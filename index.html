@@ -1,0 +1,2625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Amr · Financial Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F0F2F5;--card:#fff;--pri:#2563EB;--pri-l:#EFF6FF;--pri-d:#1D4ED8;
+  --ok:#10B981;--ok-l:#ECFDF5;--err:#EF4444;--err-l:#FEF2F2;
+  --wrn:#F59E0B;--wrn-l:#FFFBEB;--neu:#6B7280;--neu-l:#F9FAFB;
+  --txt:#111827;--txt2:#6B7280;--bdr:#E5E7EB;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shm:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.04);
+  --shl:0 10px 20px rgba(0,0,0,.08),0 4px 6px rgba(0,0,0,.04);
+  --r:12px;--rs:8px;--rl:16px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5}
+.hdr{background:var(--card);border-bottom:1px solid var(--bdr);padding:0 28px;position:sticky;top:0;z-index:200;box-shadow:var(--sh)}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;padding:12px 0 10px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand h1{font-size:17px;font-weight:700}
+.upd-badge{font-size:11px;color:var(--txt2);background:var(--neu-l);padding:3px 10px;border-radius:20px;border:1px solid var(--bdr)}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.period-wrap{position:relative}
+.period-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;background:var(--neu-l);border:1.5px solid var(--bdr);border-radius:var(--rs);font-size:12px;font-weight:600;cursor:pointer;color:var(--txt);transition:all .15s;white-space:nowrap}
+.period-btn:hover{border-color:var(--pri);color:var(--pri)}
+.period-btn .arrow{font-size:10px;transition:transform .2s;display:inline-block}
+.period-btn.open .arrow{transform:rotate(180deg)}
+.period-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--bdr);border-radius:var(--rs);box-shadow:var(--shl);min-width:150px;z-index:500;overflow:hidden}
+.period-menu.open{display:block}
+.pm-item{padding:9px 14px;font-size:12px;font-weight:500;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background .1s}
+.pm-item:hover{background:var(--neu-l)}
+.pm-item.active{color:var(--pri);font-weight:700;background:var(--pri-l)}
+.pm-item.locked{color:#D1D5DB;cursor:default}
+.pm-item.locked:hover{background:#fff}
+.pm-lock{font-size:10px}
+.main-tabs{display:flex;gap:0;border-top:1px solid var(--bdr);margin-top:2px}
+.mtab{padding:10px 22px;font-size:13px;font-weight:500;color:var(--txt2);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px}
+.mtab:hover{color:var(--pri)}
+.mtab.active{color:var(--pri);border-bottom-color:var(--pri);font-weight:700}
+.main{max-width:1400px;margin:0 auto;padding:28px}
+.tab-content{display:none}.tab-content.active{display:block}
+.section{margin-bottom:32px}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sec-ttl{font-size:13px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.04em}
+.sec-n{width:22px;height:22px;background:var(--pri);color:#fff;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.g{display:grid;gap:16px}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g5{grid-template-columns:repeat(5,1fr)}
+.card{background:var(--card);border-radius:var(--r);padding:20px;box-shadow:var(--sh);border:1px solid var(--bdr)}
+.kpi{background:var(--card);border-radius:var(--r);padding:22px;box-shadow:var(--sh);border:1px solid var(--bdr);position:relative;overflow:hidden;text-align:center}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--pri)}
+.kpi.ok::before{background:var(--ok)}.kpi.err::before{background:var(--err)}.kpi.wrn::before{background:var(--wrn)}
+.kpi-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2);margin-bottom:8px}
+.kpi-val{font-size:30px;font-weight:800;line-height:1.15;margin-bottom:6px}
+.kpi-sub{font-size:13px;color:var(--txt2);display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
+.bg{background:var(--ok-l);color:var(--ok)}.br{background:var(--err-l);color:var(--err)}
+.bw{background:var(--wrn-l);color:var(--wrn)}.bn{background:var(--neu-l);color:var(--neu)}
+.bp{background:var(--pri-l);color:var(--pri)}
+.badge-est{background:#FEF9C3;color:#92400E;font-size:10px;padding:1px 6px}
+.badge-act{background:var(--ok-l);color:var(--ok);font-size:10px;padding:1px 6px}
+.badge-ph{background:#F3F4F6;color:#9CA3AF;font-size:10px;padding:1px 6px;font-style:italic}
+.hdot{width:12px;height:12px;border-radius:50%;flex-shrink:0;display:inline-block}
+.hdot.green{background:var(--ok);box-shadow:0 0 0 3px var(--ok-l)}
+.hdot.amber{background:var(--wrn);box-shadow:0 0 0 3px var(--wrn-l)}
+.hdot.red{background:var(--err);box-shadow:0 0 0 3px var(--err-l)}
+.health-comment{font-size:11px;color:var(--txt2);font-style:italic;margin-top:6px;padding:8px;background:var(--neu-l);border-radius:6px;border-left:3px solid var(--wrn);line-height:1.4;text-align:left}
+.cat-card{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--sh);border:1.5px solid var(--bdr);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.cat-card:hover{transform:translateY(-2px);box-shadow:var(--shm)}
+.cat-card.active{border-color:var(--pri);background:var(--pri-l)}
+.cat-strip{position:absolute;top:0;left:0;right:0;height:3px}
+.cat-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.cat-name{font-weight:700;font-size:13px}.cat-broker{font-size:10px;color:var(--txt2);margin-top:1px}
+.cat-val{font-size:20px;font-weight:800;line-height:1.2;margin-bottom:2px}
+.cat-pnl{font-size:12px;font-weight:600;margin-bottom:2px}.cat-alloc{font-size:11px;color:var(--txt2)}
+.mini-bar{margin-top:8px;height:4px;background:var(--bdr);border-radius:2px;overflow:hidden}
+.mini-fill{height:100%;border-radius:2px}
+.holdings-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--pri-l);color:var(--pri);border:1px solid #BFDBFE}
+.chip .rm{cursor:pointer;font-size:13px;line-height:1}
+.chip .rm:hover{color:var(--err)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.tab{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid var(--bdr);background:#fff;color:var(--txt2);transition:all .15s}
+.tab:hover{border-color:var(--pri);color:var(--pri)}
+.tab.active{background:var(--pri);border-color:var(--pri);color:#fff}
+.tab.locked{color:#D1D5DB;cursor:default;opacity:.55}.tab.locked:hover{border-color:var(--bdr);color:#D1D5DB}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:9px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--txt2);background:var(--neu-l);border-bottom:1px solid var(--bdr);white-space:nowrap}
+th:first-child{border-radius:8px 0 0 8px}th:last-child{border-radius:0 8px 8px 0}
+td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--bdr);vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.sig{width:8px;height:8px;border-radius:50%;display:inline-block}
+.sg{background:var(--ok)}.sw{background:var(--wrn)}.sr{background:var(--err)}.sb{background:var(--pri)}
+.itag{display:inline-flex;align-items:center;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px}
+.it-etf{background:#EFF6FF;color:#2563EB}.it-stock{background:#F5F3FF;color:#7C3AED}
+.it-crypto{background:#FEF2F2;color:#EF4444}.it-commodity{background:#FFFBEB;color:#F59E0B}
+.it-cash{background:#ECFDF5;color:#10B981}
+.rtag{display:inline-flex;padding:1px 6px;border-radius:3px;font-size:10px;background:var(--neu-l);color:var(--txt2);margin-left:3px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
+.btn-p{background:var(--pri);color:#fff}.btn-p:hover{background:var(--pri-d)}
+.btn-o{background:#fff;color:var(--pri);border:1.5px solid var(--pri)}.btn-o:hover{background:var(--pri-l)}
+.btn-g{background:transparent;color:var(--txt2)}.btn-g:hover{background:var(--neu-l)}
+.btn-d{background:var(--err);color:#fff}.btn-d:hover{background:#DC2626}
+.btn-ok{background:var(--ok);color:#fff}.btn-ok:hover{background:#059669}
+.btn-sm{padding:5px 10px;font-size:12px}.btn-xs{padding:3px 8px;font-size:11px}
+.chart-hint{font-size:11px;color:var(--txt2);margin-top:4px;font-style:italic;display:flex;align-items:center;gap:4px}
+.trans-settings{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.ts-card{background:var(--card);border-radius:var(--r);padding:18px;border:1px solid var(--bdr);box-shadow:var(--sh)}
+.ts-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--txt2);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.ts-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.ts-field{display:flex;flex-direction:column;gap:4px}
+.ts-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--txt2);display:flex;align-items:center;gap:5px}
+.ts-inp{padding:8px 10px;border:1.5px solid var(--bdr);border-radius:var(--rs);font-size:13px;font-weight:600;color:var(--txt);width:100%;background:#fff;transition:border-color .15s}
+.ts-inp:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.ts-inp.modified{border-color:var(--ok);background:var(--ok-l)}
+.runway-box{text-align:center;padding:18px 0 10px}
+.runway-val{font-size:72px;font-weight:900;line-height:1;color:var(--ok);letter-spacing:-2px}
+.runway-lbl{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--txt2);margin-top:6px;font-weight:600}
+.rwy-bar{height:12px;background:var(--bdr);border-radius:6px;overflow:hidden;margin:14px 0 10px}
+.rwy-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--ok),#34D399)}
+.rwy-kpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px}
+.rwy-kpi-item{background:var(--bg2);border-radius:8px;padding:8px 10px}
+.rwy-kpi-lbl{font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.rwy-kpi-val{font-size:15px;font-weight:700;line-height:1.2}
+.phase-row{display:flex;gap:8px;flex-wrap:wrap}
+.ph-tag{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:#fff;border-radius:var(--rl);width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:var(--shl);transform:translateY(20px);transition:transform .2s}
+.overlay.open .modal{transform:translateY(0)}
+.modal-wide{max-width:820px}
+.mhdr{padding:20px 24px 16px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1}
+.mtitle{font-size:16px;font-weight:700}
+.mbody{padding:20px 24px}
+.mfoot{padding:16px 24px;border-top:1px solid var(--bdr);display:flex;gap:8px;justify-content:flex-end}
+.xbtn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--txt2);width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.xbtn:hover{background:var(--neu-l)}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ffull{grid-column:1/-1}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:2px}
+.flbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--txt2)}
+.finp,.fsel{padding:9px 12px;border:1.5px solid var(--bdr);border-radius:var(--rs);font-size:13px;color:var(--txt);width:100%;background:#fff;transition:border-color .15s}
+.finp:focus,.fsel:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.fdiv{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--txt2);margin:14px 0 6px;padding-bottom:5px;border-bottom:1px solid var(--bdr);grid-column:1/-1}
+.ni-fields{display:none}.ni-fields.show{display:contents}
+.tip{position:relative;cursor:help}
+.tip-box{display:none;position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);background:#1F2937;color:#fff;padding:8px 12px;border-radius:6px;font-size:11px;z-index:400;pointer-events:none;min-width:200px;max-width:260px;text-align:center;line-height:1.4;box-shadow:var(--shm)}
+.tip-box::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1F2937}
+.tip:hover .tip-box{display:block}
+.tg{color:var(--ok)}.tr{color:var(--err)}.tw{color:var(--wrn)}.t2{color:var(--txt2)}.tp{color:var(--pri)}
+.fw6{font-weight:600}.fw7{font-weight:700}.fw8{font-weight:800}
+.divider{height:1px;background:var(--bdr);margin:16px 0}
+.empty{text-align:center;padding:40px;color:var(--txt2)}
+.chart-ttl{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--txt)}
+.notif{position:fixed;top:20px;right:20px;background:#1F2937;color:#fff;padding:12px 18px;border-radius:var(--rs);font-size:13px;z-index:9999;box-shadow:var(--shl);transform:translateY(-80px);transition:transform .3s;max-width:300px}
+.notif.show{transform:translateY(0)}
+.fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;background:var(--pri);color:#fff;border:none;border-radius:50%;font-size:24px;cursor:pointer;box-shadow:var(--shl);display:flex;align-items:center;justify-content:center;z-index:200;transition:all .2s}
+.fab:hover{transform:scale(1.1);background:var(--pri-d)}
+.lnk{color:var(--pri);font-size:12px;font-weight:500;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:3px}
+.lnk:hover{text-decoration:underline}
+/* Inline price edit */
+.price-inp{background:none;border:none;border-bottom:1.5px dashed var(--bdr);text-align:right;font-size:12px;font-weight:600;color:var(--txt);width:78px;padding:2px 0;transition:all .15s;cursor:text;-moz-appearance:textfield}
+.price-inp::-webkit-outer-spin-button,.price-inp::-webkit-inner-spin-button{-webkit-appearance:none}
+.price-inp:hover{border-bottom-color:var(--pri);color:var(--pri)}
+.price-inp:focus{outline:none;border-bottom:2px solid var(--pri);background:var(--pri-l);border-radius:var(--rs);padding:2px 6px;width:90px}
+/* Income / info badges */
+.badge-div{background:#ECFDF5;color:#059669;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.badge-ter{background:#FEF3C7;color:#B45309;font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;white-space:nowrap}
+.badge-acc{background:#EFF6FF;color:#2563EB;font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px}
+.badge-div-tx{background:#ECFDF5;color:#059669}
+/* Sector breakdown table */
+.bkd-sec{border-bottom:1px solid var(--bdr)}
+.bkd-sec:last-child{border-bottom:none}
+.bkd-hdr-row{display:grid;grid-template-columns:12px 1fr 70px 90px 60px 42px 16px;align-items:center;gap:8px;padding:9px 6px;cursor:pointer;border-radius:var(--rs)}
+.bkd-hdr-row:hover{background:var(--neu-l)}
+.bkd-holdings{display:none;padding-left:28px;border-left:2px solid var(--bdr);margin:0 6px 6px 6px}
+.bkd-sec.open .bkd-holdings{display:block}
+.bkd-sec.open .bkd-arr{transform:rotate(180deg)}
+.bkd-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.bkd-hold-row{display:grid;grid-template-columns:44px 1fr 90px 60px;align-items:center;gap:8px;padding:5px 4px;border-radius:var(--rs)}
+.bkd-hold-row:hover{background:var(--neu-l)}
+.bkd-ticker{font-size:11px;font-weight:700;color:var(--pri)}
+.bkd-sec-name{font-weight:600;font-size:13px}
+.bkd-col-n{font-size:11px;color:var(--txt2);text-align:center}
+.bkd-col-val{font-weight:600;font-size:12px;text-align:right}
+.bkd-col-ret{font-size:11px;text-align:right}
+.bkd-col-alloc{font-size:11px;color:var(--txt2);text-align:right}
+.bkd-arr{font-size:10px;color:var(--txt2);transition:transform .2s;text-align:center}
+.bkd-hold-name{font-size:11px;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tax-card{background:var(--card);border-radius:var(--r);padding:20px;box-shadow:var(--sh);border:1px solid var(--bdr);margin-bottom:12px}
+.tax-row{display:grid;gap:8px;padding:9px 12px;border-bottom:1px solid var(--bdr);font-size:13px;align-items:center}
+.tax-row:last-child{border-bottom:none}
+.tax-hdr{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--txt2);background:var(--neu-l);padding:6px 12px;border-radius:var(--rs) var(--rs) 0 0}
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .g4{grid-template-columns:repeat(2,1fr)}
+  .g5{grid-template-columns:repeat(3,1fr)}
+  .trans-settings{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  .hdr{padding:0 16px}
+  .hdr-top{flex-wrap:wrap;gap:8px;padding:10px 0}
+  .brand h1{font-size:15px}
+  .hdr-right{flex-wrap:wrap;gap:6px}
+  .hdr-right .btn-sm{font-size:11px;padding:4px 8px}
+  .main-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .mtab{padding:9px 14px;font-size:12px;white-space:nowrap}
+  .main{padding:14px}
+  .g2,.g3,.g4,.g5{grid-template-columns:1fr}
+  .g4.kpi-grid-4col{grid-template-columns:repeat(2,1fr)}
+  .fgrid{grid-template-columns:1fr}
+  .trans-settings{grid-template-columns:1fr}
+  .kpi-val{font-size:22px}
+  .cat-val{font-size:16px}
+  .sec-hdr{flex-direction:column;align-items:flex-start;gap:6px}
+  .holdings-header{flex-direction:column;align-items:flex-start}
+  .tbl-wrap{font-size:12px}
+  td,th{padding:7px 8px}
+  .bkd-hdr-row{grid-template-columns:12px 1fr 60px 80px 50px 36px 16px}
+  .modal{border-radius:var(--r) var(--r) 0 0;max-height:85vh;position:fixed;bottom:0;left:0;right:0;top:auto;transform:translateY(100%)}
+  .overlay.open .modal{transform:translateY(0)}
+  .modal-wide{max-width:100%}
+}
+/* ── PRINT / PDF ── */
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* Hide interactive chrome */
+  .hdr,.main-tabs,.fab,.notif,.overlay,
+  .btn,.xbtn,.chip .rm,
+  #ovwPeriodTabs,.holdings-header,
+  .tbl-wrap,
+  .tab-content:not(.active){display:none!important}
+  /* Show only Overview + Tax summary */
+  body{background:#fff!important;color:#000!important;font-size:11pt}
+  .main{padding:0;max-width:100%}
+  .tab-content.active{display:block!important}
+  /* Print header */
+  body::before{
+    content:'Financial Dashboard — ' attr(data-print-date);
+    display:block;font-size:14pt;font-weight:700;
+    border-bottom:2px solid #2563EB;padding-bottom:8pt;margin-bottom:16pt
+  }
+  /* Cards stay white */
+  .card,.kpi,.cat-card,.tax-card,.ts-card{
+    background:#fff!important;border:1px solid #ccc!important;
+    box-shadow:none!important;break-inside:avoid
+  }
+  /* Grids: allow 2-column on print */
+  .g4{grid-template-columns:repeat(2,1fr)!important}
+  .g3{grid-template-columns:repeat(3,1fr)!important}
+  .g2{grid-template-columns:repeat(2,1fr)!important}
+  canvas{max-width:100%!important;height:auto!important}
+  /* Page breaks */
+  .section{break-inside:avoid;margin-bottom:16pt}
+  a{color:#000!important;text-decoration:none!important}
+}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="hdr-top">
+    <div class="brand">
+      <h1>💼 Financial Dashboard</h1>
+      <span class="upd-badge" id="lastUpd">Last updated: 25 Mar 2026</span>
+    </div>
+    <div class="hdr-right">
+      <button class="btn btn-g btn-sm" onclick="openInstModal()">⚙ Instruments</button>
+      <button class="btn btn-g btn-sm" onclick="openModal('historyModal')">📋 Transactions</button>
+      <div style="width:1px;height:20px;background:var(--bdr);margin:0 2px"></div>
+      <button class="btn btn-g btn-sm" onclick="exportDB()" title="Download your data as a JSON backup file">📤 Export</button>
+      <label class="btn btn-g btn-sm" title="Restore from a previously exported JSON backup" style="cursor:pointer;margin:0">📥 Import<input type="file" accept=".json" onchange="importDB(event)" style="display:none"></label>
+      <button class="btn btn-g btn-sm" onclick="exportPDF()" title="Print or save as PDF — use your browser's Save as PDF option">📄 PDF</button>
+      <div style="width:1px;height:20px;background:var(--bdr);margin:0 2px"></div>
+      <button class="btn btn-o btn-sm" onclick="openUpdatePricesModal()">🔄 Update Prices</button>
+      <button class="btn btn-p btn-sm" onclick="openModal('txModal')">＋ Add Transaction</button>
+    </div>
+  </div>
+  <div class="main-tabs">
+    <button class="mtab active" onclick="switchTab('overview',this)">📊 Overview</button>
+    <button class="mtab" onclick="switchTab('holdings',this)">📋 Holdings</button>
+    <button class="mtab" onclick="switchTab('transition',this)">💸 Cash Flow</button>
+    <button class="mtab" onclick="switchTab('tax',this)">💰 Tax</button>
+  </div>
+</header>
+
+<div class="main">
+
+<!-- TAB: OVERVIEW -->
+<div class="tab-content active" id="tab-overview">
+  <div class="section" id="s-kpis">
+    <div class="g g4" id="kpiGrid"></div>
+  </div>
+  <div class="tabs" id="ovwPeriodTabs" style="margin-bottom:0;padding:0 0 8px 0">
+    <div class="tab ovw-ptab active" data-p="all" onclick="setPeriod('all',this)">All Time</div>
+    <div class="tab ovw-ptab locked" id="ovw-weekly" onclick="periodLockedNotice()">Weekly 🔒</div>
+    <div class="tab ovw-ptab locked" id="ovw-monthly" onclick="periodLockedNotice()">Monthly 🔒</div>
+    <div class="tab ovw-ptab locked" id="ovw-quarterly" onclick="periodLockedNotice()">Quarterly 🔒</div>
+    <div class="tab ovw-ptab locked" id="ovw-6m" onclick="periodLockedNotice()">6 Months 🔒</div>
+    <div class="tab ovw-ptab locked" id="ovw-annual" onclick="periodLockedNotice()">Annual 🔒</div>
+  </div>
+  <div class="section" id="s-alloc">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">2</span>Asset Allocation</div>
+      <a class="lnk" onclick="switchTabByName('holdings')">View all holdings →</a>
+    </div>
+    <div class="g g2">
+      <div class="card">
+        <div class="chart-ttl">Portfolio Composition</div>
+        <div style="position:relative;height:260px"><canvas id="donutChart"></canvas></div>
+        <div class="chart-hint">👆 Click a slice to drill into that category</div>
+      </div>
+      <div class="card">
+        <div class="chart-ttl">Invested vs Current Value (€)</div>
+        <div style="position:relative;height:260px"><canvas id="allocBar"></canvas></div>
+        <div class="chart-hint">👆 Click a bar to drill into that category</div>
+      </div>
+    </div>
+  </div>
+  <div class="section" id="s-cats">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">3</span>Category Performance</div>
+      <span class="t2" style="font-size:12px">Click a card to open Holdings →</span>
+    </div>
+    <div class="g g5" id="catGrid"></div>
+  </div>
+  <div class="section" id="s-sectors">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">4</span>Sector &amp; Region Breakdown</div>
+      <span class="t2" style="font-size:12px">👆 Click to filter Holdings</span>
+    </div>
+    <div class="g g3">
+      <div class="card">
+        <div class="chart-ttl">By Sector (Current Value)</div>
+        <div style="position:relative;height:280px"><canvas id="sectorDonut"></canvas></div>
+        <div class="chart-hint">👆 Click a sector slice to see those holdings</div>
+      </div>
+      <div class="card" style="grid-column:span 2">
+        <div class="chart-ttl">By Region (Invested vs Current)</div>
+        <div style="position:relative;height:280px"><canvas id="regionBar"></canvas></div>
+        <div class="chart-hint">👆 Click a region bar to see those holdings</div>
+      </div>
+    </div>
+    <div id="sectorBreakdown" style="margin-top:16px"></div>
+  </div>
+</div>
+
+<!-- TAB: HOLDINGS -->
+<div class="tab-content" id="tab-holdings">
+  <div class="section">
+    <div class="holdings-header">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="sec-ttl" style="margin:0">Holdings Drilldown</div>
+        <div class="filter-chips" id="activeFilters"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <a class="lnk" onclick="switchTabByName('overview')" style="font-size:11px">← Back to Overview</a>
+        <div class="period-wrap" id="holdPeriodWrap">
+          <button class="period-btn" id="holdPeriodBtn" onclick="togglePeriodMenu('hold')">
+            <span id="holdPeriodLabel">All Time</span>
+            <span class="arrow">▾</span>
+          </button>
+          <div class="period-menu" id="holdPeriodMenu">
+            <div class="pm-item active" data-p="all" onclick="setPeriod('all',this)">All Time <span>✓</span></div>
+            <div class="pm-item locked" onclick="periodLockedNotice()">Weekly <span class="pm-lock">🔒</span></div>
+            <div class="pm-item locked" onclick="periodLockedNotice()">Monthly <span class="pm-lock">🔒</span></div>
+            <div class="pm-item locked" onclick="periodLockedNotice()">Quarterly <span class="pm-lock">🔒</span></div>
+            <div class="pm-item locked" onclick="periodLockedNotice()">6 Months <span class="pm-lock">🔒</span></div>
+            <div class="pm-item locked" onclick="periodLockedNotice()">Annual <span class="pm-lock">🔒</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="tabs" id="holdingTabs"></div>
+      <div class="g g2" style="margin-bottom:20px">
+        <div>
+          <div class="chart-ttl" id="barChartTitle">P&amp;L % per Holding</div>
+          <div style="position:relative;height:220px"><canvas id="holdBar"></canvas></div>
+        </div>
+        <div>
+          <div class="chart-ttl">Position Size (% of Category)</div>
+          <div style="position:relative;height:220px"><canvas id="holdPie"></canvas></div>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table><thead id="holdThead"></thead><tbody id="holdTbody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: TRANSITION -->
+<div class="tab-content" id="tab-transition">
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl">💸 Cash Flow Planner</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="t2" style="font-size:11px">Edit values below — changes auto-save &amp; refresh charts</span>
+        <button class="btn btn-ok btn-sm" onclick="resetTransitionDefaults()">↺ Reset to defaults</button>
+      </div>
+    </div>
+
+    <!-- Runway cards row 1 -->
+    <div class="g" style="grid-template-columns:2fr 1fr 1fr 1fr;gap:16px;margin-bottom:12px">
+      <div class="cat-card" style="cursor:default">
+        <div class="cat-strip" style="background:var(--ok)"></div>
+        <div class="cat-top"><div><div class="cat-name">🕐 Financial Runway</div><div class="cat-broker">months until funds run out</div></div></div>
+        <div style="font-size:48px;font-weight:900;line-height:1;color:var(--ok);letter-spacing:-1px;margin-bottom:4px" id="runwayVal">—</div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--txt2);font-weight:600;margin-bottom:10px">months of runway</div>
+        <div class="rwy-bar"><div class="rwy-fill" id="runwayFill" style="width:0%"></div></div>
+        <div class="phase-row" id="phaseTags" style="margin-top:8px;gap:4px;flex-wrap:wrap"></div>
+      </div>
+      <div class="cat-card" style="cursor:default">
+        <div class="cat-strip" style="background:#3B82F6"></div>
+        <div class="cat-top"><div class="cat-name">💰 Liquid Buffer</div></div>
+        <div class="cat-val" id="savBuf">—</div>
+        <div class="cat-alloc">Cash available</div>
+      </div>
+      <div class="cat-card" style="cursor:default">
+        <div class="cat-strip" style="background:var(--err)"></div>
+        <div class="cat-top"><div class="cat-name">🔥 Monthly Burn</div></div>
+        <div class="cat-val tr" id="monBurn">—</div>
+        <div class="cat-alloc">Total expenses / mo</div>
+      </div>
+      <div class="cat-card" style="cursor:default">
+        <div class="cat-strip" style="background:var(--ok)"></div>
+        <div class="cat-top"><div class="cat-name">📊 Net Monthly</div></div>
+        <div class="cat-val" id="netMon">—</div>
+        <div class="cat-alloc">Income − Expenses</div>
+      </div>
+    </div>
+    <!-- Runway cards row 2 -->
+    <div class="g g4" style="margin-bottom:20px">
+      <div class="cat-card" style="cursor:default">
+        <div class="cat-strip" style="background:#8B5CF6"></div>
+        <div class="cat-top"><div class="cat-name" id="rwyBenLabel">🎯 Phase 3 Income</div></div>
+        <div class="cat-val tg" id="wwBen">—</div>
+        <div class="cat-alloc" id="rwyBenSub">Monthly income (phase 3)</div>
+      </div>
+      <div class="cat-card" style="cursor:default">
+        <div class="cat-strip" style="background:#8B5CF6"></div>
+        <div class="cat-top"><div class="cat-name" id="rwyDurLabel">⏱ Phase 3 Duration</div></div>
+        <div class="cat-val" id="wwDurVal">—</div>
+        <div class="cat-alloc">Benefit period length</div>
+      </div>
+      <div class="cat-card" style="cursor:default">
+        <div class="cat-strip" style="background:var(--pri)"></div>
+        <div class="cat-top"><div class="cat-name">📄 Severance</div></div>
+        <div class="cat-val tp" id="sevVal">—</div>
+        <div class="cat-alloc">One-time net payout</div>
+      </div>
+      <div class="cat-card" style="cursor:default">
+        <div class="cat-strip" style="background:#F59E0B"></div>
+        <div class="cat-top"><div class="cat-name">⏰ Leave Hours</div></div>
+        <div class="cat-val tp" id="leaveHoursVal">—</div>
+        <div class="cat-alloc">Payout on departure</div>
+      </div>
+    </div>
+
+      <!-- Editable Settings -->
+      <div class="card">
+        <div class="sec-ttl" style="font-size:11px;margin-bottom:14px">⚙️ Assumptions — Edit with real values when available</div>
+        <!-- Phase name labels -->
+        <div class="g" style="grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px dashed var(--bdr)">
+          <div class="ts-field">
+            <label class="ts-lbl">Phase 1 Label</label>
+            <input class="ts-inp" id="cfg_phaseName1" type="text" placeholder="e.g. Employment Phase" oninput="onTransitionInput('phaseName1',this);refreshPhaseLabels()">
+          </div>
+          <div class="ts-field">
+            <label class="ts-lbl">Phase 2 Label</label>
+            <input class="ts-inp" id="cfg_phaseName2" type="text" placeholder="e.g. Career Gap" oninput="onTransitionInput('phaseName2',this);refreshPhaseLabels()">
+          </div>
+          <div class="ts-field">
+            <label class="ts-lbl">Phase 3 Label</label>
+            <input class="ts-inp" id="cfg_phaseName3" type="text" placeholder="e.g. Benefits Phase" oninput="onTransitionInput('phaseName3',this);refreshPhaseLabels()">
+          </div>
+        </div>
+        <div class="g" style="grid-template-columns:repeat(3,1fr);gap:16px">
+          <!-- Phase 1 -->
+          <div>
+            <div id="phaseHdr1" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#2563EB;margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid #BFDBFE">📘 Phase 1</div>
+            <div class="ts-field" style="margin-bottom:8px">
+              <label class="ts-lbl">Monthly Net Salary (€) <span class="badge badge-est" id="est_salary">estimated</span></label>
+              <input class="ts-inp" id="cfg_salary" type="number" placeholder="0" oninput="onTransitionInput('salary',this)">
+            </div>
+            <div class="ts-field" style="margin-bottom:8px">
+              <label class="ts-lbl">Monthly Expenses (€) <span class="badge badge-est" id="est_exp1">estimated</span></label>
+              <input class="ts-inp" id="cfg_exp1" type="number" placeholder="0" oninput="onTransitionInput('exp1',this)">
+            </div>
+            <div class="ts-field" style="margin-bottom:8px">
+              <label class="ts-lbl">Monthly Savings (€) <span class="badge badge-est" id="est_sav1">estimated</span></label>
+              <input class="ts-inp" id="cfg_sav1" type="number" placeholder="0" oninput="onTransitionInput('sav1',this)">
+            </div>
+            <div class="ts-field">
+              <label class="ts-lbl">Last Month on ING Payroll <span class="badge badge-est" id="est_enddate">estimated</span></label>
+              <input class="ts-inp" id="cfg_enddate" type="month" oninput="onTransitionInput('enddate',this)">
+            </div>
+          </div>
+          <!-- Phase 2 -->
+          <div>
+            <div id="phaseHdr2" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#EF4444;margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid #FECACA">⚠️ Phase 2 <span style="font-weight:400;font-style:italic;text-transform:none">(leave blank if none)</span></div>
+            <div class="ts-field" style="margin-bottom:8px">
+              <label class="ts-lbl">Start Month <span class="badge badge-est" id="est_gstart">optional</span></label>
+              <input class="ts-inp" id="cfg_gstart" type="month" value="" oninput="onTransitionInput('gstart',this)" placeholder="blank = no gap">
+            </div>
+            <div class="ts-field" style="margin-bottom:8px">
+              <label class="ts-lbl">End Month <span class="badge badge-est" id="est_gend">optional</span></label>
+              <input class="ts-inp" id="cfg_gend" type="month" value="" oninput="onTransitionInput('gend',this)" placeholder="blank = no gap">
+            </div>
+            <div class="ts-field">
+              <label class="ts-lbl">Monthly Expenses (€) <span class="badge badge-est" id="est_gexp">estimated</span></label>
+              <input class="ts-inp" id="cfg_gexp" type="number" placeholder="0" oninput="onTransitionInput('gexp',this)">
+            </div>
+          </div>
+          <!-- Phase 3 -->
+          <div>
+            <div id="phaseHdr3" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#7C3AED;margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid #DDD6FE">🎯 Phase 3</div>
+            <div class="ts-field" style="margin-bottom:8px">
+              <label class="ts-lbl">Start Month <span class="badge badge-est" id="est_wstart">estimated</span></label>
+              <input class="ts-inp" id="cfg_wstart" type="month" oninput="onTransitionInput('wstart',this)">
+            </div>
+            <div class="ts-field" style="margin-bottom:8px">
+              <label class="ts-lbl">Phase 3 Monthly Income (€) <span class="badge badge-ph" id="est_ww">placeholder</span></label>
+              <input class="ts-inp" id="cfg_ww" type="number" placeholder="0" oninput="onTransitionInput('ww',this)">
+            </div>
+            <div class="ts-field" style="margin-bottom:8px">
+              <label class="ts-lbl">Monthly Expenses (€) <span class="badge badge-est" id="est_wexp">estimated</span></label>
+              <input class="ts-inp" id="cfg_wexp" type="number" placeholder="0" oninput="onTransitionInput('wexp',this)">
+            </div>
+            <div class="ts-field">
+              <label class="ts-lbl">Monthly Savings (€) <span class="badge badge-est" id="est_sav3">estimated</span></label>
+              <input class="ts-inp" id="cfg_sav3" type="number" placeholder="0" oninput="onTransitionInput('sav3',this)">
+            </div>
+            <div class="ts-field">
+              <label class="ts-lbl">Phase 3 Duration (months) <span class="badge badge-ph" id="est_wwDuration">placeholder</span></label>
+              <input class="ts-inp" id="cfg_wwDuration" type="number" value="0" placeholder="e.g. 24" oninput="onTransitionInput('wwDuration',this)">
+            </div>
+          </div>
+        </div>
+
+        <!-- One-Time Inflows -->
+        <div style="margin-top:14px;padding-top:14px;border-top:2px dashed #D1FAE5">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#059669;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+            💰 One-Time Inflows
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt2);font-size:10px">— confirm amounts with lawyer &amp; ING before updating</span>
+          </div>
+          <div class="g" style="grid-template-columns:repeat(5,1fr);gap:10px;align-items:end">
+            <div class="ts-field">
+              <label class="ts-lbl">Severance Net (€) <span class="badge badge-ph" id="est_severance">placeholder</span></label>
+              <input class="ts-inp" id="cfg_severance" type="number" value="0" placeholder="0" oninput="onTransitionInput('severance',this)">
+            </div>
+            <div class="ts-field">
+              <label class="ts-lbl">Severance Month <span class="badge badge-ph" id="est_severanceMonth">placeholder</span></label>
+              <input class="ts-inp" id="cfg_severanceMonth" type="month" oninput="onTransitionInput('severanceMonth',this)">
+            </div>
+            <div class="ts-field">
+              <label class="ts-lbl">Leave Hours Count <span class="badge badge-ph" id="est_leaveHours">placeholder</span></label>
+              <input class="ts-inp" id="cfg_leaveHours" type="number" value="0" placeholder="e.g. 89" oninput="onTransitionInput('leaveHours',this)">
+            </div>
+            <div class="ts-field">
+              <label class="ts-lbl">Leave Hourly Rate (€/hr) <span class="badge badge-ph" id="est_leaveHoursRate">placeholder</span></label>
+              <input class="ts-inp" id="cfg_leaveHoursRate" type="number" value="0" placeholder="€/hr" oninput="onTransitionInput('leaveHoursRate',this);rebuildCashFlow()">
+            </div>
+            <div class="ts-field">
+              <label class="ts-lbl">Leave Hours Month <span class="badge badge-ph" id="est_leaveHoursMonth">placeholder</span></label>
+              <input class="ts-inp" id="cfg_leaveHoursMonth" type="month" oninput="onTransitionInput('leaveHoursMonth',this)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Savings buffer -->
+        <div class="divider"></div>
+        <div class="g" style="grid-template-columns:1fr 1fr;gap:16px">
+          <div class="ts-field">
+            <label class="ts-lbl">Current Savings Buffer (€) <span class="badge badge-est" id="est_buf">estimated</span></label>
+            <input class="ts-inp" id="cfg_buf" type="number" placeholder="0" oninput="onTransitionInput('buf',this)">
+          </div>
+          <div class="ts-field">
+            <label class="ts-lbl">Projection End Month</label>
+            <input class="ts-inp" id="cfg_endproj" type="month" oninput="rebuildCashFlow()">
+          </div>
+        </div>
+      </div>
+
+    <!-- Charts -->
+    <div class="g g1" style="margin-bottom:16px">
+      <div class="card">
+        <div class="chart-ttl">Monthly Cash Flow — Income vs Expenses</div>
+        <div style="position:relative;height:240px"><canvas id="cfChart"></canvas></div>
+        <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;flex-wrap:wrap">
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#3B82F6;border-radius:2px;display:inline-block"></span><span id="lgd1">Phase 1 income</span></span>
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#EF4444;border-radius:2px;display:inline-block"></span><span id="lgd2">Phase 2 (€0 income)</span></span>
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#8B5CF6;border-radius:2px;display:inline-block"></span><span id="lgd3">Phase 3 income</span></span>
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#94A3B8;border-radius:2px;display:inline-block"></span><span id="lgd4">Post-phase 3</span></span>
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#F59E0B55;border-radius:2px;border:1px solid #F59E0B;display:inline-block"></span>Expenses</span>
+        </div>
+      </div>
+    </div>
+    <div class="g g1">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="chart-ttl" style="margin-bottom:0">Savings Projection</div>
+          <span style="font-size:11px;color:var(--txt2);font-style:italic">🟡 = one-time inflow (severance / leave hours)</span>
+        </div>
+        <div style="position:relative;height:220px"><canvas id="savChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: TAX -->
+<div class="tab-content" id="tab-tax">
+  <!-- Tax Settings -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">⚙</span>Tax Settings</div>
+      <span class="t2" style="font-size:12px">Global defaults · Per-instrument rates editable in Dividend section below</span>
+    </div>
+    <div class="card" style="max-width:900px">
+      <div class="g" style="grid-template-columns:repeat(3,1fr);gap:20px;align-items:end">
+        <!-- Row 1: Income Tax -->
+        <div>
+          <label class="ts-lbl">Box 1 — Income Tax Rate (%)</label>
+          <input class="ts-inp" type="number" id="tax_box1Rate" value="0" min="0" max="100" step="0.1"
+            oninput="saveTaxSettings()" style="margin-top:6px">
+          <div class="t2" style="font-size:11px;margin-top:4px">Your effective income tax rate. Set to 0 to use the built-in NL 2025 brackets.</div>
+        </div>
+        <div>
+          <label class="ts-lbl">Box 2 — Substantial Interest Rate (%)</label>
+          <input class="ts-inp" type="number" id="tax_box2Rate" value="26.9" min="0" max="100" step="0.1"
+            oninput="saveTaxSettings()" style="margin-top:6px">
+          <div class="t2" style="font-size:11px;margin-top:4px">Rate applied to BV dividends / substantial interest income. (NL 2025: 24.5–33%)</div>
+        </div>
+        <div>
+          <label class="ts-lbl">Dividend Withholding Rate (%)</label>
+          <input class="ts-inp" type="number" id="tax_divRate" value="15" min="0" max="100" step="0.1"
+            oninput="saveTaxSettings()" style="margin-top:6px">
+          <div class="t2" style="font-size:11px;margin-top:4px">Fallback for instruments without a custom rate.</div>
+        </div>
+        <!-- Row 2: Wealth Tax -->
+        <div>
+          <label class="ts-lbl">Wealth Tax Rate (%)</label>
+          <input class="ts-inp" type="number" id="tax_cgRate" value="36" min="0" max="100" step="0.1"
+            oninput="saveTaxSettings()" style="margin-top:6px">
+          <div class="t2" style="font-size:11px;margin-top:4px">Applied to the fictitious / deemed return on net worth.</div>
+        </div>
+        <div>
+          <label class="ts-lbl">Fictitious Return Rate (%)</label>
+          <input class="ts-inp" type="number" id="tax_ficRate" value="6.36" min="0" max="100" step="0.01"
+            oninput="saveTaxSettings()" style="margin-top:6px">
+          <div class="t2" style="font-size:11px;margin-top:4px">Deemed return on savings/investments used for wealth tax.</div>
+        </div>
+        <div>
+          <label class="ts-lbl">Wealth Tax Allowance</label>
+          <input class="ts-inp" type="number" id="tax_allowance" value="57000" min="0" step="1000"
+            oninput="saveTaxSettings()" style="margin-top:6px">
+          <div class="t2" style="font-size:11px;margin-top:4px">Tax-free allowance per person before wealth tax applies.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Box 1 -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">1</span>Income Tax — From Work</div>
+      <span class="t2" style="font-size:12px">Employment income · Benefits · Linked from Cash Flow tab</span>
+    </div>
+    <div id="taxBox1"></div>
+  </div>
+  <!-- Box 2 -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">2</span>Box 2 — Substantial Interest</div>
+      <span class="t2" style="font-size:12px">BV dividend income · ≥5% company stake · Director salary → Box 1</span>
+    </div>
+    <div id="taxBox2"></div>
+  </div>
+  <!-- Box 3 -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">3</span>Wealth Tax — Savings &amp; Investments</div>
+      <span class="t2" id="box3SubHdr" style="font-size:12px">Wealth tax on portfolio above the configured allowance</span>
+    </div>
+    <div id="taxBox3Table"></div>
+  </div>
+  <!-- Dividend Withholding -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">📥</span>Dividend & Distribution Withholding</div>
+      <span class="t2" style="font-size:12px">Per-instrument rates · Withheld tax is a credit against Box 1/3 liability</span>
+    </div>
+    <div id="taxDivTable"></div>
+  </div>
+  <!-- TER -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">📊</span>ETF Cost Summary (TER)</div>
+      <span class="t2" style="font-size:12px">Annual cost drag — already embedded in ETF NAV price</span>
+    </div>
+    <div id="taxTerTable"></div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<button class="fab" onclick="openModal('txModal')" title="Add Transaction">＋</button>
+<div class="notif" id="notif"></div>
+
+<!-- MODAL: ADD TRANSACTION -->
+<div class="overlay" id="txModal">
+  <div class="modal">
+    <div class="mhdr"><span class="mtitle">＋ Add Transaction</span><button class="xbtn" onclick="closeModal('txModal')">✕</button></div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg ffull">
+          <label class="flbl">Instrument *</label>
+          <select class="fsel" id="tx_inst" onchange="onInstChange()">
+            <option value="">— select —</option>
+            <option value="__new__">＋ Add new instrument</option>
+          </select>
+        </div>
+        <div class="fg"><label class="flbl">Type *</label>
+          <select class="fsel" id="tx_type" onchange="onTxTypeChange()">
+            <option value="buy">Buy</option>
+            <option value="sell">Sell</option>
+            <option value="dividend">Dividend / Distribution</option>
+          </select>
+        </div>
+        <div class="fg"><label class="flbl">Date *</label><input class="finp" type="date" id="tx_date"></div>
+        <div class="fg" id="qty_row"><label class="flbl">Quantity *</label><input class="finp" type="number" id="tx_qty" step="any" placeholder="0.00" oninput="calcTotal()"></div>
+        <div class="fg"><label class="flbl" id="price_lbl">Price per Unit (€) *</label><input class="finp" type="number" id="tx_price" step="any" placeholder="0.00" oninput="calcTotal()"></div>
+        <div class="fg" id="fees_row"><label class="flbl">Fees</label><input class="finp" type="number" id="tx_fees" step="any" placeholder="0.00" oninput="calcTotal()"></div>
+        <div class="fg ffull">
+          <label class="flbl">Total</label>
+          <div style="padding:9px 12px;background:var(--neu-l);border-radius:var(--rs);font-weight:700;font-size:15px" id="tx_total">€ —</div>
+        </div>
+        <div class="fg ffull"><label class="flbl">Notes</label><input class="finp" type="text" id="tx_notes" placeholder="Optional"></div>
+        <div class="fdiv ni-fields" id="niSection">New Instrument Details</div>
+        <div class="fg ni-fields"><label class="flbl">Name *</label><input class="finp" type="text" id="ni_name" placeholder="e.g. iShares MSCI World"></div>
+        <div class="fg ni-fields"><label class="flbl">Ticker</label><input class="finp" type="text" id="ni_ticker" placeholder="e.g. IWDA"></div>
+        <div class="fg ni-fields"><label class="flbl">Category *</label>
+          <select class="fsel" id="ni_cat"><option value="ETF">ETF</option><option value="Stock">Stock</option><option value="Crypto">Crypto</option><option value="Commodity">Commodity</option><option value="Cash">Cash</option></select>
+        </div>
+        <div class="fg ni-fields"><label class="flbl">Broker / Exchange</label><input class="finp" type="text" id="ni_broker" placeholder="e.g. Trade Republic"></div>
+        <div class="fdiv ni-fields">Enrichment — Sector &amp; Geography</div>
+        <div class="fg ni-fields"><label class="flbl">Sector</label>
+          <select class="fsel" id="ni_sector">
+            <optgroup label="ETF Sectors"><option>Utilities</option><option>Energy</option><option>Materials</option><option>Industrials</option><option>Defense</option></optgroup>
+            <optgroup label="Stocks"><option>Banking</option><option>Asset Management</option><option>Consumer Finance</option><option>Health Technology</option><option>Construction</option><option>Airlines</option><option>Technology</option><option>Consumer Discretionary</option></optgroup>
+            <optgroup label="Crypto"><option>Bitcoin</option><option>Ethereum</option><option>Solana</option><option>Cryptocurrency</option></optgroup>
+            <optgroup label="Other"><option>Gold</option><option>Cash &amp; Equivalents</option><option>Other</option></optgroup>
+          </select>
+        </div>
+        <div class="fg ni-fields"><label class="flbl">Industry</label><input class="finp" type="text" id="ni_industry" placeholder="e.g. Nuclear Energy"></div>
+        <div class="fg ni-fields"><label class="flbl">Country / Focus</label><input class="finp" type="text" id="ni_country" placeholder="e.g. Netherlands"></div>
+        <div class="fg ni-fields"><label class="flbl">Region</label>
+          <select class="fsel" id="ni_region"><option>Europe</option><option>Americas</option><option>Asia</option><option>Global</option><option>Middle East</option><option>Africa</option></select>
+        </div>
+        <div class="fg ni-fields"><label class="flbl">Currency</label><input class="finp" type="text" id="ni_currency" value="EUR"></div>
+        <div class="fg ni-fields"><label class="flbl">TER % <span style="font-size:10px;color:var(--txt2)">(annual fund cost)</span></label><input class="finp" type="number" id="ni_ter" step="any" placeholder="e.g. 0.46"></div>
+        <div class="fg ni-fields"><label class="flbl">Distribution Type</label>
+          <select class="fsel" id="ni_distType">
+            <option value="">— N/A (stocks, crypto, etc.) —</option>
+            <option value="Acc">Acc — Accumulating (no payout)</option>
+            <option value="Dist">Dist — Distributing (pays dividends)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeModal('txModal')">Cancel</button>
+      <button class="btn btn-p" onclick="saveTx()">Save Transaction</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: HISTORY -->
+<div class="overlay" id="historyModal">
+  <div class="modal modal-wide">
+    <div class="mhdr"><span class="mtitle">📋 Transaction History</span><button class="xbtn" onclick="closeModal('historyModal')">✕</button></div>
+    <div class="mbody">
+      <div style="margin-bottom:14px;display:flex;gap:8px;align-items:center">
+        <select class="fsel" id="histFilter" style="width:240px" onchange="renderHistory()"><option value="all">All instruments</option></select>
+        <span class="t2" id="histCount" style="font-size:12px"></span>
+      </div>
+      <div class="tbl-wrap"><table><thead><tr>
+        <th>Date</th><th>Instrument</th><th>Type</th><th class="num">Qty</th>
+        <th class="num" id="histPriceHdr">Price</th><th class="num">Fees</th><th class="num">Total</th><th>Notes</th><th></th>
+      </tr></thead><tbody id="histBody"></tbody></table></div>
+    </div>
+    <div class="mfoot" style="justify-content:space-between">
+      <button class="btn btn-d btn-sm" onclick="hardReset()" title="Factory reset — clears ALL data and restarts setup wizard. Cannot be undone.">↺ Factory Reset</button>
+      <button class="btn btn-g" onclick="closeModal('historyModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: UPDATE PRICES -->
+<div class="overlay" id="pricesModal">
+  <div class="modal modal-wide">
+    <div class="mhdr"><span class="mtitle">🔄 Update Current Prices</span><button class="xbtn" onclick="closeModal('pricesModal')">✕</button></div>
+    <div class="mbody">
+      <p style="font-size:12px;color:var(--txt2);margin-bottom:16px">Update prices to refresh all P&amp;L figures. Each save records a snapshot — enabling period comparisons over time.</p>
+      <div id="pricesList"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeModal('pricesModal')">Cancel</button>
+      <button class="btn btn-p" onclick="savePrices()">Save &amp; Refresh</button>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING WIZARD -->
+<div class="overlay" id="wizOverlay" style="z-index:3000;background:rgba(0,0,0,.75)">
+  <div class="modal" style="max-width:620px;width:100%;padding:0;overflow:hidden">
+    <!-- Progress bar -->
+    <div style="background:var(--bdr);height:4px"><div id="wizProgress" style="background:var(--accent);height:4px;width:25%;transition:width .3s"></div></div>
+    <!-- Header -->
+    <div class="mhdr" style="border-bottom:1px solid var(--bdr);padding:18px 24px">
+      <span class="mtitle" id="wizTitle">Welcome to Financial Dashboard</span>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px" id="wizSubtitle">Step 1 of 4</div>
+    </div>
+    <!-- Body -->
+    <div id="wizBody" style="padding:24px;min-height:260px;max-height:60vh;overflow-y:auto"></div>
+    <!-- Footer -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-top:1px solid var(--bdr);gap:12px">
+      <button class="btn btn-sm" id="wizBackBtn" onclick="wizBack()" style="visibility:hidden">← Back</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-sm" id="wizSkipBtn" onclick="wizSkip()" style="opacity:.6">Skip this step</button>
+        <button class="btn btn-sm btn-p" id="wizNextBtn" onclick="wizNext()">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MANAGE INSTRUMENTS -->
+<div class="overlay" id="instModal">
+  <div class="modal modal-wide" style="max-width:900px">
+    <div class="mhdr">
+      <span class="mtitle">⚙ Manage Instruments</span>
+      <button class="xbtn" onclick="closeModal('instModal')">✕</button>
+    </div>
+    <div class="mbody">
+      <div id="instListView">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <span class="t2" style="font-size:12px" id="instCount"></span>
+          <button class="btn btn-p btn-sm" onclick="showInstForm()">＋ Add Instrument</button>
+        </div>
+        <div class="tbl-wrap">
+          <table><thead><tr>
+            <th>Name</th><th>Ticker</th><th>Category</th><th>Sector</th><th>Broker</th><th>WHT %</th><th>TER %</th><th></th>
+          </tr></thead><tbody id="instListBody"></tbody></table>
+        </div>
+      </div>
+      <div id="instFormView" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <button class="btn btn-g btn-sm" onclick="showInstList()">← Back to list</button>
+          <span class="fw7" id="instFormTitle">New Instrument</span>
+        </div>
+        <input type="hidden" id="inst_editId">
+        <div class="fgrid">
+          <div class="fg"><label class="flbl">Name *</label><input class="finp" type="text" id="inst_name" placeholder="e.g. iShares MSCI World"></div>
+          <div class="fg"><label class="flbl">Ticker</label><input class="finp" type="text" id="inst_ticker" placeholder="e.g. IWDA"></div>
+          <div class="fg"><label class="flbl">Category *</label>
+            <select class="fsel" id="inst_cat">
+              <option value="ETF">ETF</option><option value="Stock">Stock</option>
+              <option value="Crypto">Crypto</option><option value="Commodity">Commodity</option><option value="Cash">Cash</option>
+            </select>
+          </div>
+          <div class="fg"><label class="flbl">Broker / Exchange</label><input class="finp" type="text" id="inst_broker" placeholder="e.g. Trade Republic"></div>
+          <div class="fg"><label class="flbl">Sector</label>
+            <select class="fsel" id="inst_sector">
+              <optgroup label="ETF Sectors"><option>Utilities</option><option>Energy</option><option>Materials</option><option>Industrials</option><option>Defense</option></optgroup>
+              <optgroup label="Stocks"><option>Banking</option><option>Asset Management</option><option>Health Technology</option><option>Construction</option><option>Airlines</option><option>Technology</option><option>Consumer Discretionary</option></optgroup>
+              <optgroup label="Crypto"><option>Bitcoin</option><option>Ethereum</option><option>Solana</option><option>Cryptocurrency</option></optgroup>
+              <optgroup label="Other"><option>Gold</option><option>Cash &amp; Equivalents</option><option>Other</option></optgroup>
+            </select>
+          </div>
+          <div class="fg"><label class="flbl">Industry</label><input class="finp" type="text" id="inst_industry" placeholder="e.g. Nuclear Energy"></div>
+          <div class="fg"><label class="flbl">Country / Focus</label><input class="finp" type="text" id="inst_country" placeholder="e.g. Netherlands"></div>
+          <div class="fg"><label class="flbl">Region</label>
+            <select class="fsel" id="inst_region"><option>Europe</option><option>Americas</option><option>Asia</option><option>Global</option><option>Middle East</option><option>Africa</option></select>
+          </div>
+          <div class="fg"><label class="flbl">Currency</label><input class="finp" type="text" id="inst_currency" value="EUR"></div>
+          <div class="fg"><label class="flbl">Distribution Type</label>
+            <select class="fsel" id="inst_distType">
+              <option value="">— N/A —</option>
+              <option value="Acc">Acc — Accumulating</option>
+              <option value="Dist">Dist — Distributing</option>
+            </select>
+          </div>
+          <div class="fg"><label class="flbl">TER % <span style="font-size:10px;color:var(--txt2)">(ETFs only)</span></label><input class="finp" type="number" id="inst_ter" step="any" placeholder="e.g. 0.20"></div>
+          <div class="fg"><label class="flbl">Div Withholding Rate %</label><input class="finp" type="number" id="inst_wht" step="any" placeholder="e.g. 15"></div>
+          <div class="fg"><label class="flbl">Unit <span style="font-size:10px;color:var(--txt2)">(commodities: g / troy oz)</span></label><input class="finp" type="text" id="inst_unit" placeholder="leave blank for shares"></div>
+          <div class="fg"><label class="flbl">Interest Rate % <span style="font-size:10px;color:var(--txt2)">(savings)</span></label><input class="finp" type="number" id="inst_interest" step="any" placeholder="e.g. 3.42"></div>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot" id="instModalFoot">
+      <button class="btn btn-g" onclick="closeModal('instModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DISTINCT_COLORS = [
+  '#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6',
+  '#0EA5E9','#EC4899','#84CC16','#F97316','#6366F1',
+  '#14B8A6','#A78BFA','#34D399','#FCD34D','#F87171',
+  '#60A5FA','#C084FC','#4ADE80','#FB923C','#38BDF8',
+  '#E879F9','#A3E635','#FACC15','#FB7185','#2DD4BF',
+  '#818CF8','#FCA5A5','#6EE7B7','#FDE68A','#93C5FD'
+];
+const CAT_COLOR = {ETF:'#3B82F6',Stock:'#8B5CF6',Crypto:'#EF4444',Commodity:'#F59E0B',Cash:'#10B981'};
+const CAT_ICON  = {ETF:'📊',Stock:'📈',Crypto:'₿',Commodity:'🥇',Cash:'💰'};
+
+// ── CALLOUT LABEL PLUGIN (shared by both doughnut charts) ──
+const calloutLabelPlugin = {
+  id:'calloutLabels',
+  afterDraw(chart){
+    if(chart.config.type!=='doughnut'&&chart.config.type!=='pie') return;
+    const {ctx,data}=chart;
+    const meta=chart.getDatasetMeta(0);
+    const total=data.datasets[0].data.reduce((s,v)=>s+(+v||0),0);
+    if(total<=0) return;
+    ctx.save();
+    meta.data.forEach((arc,i)=>{
+      const val=+data.datasets[0].data[i]||0;
+      const pct=val/total*100;
+      if(pct<2.5) return; // skip slivers — too small to label
+      const midAngle=(arc.startAngle+arc.endAngle)/2;
+      const outerR=arc.outerRadius;
+      const cx=arc.x, cy=arc.y;
+      const color=Array.isArray(data.datasets[0].backgroundColor)?data.datasets[0].backgroundColor[i]:data.datasets[0].backgroundColor;
+      // Leader line: arc edge → elbow → horizontal tick
+      const lx1=cx+Math.cos(midAngle)*(outerR+3);
+      const ly1=cy+Math.sin(midAngle)*(outerR+3);
+      const lx2=cx+Math.cos(midAngle)*(outerR+22);
+      const ly2=cy+Math.sin(midAngle)*(outerR+22);
+      const isRight=Math.cos(midAngle)>=0;
+      const tickLen=isRight?10:-10;
+      const lx3=lx2+tickLen;
+      ctx.strokeStyle=color; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(lx1,ly1); ctx.lineTo(lx2,ly2); ctx.lineTo(lx3,ly2); ctx.stroke();
+      // Dot at arc edge
+      ctx.fillStyle=color; ctx.beginPath(); ctx.arc(lx1,ly1,2.5,0,Math.PI*2); ctx.fill();
+      // Label text
+      const label=data.labels[i];
+      ctx.fillStyle='#111827';
+      ctx.font='600 10.5px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
+      ctx.textBaseline='middle';
+      ctx.textAlign=isRight?'left':'right';
+      ctx.fillText(`${label}  ${pct.toFixed(1)}%`, lx3+(isRight?4:-4), ly2);
+    });
+    ctx.restore();
+  }
+};
+
+const DEFAULT_INSTRUMENTS = [
+  {id:'i01',name:'iShares STOXX Europe 600 Utilities',ticker:'IUKS',category:'ETF',sector:'Utilities',industry:'Electric Utilities',country:'Multi-Europe',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.46,distType:'Dist',broker:'Trade Republic',withholdingRate:0},
+  {id:'i02',name:'iShares MSCI Europe Energy Sector',ticker:'IESE',category:'ETF',sector:'Energy',industry:'Oil & Gas',country:'Multi-Europe',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.18,distType:'Acc',broker:'Trade Republic'},
+  {id:'i03',name:'iShares STOXX Europe 600 Construction & Materials',ticker:'ICMB',category:'ETF',sector:'Materials',industry:'Construction Materials',country:'Multi-Europe',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.46,distType:'Dist',broker:'Trade Republic',withholdingRate:0},
+  {id:'i04',name:'iShares MSCI Europe Industrials Sector',ticker:'IIND',category:'ETF',sector:'Industrials',industry:'Industrial Conglomerates',country:'Multi-Europe',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.18,distType:'Acc',broker:'Trade Republic'},
+  {id:'i05',name:'VanEck Defense ETF',ticker:'DFNS',category:'ETF',sector:'Defense',industry:'Aerospace & Defense',country:'Global',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.55,distType:'Acc',broker:'Trade Republic'},
+  {id:'i06',name:'VanEck Uranium & Nuclear Technologies',ticker:'NUKL',category:'ETF',sector:'Energy',industry:'Nuclear Energy',country:'Global',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.55,distType:'Acc',broker:'Trade Republic'},
+  {id:'i07',name:'WisdomTree Uranium & Nuclear Energy',ticker:'WTNC',category:'ETF',sector:'Energy',industry:'Nuclear Energy',country:'Global',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.45,distType:'Acc',broker:'Trade Republic'},
+  {id:'i08',name:'WisdomTree Europe Defence ETF',ticker:'WTDE',category:'ETF',sector:'Defense',industry:'Aerospace & Defense',country:'Europe',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.40,distType:'Acc',broker:'Trade Republic'},
+  {id:'i09',name:'Amundi STOXX Europe 600 Basic Resources',ticker:'AMRS',category:'ETF',sector:'Materials',industry:'Metals & Mining',country:'Multi-Europe',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.30,distType:'Acc',broker:'Trade Republic'},
+  {id:'i10',name:'VanEck Rare Earth & Strategic Metals',ticker:'REMX',category:'ETF',sector:'Materials',industry:'Rare Earth & Strategic Metals',country:'Global',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.59,distType:'Acc',broker:'Trade Republic'},
+  {id:'i11',name:'ING Groep N.V.',ticker:'INGA',category:'Stock',sector:'Banking',industry:'Diversified Banks',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'AEX',broker:'ING',withholdingRate:15},
+  {id:'i12',name:'Koninklijke Philips N.V.',ticker:'PHIA',category:'Stock',sector:'Health Technology',industry:'Medical Devices & Equipment',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'AEX',broker:'Trading 212',withholdingRate:15},
+  {id:'i13',name:'ACOM Co. Ltd',ticker:'ACOM',category:'Stock',sector:'Agricultural Trade & Distribution',industry:'Agriculture Products Trading',country:'Japan',region:'Asia',currency:'EUR',exchange:'Trading 212',broker:'Trading 212',withholdingRate:10},
+  {id:'i14',name:'ACS Actividades de Construccion',ticker:'ACS',category:'Stock',sector:'Construction',industry:'Construction & Engineering',country:'Spain',region:'Europe',currency:'EUR',exchange:'BME',broker:'Trading 212',withholdingRate:15},
+  {id:'i15',name:'Hochtief AG',ticker:'HOT',category:'Stock',sector:'Construction',industry:'Construction & Engineering',country:'Germany',region:'Europe',currency:'EUR',exchange:'XETRA',broker:'Trading 212',withholdingRate:15},
+  {id:'i16',name:'AssetMark Financial Holdings',ticker:'ASY',category:'Stock',sector:'Engineering & Infrastructure',industry:'Infrastructure Projects',country:'USA',region:'Americas',currency:'EUR',exchange:'NYSE',broker:'Trading 212',withholdingRate:15},
+  {id:'i24',name:'Air France-KLM',ticker:'AF',category:'Stock',sector:'Airlines',industry:'Passenger Airlines',country:'France',region:'Europe',currency:'EUR',exchange:'Euronext Paris',broker:'Trading 212',withholdingRate:15},
+  {id:'i17',name:'Bitcoin',ticker:'BTC',category:'Crypto',sector:'Bitcoin',industry:'Digital Currency — Store of Value',country:'Global',region:'Global',currency:'EUR',exchange:'Coinbase',broker:'Coinbase'},
+  {id:'i18',name:'Ethereum',ticker:'ETH',category:'Crypto',sector:'Ethereum',industry:'Smart Contract Platform',country:'Global',region:'Global',currency:'EUR',exchange:'Coinbase',broker:'Coinbase'},
+  {id:'i19',name:'Solana',ticker:'SOL',category:'Crypto',sector:'Solana',industry:'Smart Contract Platform',country:'Global',region:'Global',currency:'EUR',exchange:'Coinbase',broker:'Coinbase'},
+  {id:'i20',name:'Gold ETF (4GLD)',ticker:'4GLD',category:'Commodity',sector:'Gold',industry:'Precious Metals — ETF',country:'Global',region:'Global',currency:'EUR',exchange:'Trading 212',broker:'Trading 212',unit:'g'},
+  {id:'i21',name:'Physical Gold Coins',ticker:'XAU',category:'Commodity',sector:'Gold',industry:'Precious Metals — Physical',country:'Global',region:'Global',currency:'EUR',exchange:'Physical',broker:'Physical',unit:'troy oz'},
+  {id:'i22',name:'Cash',ticker:'CASH',category:'Cash',sector:'Cash & Equivalents',industry:'Cash',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'Trading 212',broker:'Trading 212'},
+  {id:'i23',name:'Savings',ticker:'SAV',category:'Cash',sector:'Cash & Equivalents',industry:'Savings',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'Trading 212',broker:'Trading 212',interestRate:3.42},
+];
+const DEFAULT_TRANSACTIONS = [
+  {id:'t01',iid:'i01',type:'buy',date:'2024-01-15',qty:17.5,price:57.15,fees:0,notes:'Initial position'},
+  {id:'t02',iid:'i02',type:'buy',date:'2024-01-15',qty:172.0,price:12.16,fees:0,notes:''},
+  {id:'t03',iid:'i03',type:'buy',date:'2024-01-15',qty:11.0,price:85.80,fees:0,notes:''},
+  {id:'t04',iid:'i04',type:'buy',date:'2024-01-15',qty:109.0,price:9.12,fees:0,notes:''},
+  {id:'t05',iid:'i05',type:'buy',date:'2024-01-15',qty:15.8,price:63.21,fees:0,notes:''},
+  {id:'t06',iid:'i06',type:'buy',date:'2024-01-15',qty:19.0,price:52.00,fees:0,notes:''},
+  {id:'t07',iid:'i07',type:'buy',date:'2024-01-15',qty:18.9,price:52.80,fees:0,notes:''},
+  {id:'t08',iid:'i08',type:'buy',date:'2024-01-15',qty:28.0,price:35.17,fees:0,notes:''},
+  {id:'t09',iid:'i09',type:'buy',date:'2024-01-15',qty:45.0,price:111.13,fees:0,notes:''},
+  {id:'t10',iid:'i10',type:'buy',date:'2024-01-15',qty:67.0,price:14.93,fees:0,notes:''},
+  {id:'t11',iid:'i11',type:'buy',date:'2023-06-15',qty:2000.0,price:17.04,fees:0,notes:'ING brokerage'},
+  {id:'t12',iid:'i12',type:'buy',date:'2024-03-01',qty:107.0,price:17.04,fees:0,notes:''},
+  {id:'t13',iid:'i13',type:'buy',date:'2024-03-01',qty:38.0,price:26.32,fees:0,notes:''},
+  {id:'t14',iid:'i14',type:'buy',date:'2024-03-01',qty:9.1,price:109.89,fees:0,notes:''},
+  {id:'t15',iid:'i15',type:'buy',date:'2024-03-01',qty:2.43,price:411.52,fees:0,notes:''},
+  {id:'t16',iid:'i16',type:'buy',date:'2024-03-01',qty:25.0,price:40.00,fees:0,notes:''},
+  {id:'t17',iid:'i17',type:'buy',date:'2021-11-01',qty:0.2155,price:77502,fees:0,notes:'DCA accumulation'},
+  {id:'t18',iid:'i18',type:'buy',date:'2021-11-01',qty:3.0,price:3900,fees:0,notes:''},
+  {id:'t19',iid:'i19',type:'buy',date:'2022-06-01',qty:2.0,price:191,fees:0,notes:''},
+  {id:'t20',iid:'i20',type:'buy',date:'2023-01-01',qty:39.0,price:97.95,fees:0,notes:'Gold ETF'},
+  {id:'t21',iid:'i21',type:'buy',date:'2020-03-01',qty:12.0,price:1930,fees:0,notes:'Physical gold coins'},
+  {id:'t22',iid:'i22',type:'buy',date:'2026-03-25',qty:4950,price:1,fees:0,notes:'Cash balance'},
+  {id:'t23',iid:'i23',type:'buy',date:'2026-03-25',qty:50000,price:1,fees:0,notes:'Savings @ 3.42% p.a.'},
+  {id:'t24',iid:'i24',type:'buy',date:'2026-03-25',qty:67.0,price:9.27,fees:0,notes:''},
+];
+const DEFAULT_PRICES = {
+  i01:55.55,i02:15.00,i03:84.00,i04:8.76,i05:60.00,i06:49.50,
+  i07:50.00,i08:32.60,i09:119.00,i10:14.00,i11:22.00,i12:22.00,
+  i13:26.00,i14:107.00,i15:409.00,i16:41.00,i17:61700,i18:1800,
+  i19:78.00,i20:121.00,i21:3640.00,i22:1.00,i23:1.00,i24:9.27
+};
+const DEFAULT_TRANSITION = {
+  phaseName1:'Employment Phase',phaseName2:'Career Gap',phaseName3:'Benefits Phase',
+  salary:0,exp1:0,sav1:0,enddate:'',
+  gstart:'',gend:'',gexp:0,
+  wstart:'',ww:0,wexp:0,sav3:0,
+  buf:0,endproj:'',
+  severance:0,severanceMonth:'',
+  leaveHours:0,leaveHoursRate:0,leaveHoursMonth:'',
+  wwDuration:0,
+  modified:{}
+};
+
+let DB = {instruments:[],transactions:[],prices:{},priceHistory:{},taxSettings:{},lastPriceUpdateDate:{},transition:{}};
+let activeCategory = 'ETF';
+let activeSectorFilter = null;
+let activeRegionFilter = null;
+let charts = {};
+
+function getDefaults(){
+  return {
+    instruments:[],
+    transactions:[],
+    prices:{},
+    priceHistory:{},
+    taxSettings:{dividendWithholdingRate:15,capitalGainsRate:36,fictitiousReturnRate:6.36,box3Allowance:57000,box1EffectiveRate:0,box2Rate:26.9},
+    lastPriceUpdateDate:{},
+    transition:JSON.parse(JSON.stringify(DEFAULT_TRANSITION)),
+    settings:{currency:'€',country:''}
+  };
+}
+function loadDB(){
+  try{
+    const s=localStorage.getItem('findb_v4');
+    if(s){
+      const parsed=JSON.parse(s);
+      if(parsed.instruments!==undefined){
+        DB=parsed;
+        if(!DB.priceHistory) DB.priceHistory={};
+        if(!DB.taxSettings) DB.taxSettings={dividendWithholdingRate:15,capitalGainsRate:36};
+        // Migrate new taxSettings fields
+        if(DB.taxSettings.fictitiousReturnRate===undefined) DB.taxSettings.fictitiousReturnRate=6.36;
+        if(DB.taxSettings.box3Allowance===undefined) DB.taxSettings.box3Allowance=57000;
+        if(DB.taxSettings.box1EffectiveRate===undefined) DB.taxSettings.box1EffectiveRate=0;
+        if(DB.taxSettings.box2Rate===undefined) DB.taxSettings.box2Rate=26.9;
+        // Migrate phase names
+        if(!DB.transition) DB.transition={};
+        if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
+        if(!DB.transition.phaseName2) DB.transition.phaseName2='Career Gap';
+        if(!DB.transition.phaseName3) DB.transition.phaseName3='Benefits Phase';
+        // Migrate settings
+        if(!DB.settings) DB.settings={currency:'€',country:''};
+        if(!DB.lastPriceUpdateDate){
+          // First-time migration: initialise tracking dates to today so no immediate stale warnings
+          DB.lastPriceUpdateDate={};
+          const today=new Date().toISOString().slice(0,10);
+          DB.instruments.forEach(i=>{ DB.lastPriceUpdateDate[i.id]=today; });
+        }
+        // Migrate Cash/Savings instrument names (one-time rename)
+        const _c=DB.instruments.find(i=>i.id==='i22');
+        if(_c&&_c.name==='Cash — Trading 212') _c.name='Cash';
+        const _s=DB.instruments.find(i=>i.id==='i23');
+        if(_s&&_s.name==='Savings — Trading 212') _s.name='Savings';
+        // Migrate: leaveHoursAmt → leaveHours + leaveHoursRate
+        if(DB.transition&&DB.transition.leaveHoursAmt!==undefined&&DB.transition.leaveHours===undefined){
+          DB.transition.leaveHours=0; DB.transition.leaveHoursRate=0;
+          delete DB.transition.leaveHoursAmt;
+        }
+        // Migrate: add per-instrument withholdingRate defaults
+        const _whr={i01:0,i03:0,i11:15,i12:15,i13:10,i14:15,i15:15,i16:15,i24:15};
+        DB.instruments.forEach(i=>{if(i.withholdingRate===undefined&&_whr[i.id]!==undefined) i.withholdingRate=_whr[i.id];});
+        return;
+      }
+    }
+  }catch(e){}
+  DB=getDefaults(); saveDB();
+}
+function saveDB(){ try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){} }
+// ── ONBOARDING WIZARD ──
+let _wizStep=1;
+const _wizTitles=['Set Your Currency & Country','Add Your Investment Instruments','Enter Starting Prices','Configure Your Cash Flow Phases'];
+const _wizSubs=['Step 1 of 4 — Basic settings','Step 2 of 4 — Portfolio instruments','Step 3 of 4 — Current prices','Step 4 of 4 — Income phases'];
+let _wizInsts=[]; // temporary instrument list during wizard
+
+function showWizard(){
+  _wizStep=1;
+  _wizInsts=[];
+  document.getElementById('wizOverlay').classList.add('open');
+  renderWizStep();
+}
+function closeWizard(){
+  document.getElementById('wizOverlay').classList.remove('open');
+}
+function renderWizStep(){
+  document.getElementById('wizProgress').style.width=(_wizStep*25)+'%';
+  document.getElementById('wizTitle').textContent=_wizTitles[_wizStep-1];
+  document.getElementById('wizSubtitle').textContent=_wizSubs[_wizStep-1];
+  document.getElementById('wizBackBtn').style.visibility=_wizStep>1?'visible':'hidden';
+  const nextBtn=document.getElementById('wizNextBtn');
+  const skipBtn=document.getElementById('wizSkipBtn');
+  nextBtn.textContent=_wizStep===4?'Finish ✓':'Next →';
+  skipBtn.style.display=_wizStep===4?'none':'inline-flex';
+  // Render step body
+  if(_wizStep===1) renderWiz1();
+  else if(_wizStep===2) renderWiz2();
+  else if(_wizStep===3) renderWiz3();
+  else if(_wizStep===4) renderWiz4();
+}
+function wizBack(){
+  if(_wizStep>1){ _wizStep--; renderWizStep(); }
+}
+function wizSkip(){
+  if(_wizStep<4){ _wizStep++; renderWizStep(); }
+}
+function wizNext(){
+  if(_wizStep===1){
+    // Save currency & country
+    const cur=document.getElementById('wiz_currency');
+    const cust=document.getElementById('wiz_currCustom');
+    const cntry=document.getElementById('wiz_country');
+    const sym=cur&&cur.value==='custom'?(cust?cust.value.trim()||'€':'€'):((cur?cur.value:null)||'€');
+    if(!DB.settings) DB.settings={};
+    DB.settings.currency=sym;
+    DB.settings.country=cntry?cntry.value.trim():'';
+    saveDB();
+    _wizStep=2; renderWizStep(); return;
+  }
+  if(_wizStep===2){
+    // Commit wizard instruments to DB
+    if(_wizInsts.length>0){
+      _wizInsts.forEach(inst=>{ DB.instruments.push(inst); });
+      saveDB();
+    }
+    _wizStep=3; renderWizStep(); return;
+  }
+  if(_wizStep===3){
+    // Save prices entered in wizard
+    document.querySelectorAll('.wiz-price-inp').forEach(inp=>{
+      const iid=inp.dataset.iid;
+      const val=parseFloat(inp.value);
+      if(iid&&!isNaN(val)&&val>0){
+        DB.prices[iid]=val;
+        snapshotPrice(iid,val);
+        const today=new Date().toISOString().slice(0,10);
+        DB.lastPriceUpdateDate[iid]=today;
+      }
+    });
+    saveDB();
+    _wizStep=4; renderWizStep(); return;
+  }
+  if(_wizStep===4){
+    // Save phase names & basic income
+    ['1','2','3'].forEach(n=>{
+      const nm=document.getElementById('wiz_pname'+n);
+      if(nm) DB.transition['phaseName'+n]=nm.value.trim()||('Phase '+n);
+    });
+    const sal=document.getElementById('wiz_salary');
+    if(sal&&parseFloat(sal.value)>0) DB.transition.salary=parseFloat(sal.value);
+    const uwv=document.getElementById('wiz_uwv');
+    if(uwv&&parseFloat(uwv.value)>0) DB.transition.ww=parseFloat(uwv.value);
+    saveDB();
+    finishWizard(); return;
+  }
+}
+function finishWizard(){
+  closeWizard();
+  refreshAll();
+  loadTransitionSettings();
+  notify('✅ Setup complete! Update your prices and transactions to get started.');
+}
+
+// Step 1 — Currency & Country
+function renderWiz1(){
+  const cur=DB.settings?.currency||'€';
+  const cntry=DB.settings?.country||'';
+  const presets=[{sym:'€',lbl:'Euro (€)'},{sym:'$',lbl:'US Dollar ($)'},{sym:'£',lbl:'British Pound (£)'},{sym:'CHF',lbl:'Swiss Franc (CHF)'}];
+  const isCustom=!presets.find(p=>p.sym===cur);
+  document.getElementById('wizBody').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="color:var(--txt2);font-size:13px;line-height:1.5">Choose the currency symbol that will appear throughout the dashboard, and optionally your country for tax context.</div>
+      <div class="ts-field">
+        <label class="ts-lbl">Currency Symbol</label>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px" id="wizCurrGrid">
+          ${presets.map(p=>`<div class="wiz-cur-opt ${cur===p.sym&&!isCustom?'selected':''}" onclick="selectWizCurrency('${p.sym}')" style="padding:10px 14px;border:2px solid ${cur===p.sym&&!isCustom?'var(--pri)':'var(--bdr)'};border-radius:var(--rs);cursor:pointer;font-weight:600;font-size:13px;transition:all .15s;background:${cur===p.sym&&!isCustom?'var(--pri-l)':'#fff'}">${p.lbl}</div>`).join('')}
+          <div class="wiz-cur-opt ${isCustom?'selected':''}" onclick="selectWizCurrency('custom')" style="padding:10px 14px;border:2px solid ${isCustom?'var(--pri)':'var(--bdr)'};border-radius:var(--rs);cursor:pointer;font-weight:600;font-size:13px;transition:all .15s;background:${isCustom?'var(--pri-l)':'#fff'}">Custom…</div>
+        </div>
+        <select class="ts-inp" id="wiz_currency" style="display:none" onchange="renderWiz1()">
+          ${presets.map(p=>`<option value="${p.sym}" ${cur===p.sym?'selected':''}>${p.lbl}</option>`).join('')}
+          <option value="custom" ${isCustom?'selected':''}>Custom</option>
+        </select>
+        <input class="ts-inp" id="wiz_currCustom" type="text" placeholder="e.g. ¥ or kr" maxlength="5" style="display:${isCustom?'block':'none'};margin-top:6px" value="${isCustom?cur:''}">
+      </div>
+      <div class="ts-field">
+        <label class="ts-lbl">Country (optional)</label>
+        <input class="ts-inp" id="wiz_country" type="text" placeholder="e.g. Netherlands" value="${cntry}">
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Used for tax context notes. Does not affect calculations.</div>
+      </div>
+    </div>`;
+}
+function selectWizCurrency(sym){
+  // Update hidden select
+  const sel=document.getElementById('wiz_currency');
+  if(sel) sel.value=sym;
+  const cust=document.getElementById('wiz_currCustom');
+  if(cust) cust.style.display=sym==='custom'?'block':'none';
+  // Update tile highlights
+  document.querySelectorAll('.wiz-cur-opt').forEach(el=>{ el.style.border='2px solid var(--bdr)'; el.style.background='#fff'; });
+  const tiles=[...document.querySelectorAll('.wiz-cur-opt')];
+  const presets=['€','$','£','CHF'];
+  const idx=sym==='custom'?4:presets.indexOf(sym);
+  if(idx>=0&&tiles[idx]){ tiles[idx].style.border='2px solid var(--pri)'; tiles[idx].style.background='var(--pri-l)'; }
+}
+
+// Step 2 — Add Instruments
+function renderWiz2(){
+  const cats=['ETF','Stock','Crypto','Commodity','Cash'];
+  const rows=_wizInsts.map((inst,i)=>`
+    <tr>
+      <td style="padding:6px 8px;font-weight:600">${inst.name}</td>
+      <td style="padding:6px 8px;color:var(--muted)">${inst.ticker||'—'}</td>
+      <td style="padding:6px 8px"><span class="badge">${inst.category}</span></td>
+      <td style="padding:6px 8px"><button class="btn btn-xs btn-d" onclick="wizRemoveInst(${i})">✕</button></td>
+    </tr>`).join('');
+  document.getElementById('wizBody').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="color:var(--txt2);font-size:13px;line-height:1.5">Add the instruments in your portfolio. You can always add more later from the ⚙ Instruments button in the header.</div>
+      ${_wizInsts.length>0?`
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="border-bottom:2px solid var(--bdr)">
+          <th style="padding:4px 8px;text-align:left;color:var(--txt2)">Name</th>
+          <th style="padding:4px 8px;text-align:left;color:var(--txt2)">Ticker</th>
+          <th style="padding:4px 8px;text-align:left;color:var(--txt2)">Category</th>
+          <th style="padding:4px 8px"></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`:'<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No instruments added yet. Use the form below to add your first one.</div>'}
+      <details style="border:1px solid var(--bdr);border-radius:var(--rs);overflow:hidden">
+        <summary style="padding:10px 14px;font-weight:600;font-size:13px;cursor:pointer;background:var(--neu-l)">+ Add Instrument</summary>
+        <div style="padding:14px;display:flex;flex-direction:column;gap:10px" id="wizInstForm">
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px">
+            <div class="ts-field"><label class="ts-lbl">Name *</label><input class="ts-inp" id="wi_name" type="text" placeholder="e.g. Apple Inc."></div>
+            <div class="ts-field"><label class="ts-lbl">Ticker</label><input class="ts-inp" id="wi_ticker" type="text" placeholder="e.g. AAPL"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="ts-field"><label class="ts-lbl">Category *</label>
+              <select class="ts-inp" id="wi_category">
+                ${cats.map(c=>`<option>${c}</option>`).join('')}
+              </select>
+            </div>
+            <div class="ts-field"><label class="ts-lbl">Broker</label><input class="ts-inp" id="wi_broker" type="text" placeholder="e.g. IBKR"></div>
+          </div>
+          <button class="btn btn-ok btn-sm" onclick="wizAddInst()" style="align-self:flex-start">+ Add to list</button>
+        </div>
+      </details>
+      <div style="font-size:11px;color:var(--muted)">You can skip this step and add instruments later from the ⚙ button in the header.</div>
+    </div>`;
+}
+function wizAddInst(){
+  const name=document.getElementById('wi_name')?.value.trim();
+  const ticker=(document.getElementById('wi_ticker')?.value||'').trim().toUpperCase();
+  const cat=document.getElementById('wi_category')?.value||'Stock';
+  const broker=(document.getElementById('wi_broker')?.value||'').trim();
+  if(!name){ alert('Please enter a name.'); return; }
+  const id='wi'+Date.now();
+  _wizInsts.push({id,name,ticker,category:cat,broker,sector:'',industry:'',country:'',region:'',currency:DB.settings?.currency||'€',exchange:'',ter:0,distType:'',unit:'shares',withholdingRate:15});
+  renderWiz2();
+  // Re-open the details panel
+  const det=document.querySelector('#wizBody details');
+  if(det) det.open=true;
+}
+function wizRemoveInst(idx){
+  _wizInsts.splice(idx,1);
+  renderWiz2();
+}
+
+// Step 3 — Enter Prices
+function renderWiz3(){
+  const allInsts=[...DB.instruments,..._wizInsts].filter(i=>i.category!=='Cash');
+  if(allInsts.length===0){
+    document.getElementById('wizBody').innerHTML=`<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">No instruments to price yet. You can enter prices later from the Holdings tab.</div>`;
+    return;
+  }
+  const rows=allInsts.map(inst=>{
+    const cur=DB.prices[inst.id]||'';
+    const sym=DB.settings?.currency||'€';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--bdr)">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${inst.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${inst.ticker||inst.category}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:13px;color:var(--muted)">${sym}</span>
+        <input class="ts-inp wiz-price-inp" type="number" min="0" step="any" data-iid="${inst.id}" value="${cur}" placeholder="0.00" style="width:120px;text-align:right">
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('wizBody').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="color:var(--txt2);font-size:13px;margin-bottom:12px">Enter the current market price for each instrument. You can update prices anytime from the Holdings tab.</div>
+      ${rows}
+    </div>`;
+}
+
+// Step 4 — Transition Phases
+function renderWiz4(){
+  const t=DB.transition;
+  const p1=t.phaseName1||'Employment Phase';
+  const p2=t.phaseName2||'Career Gap';
+  const p3=t.phaseName3||'Benefits Phase';
+  document.getElementById('wizBody').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="color:var(--txt2);font-size:13px;line-height:1.5">Name your income phases and optionally set your current salary and expected benefits. You can configure all details later in the Cash Flow tab.</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div class="ts-field"><label class="ts-lbl">📘 Phase 1 Name</label><input class="ts-inp" id="wiz_pname1" type="text" placeholder="Employment Phase" value="${p1}"></div>
+        <div class="ts-field"><label class="ts-lbl">⚠️ Phase 2 Name</label><input class="ts-inp" id="wiz_pname2" type="text" placeholder="Career Gap" value="${p2}"></div>
+        <div class="ts-field"><label class="ts-lbl">🎯 Phase 3 Name</label><input class="ts-inp" id="wiz_pname3" type="text" placeholder="Benefits Phase" value="${p3}"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="ts-field">
+          <label class="ts-lbl">Current Monthly Salary (net)</label>
+          <input class="ts-inp" id="wiz_salary" type="number" min="0" placeholder="0" value="${t.salary||''}">
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Phase 1 monthly income</div>
+        </div>
+        <div class="ts-field">
+          <label class="ts-lbl">Expected Phase 3 Benefit</label>
+          <input class="ts-inp" id="wiz_uwv" type="number" min="0" placeholder="0" value="${t.ww||''}">
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Phase 3 monthly income</div>
+        </div>
+      </div>
+      <div style="background:var(--pri-l);border:1px solid var(--pri);border-radius:var(--rs);padding:12px;font-size:12px;color:var(--pri-d);line-height:1.5">
+        💡 All cash flow details (dates, expenses, severance, leave hours, buffer) can be configured in the <strong>Cash Flow</strong> tab after setup.
+      </div>
+    </div>`;
+}
+
+
+function hardReset(){
+  if(!confirm('Reset dashboard to factory defaults? This clears ALL instruments, transactions, prices and settings.')) return;
+  try{localStorage.removeItem('findb_v4');}catch(e){}
+  DB=getDefaults(); saveDB(); refreshAll(); loadTransitionSettings();
+  showWizard();
+}
+
+// ── EXPORT / IMPORT ──
+function exportPDF(){
+  // Stamp the date into a body attribute so @media print can render it
+  const date=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  document.body.setAttribute('data-print-date', date);
+  // Switch to Overview tab so it's the active content
+  switchTabByName('overview');
+  setTimeout(()=>window.print(), 150);
+}
+
+function exportDB(){
+  saveDB();
+  const payload=JSON.stringify(DB,null,2);
+  const blob=new Blob([payload],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const date=new Date().toISOString().slice(0,10);
+  a.href=url; a.download=`findb_${date}.json`; a.click();
+  URL.revokeObjectURL(url);
+  notify('📤 Data exported successfully.');
+}
+function importDB(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const parsed=JSON.parse(e.target.result);
+      // Basic validation
+      if(!parsed.instruments||!parsed.transactions){
+        alert('Invalid backup file — missing required fields. Import cancelled.'); return;
+      }
+      if(!confirm(`Import backup from "${file.name}"?\n\nThis will REPLACE your current data. Your existing data will be lost.\n\nInstruments: ${parsed.instruments.length}\nTransactions: ${parsed.transactions.length}`)) return;
+      DB=parsed;
+      // Ensure all migrations are applied to imported data
+      if(!DB.priceHistory) DB.priceHistory={};
+      if(!DB.taxSettings) DB.taxSettings={dividendWithholdingRate:15,capitalGainsRate:36,fictitiousReturnRate:6.36,box3Allowance:57000};
+      if(DB.taxSettings.fictitiousReturnRate===undefined) DB.taxSettings.fictitiousReturnRate=6.36;
+      if(DB.taxSettings.box3Allowance===undefined) DB.taxSettings.box3Allowance=57000;
+      if(DB.taxSettings.box1EffectiveRate===undefined) DB.taxSettings.box1EffectiveRate=0;
+      if(DB.taxSettings.box2Rate===undefined) DB.taxSettings.box2Rate=26.9;
+      if(!DB.transition) DB.transition={};
+      if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
+      if(!DB.transition.phaseName2) DB.transition.phaseName2='Career Gap';
+      if(!DB.transition.phaseName3) DB.transition.phaseName3='Benefits Phase';
+      if(!DB.settings) DB.settings={currency:'€',country:''};
+      if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
+      saveDB();
+      const cats=computeCategories();
+      if(cats.length) activeCategory=cats[0].label;
+      refreshAll(); loadTransitionSettings();
+      notify('📥 Data imported successfully from '+file.name);
+    }catch(err){
+      alert('Failed to parse backup file: '+err.message);
+    }
+    // Reset file input so the same file can be re-imported if needed
+    event.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ── HELPERS ──
+function addM(m,n){ const[y,mo]=m.split('-').map(Number); const d=new Date(y,mo-1+n,1); return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function fmtM(m){ const[y,mo]=m.split('-').map(Number); return new Date(y,mo-1,1).toLocaleDateString('en-GB',{month:'short',year:'2-digit'}); }
+
+// ── CALCULATIONS ──
+function getPositions(){
+  const pos={};
+  [...DB.transactions].sort((a,b)=>a.date.localeCompare(b.date)).forEach(tx=>{
+    if(tx.type==='dividend') return; // dividends don't change share position
+    if(!pos[tx.iid]) pos[tx.iid]={qty:0,cost:0};
+    const p=pos[tx.iid];
+    if(tx.type==='buy'){ p.cost+=tx.qty*tx.price+(tx.fees||0); p.qty+=tx.qty; }
+    else{ const avg=p.qty>0?p.cost/p.qty:0; p.cost-=avg*tx.qty; p.qty-=tx.qty; }
+  });
+  return Object.fromEntries(Object.entries(pos).filter(([,p])=>p.qty>0.00001));
+}
+function getDividends(){
+  // Returns total dividend/distribution income per instrument id
+  const divs={};
+  DB.transactions.filter(tx=>tx.type==='dividend').forEach(tx=>{
+    if(!divs[tx.iid]) divs[tx.iid]=0;
+    divs[tx.iid]+=(tx.qty||1)*(tx.price||0);
+  });
+  return divs;
+}
+function snapshotPrice(instId, price){
+  if(!DB.priceHistory[instId]) DB.priceHistory[instId]=[];
+  const today=new Date().toISOString().slice(0,10);
+  const hist=DB.priceHistory[instId];
+  // Only one snapshot per day
+  if(!hist.length||hist[hist.length-1].date!==today){
+    hist.push({date:today,price:+price});
+    // Keep max 400 days
+    if(hist.length>400) hist.splice(0,hist.length-400);
+  }
+}
+function getPriceAt(instId, daysAgo){
+  const hist=DB.priceHistory[instId];
+  if(!hist||hist.length<2) return null;
+  const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-daysAgo);
+  const cut=cutoff.toISOString().slice(0,10);
+  const entry=hist.slice().reverse().find(e=>e.date<=cut);
+  return entry?entry.price:null;
+}
+function instById(id){ return DB.instruments.find(i=>i.id===id); }
+// Safely destroy a Chart.js instance by canvas ID regardless of reference tracking
+function safeDestroy(canvasId){
+  const el=document.getElementById(canvasId);
+  if(!el) return;
+  const existing=Chart.getChart(el);
+  if(existing) existing.destroy();
+}
+function healthSig(ret){ if(ret>=-0.15)return ret>=0?'green':'amber'; return 'red'; }
+function portfolioHealth(cats){
+  const ti=cats.reduce((s,c)=>s+c.invested,0), tp=cats.reduce((s,c)=>s+c.pnl,0);
+  const r=ti>0?tp/ti:0;
+  const heavy=cats.some(c=>c.retPct<-0.25);
+  const major=cats.some(c=>c.retPct<-0.30);
+  if(r>=0&&!heavy) return{color:'green',label:'Healthy',comment:'All major categories are positive. Portfolio is well-diversified across sectors and regions.'};
+  if(r>=0&&heavy&&!major) return{color:'amber',label:'Monitor',comment:'Overall positive, but Crypto is down significantly. Consider reviewing BTC/ETH/SOL exposure vs. your risk tolerance.'};
+  if(r>=0&&major) return{color:'amber',label:'Caution',comment:'Portfolio net positive but one or more categories have losses exceeding 30%. Review overexposed positions.'};
+  return{color:'red',label:'At Risk',comment:'Net portfolio value is below cost basis. Immediate portfolio review recommended.'};
+}
+function catHealthComment(cat,retPct){
+  const p=(retPct*100).toFixed(1);
+  if(cat==='ETF') return retPct>=0?`+${p}% — European sector ETFs performing. Defensive allocation.`:`${p}% — review underperforming ETFs.`;
+  if(cat==='Stock') return retPct>=0?`+${p}% — strong equity gains. ING is a key driver.`:`${p}% — equity review needed.`;
+  if(cat==='Crypto') return retPct<0?`${p}% — BTC, ETH & SOL below cost. Long-term hold or reduce exposure?`:`+${p}% — crypto recovering.`;
+  if(cat==='Commodity') return`+${p}% — Gold (physical + ETF) is your top performer. Excellent inflation hedge.`;
+  if(cat==='Cash') return`€54,950 liquid buffer @ 3.42% p.a. — strong runway for your transition.`;
+  return retPct>=0?`+${p}%`:`${p}%`;
+}
+function computeCategories(){
+  const pos=getPositions(), divs=getDividends(), cats={};
+  DB.instruments.forEach(inst=>{
+    const cat=inst.category;
+    if(!cats[cat]) cats[cat]={label:cat,invested:0,current:0,pnl:0,pnlGross:0,divIncome:0,divTax:0,holdings:[]};
+    const p=pos[inst.id]; if(!p) return;
+    const price=DB.prices[inst.id]||0, curVal=p.qty*price;
+    const divIncome=divs[inst.id]||0;
+    const globalWHR=(DB.taxSettings?.dividendWithholdingRate||15)/100;
+    const withholdingRate=inst.withholdingRate!==undefined&&inst.withholdingRate!==null?inst.withholdingRate/100:globalWHR;
+    const divTax=divIncome*withholdingRate;
+    const pnlGross=curVal-p.cost+divIncome;
+    const pnl=curVal-p.cost+(divIncome-divTax);
+    cats[cat].invested+=p.cost; cats[cat].current+=curVal; cats[cat].pnl+=pnl; cats[cat].pnlGross+=(cats[cat].pnlGross||0)+pnlGross; cats[cat].divIncome+=divIncome; cats[cat].divTax+=(cats[cat].divTax||0)+divTax;
+    cats[cat].holdings.push({inst,pos:p,price,curVal,pnl,pnlGross,divIncome,divTax});
+  });
+  return Object.values(cats).map(c=>({...c,retPct:c.invested>0?c.pnl/c.invested:0}));
+}
+
+// ── FORMATTING ──
+const fmt=(n,d=0)=>new Intl.NumberFormat('en-EU',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
+const feur=(n,d=0)=>(DB.settings?.currency||'€')+fmt(n,d);
+const fpct=(n,d=1)=>(n>=0?'+':'')+fmt(n*100,d)+'%';
+const fdate=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
+const pc=n=>n>=0?'tg':'tr';
+
+// ── RENDER KPIs ──
+function renderKPIs(cats){
+  const nw=cats.reduce((s,c)=>s+c.current,0);
+  const inv=cats.reduce((s,c)=>s+c.invested,0);
+  const pnl=cats.reduce((s,c)=>s+c.pnl,0);
+  const ret=inv>0?pnl/inv:0;
+  const h=portfolioHealth(cats);
+  const hc={green:'var(--ok)',amber:'var(--wrn)',red:'var(--err)'};
+  document.getElementById('kpiGrid').innerHTML=`
+    <div class="kpi"><div class="kpi-lbl">Total Net Worth</div><div class="kpi-val">${feur(nw)}</div><div class="kpi-sub"><span class="badge bn">all assets</span><span class="t2">${DB.instruments.length} instruments</span></div></div>
+    <div class="kpi ${ret>=0?'ok':'err'}"><div class="kpi-lbl">Total P&amp;L</div><div class="kpi-val ${pc(pnl)}">${pnl>=0?'+':''}${feur(pnl)}</div><div class="kpi-sub"><span class="badge ${pnl>=0?'bg':'br'}">${fpct(ret)}</span><span class="t2">vs cost basis</span></div></div>
+    <div class="kpi"><div class="kpi-lbl">Total Cost Basis</div><div class="kpi-val">${feur(inv)}</div><div class="kpi-sub"><span class="t2">${DB.transactions.length} transactions logged</span></div></div>
+    <div class="kpi">
+      <div class="kpi-lbl">Portfolio Health Score</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0"><div class="hdot ${h.color}"></div><div style="font-size:16px;font-weight:700;color:${hc[h.color]}">${h.color==='green'?'🟢':h.color==='amber'?'🟡':'🔴'} ${h.label}</div></div>
+      <div class="health-comment">${h.comment}</div>
+    </div>`;
+}
+
+// ── RENDER ALLOCATION CHARTS ──
+function renderAlloc(cats){
+  const labels=cats.map(c=>c.label), colors=cats.map(c=>CAT_COLOR[c.label]||'#6B7280');
+  const nw=cats.reduce((s,c)=>s+c.current,0);
+  safeDestroy('donutChart');
+  charts.donut=new Chart(document.getElementById('donutChart'),{
+    type:'doughnut',
+    data:{labels,datasets:[{data:cats.map(c=>+c.current.toFixed(0)),backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverBorderWidth:3}]},
+    options:{
+      cutout:'65%',responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:36,right:80,bottom:36,left:80}},
+      plugins:{
+        legend:{display:false}, // callout labels replace legend
+        tooltip:{callbacks:{label:ctx=>{
+          const p=(ctx.raw/nw*100).toFixed(1);
+          const cat=cats[ctx.dataIndex];
+          const ret=cat&&cat.invested>0?((cat.pnl/cat.invested)*100).toFixed(1):null;
+          return [` ${ctx.label}: ${feur(ctx.raw)}`,` Alloc: ${p}% of portfolio`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
+        }}}
+      },
+      onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
+    },
+    plugins:[calloutLabelPlugin]
+  });
+  safeDestroy('allocBar');
+  charts.allocBar=new Chart(document.getElementById('allocBar'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Invested',data:cats.map(c=>+c.invested.toFixed(0)),backgroundColor:colors.map(c=>c+'44'),borderColor:colors,borderWidth:1.5,borderRadius:4},
+      {label:'Current Value',data:cats.map(c=>+c.current.toFixed(0)),backgroundColor:colors,borderRadius:4}
+    ]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,pointStyleWidth:8}},
+        tooltip:{callbacks:{label:ctx=>{
+          if(ctx.dataset.label==='Current Value'){
+            const totalCur=ctx.dataset.data.reduce((s,v)=>s+(+v||0),0);
+            const allocPct=totalCur>0?(ctx.raw/totalCur*100).toFixed(1):'0.0';
+            const invested=ctx.chart.data.datasets[0].data[ctx.dataIndex]||0;
+            const ret=invested>0?(((ctx.raw-invested)/invested)*100).toFixed(1):null;
+            return [` Current Value: ${feur(ctx.raw)}`,` Alloc: ${allocPct}% of category total`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
+          }
+          return ` ${ctx.dataset.label}: ${feur(ctx.raw)}`;
+        }}}},
+      scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
+      onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
+    }
+  });
+}
+
+// ── RENDER CATEGORY CARDS ──
+function renderCatCards(cats){
+  const nw=cats.reduce((s,c)=>s+c.current,0);
+  document.getElementById('catGrid').innerHTML=cats.map(c=>{
+    const color=CAT_COLOR[c.label]||'#6B7280', allocPct=nw>0?c.current/nw*100:0, sig=healthSig(c.retPct);
+    const comment=catHealthComment(c.label,c.retPct);
+    return`<div class="cat-card" onclick="jumpToHoldings('${c.label}')" id="cat-${c.label}">
+      <div class="cat-strip" style="background:${color}"></div>
+      <div class="cat-top">
+        <div><div class="cat-name">${CAT_ICON[c.label]||'●'} ${c.label==='Commodity'?'Gold':c.label}</div>
+          <div class="cat-broker">${[...new Set(c.holdings.map(h=>h.inst.broker))].join(', ')}</div></div>
+        <div class="tip" style="cursor:help"><div class="hdot ${sig}"></div>
+          <span class="tip-box" style="left:auto;right:0;transform:none;min-width:180px">${comment}</span></div>
+      </div>
+      <div class="cat-val" style="color:${color}">${feur(c.current)}</div>
+      <div class="cat-pnl ${pc(c.pnl)}">${c.pnl>=0?'+':''}${feur(c.pnl)} (${fpct(c.retPct)})</div>
+      <div class="cat-alloc">${c.holdings.length} holdings · ${allocPct.toFixed(1)}% of portfolio</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:${allocPct}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER SECTOR & REGION ──
+function renderSectorRegion(){
+  const pos=getPositions(), sMap={}, rMap={};
+  DB.instruments.forEach(inst=>{
+    const p=pos[inst.id]; if(!p) return;
+    const cur=p.qty*(DB.prices[inst.id]||0), inv=p.cost;
+    const sec=inst.sector||'Other'; if(!sMap[sec]) sMap[sec]={cur:0,inv:0}; sMap[sec].cur+=cur; sMap[sec].inv+=inv;
+    const reg=inst.region||'Global'; if(!rMap[reg]) rMap[reg]={cur:0,inv:0}; rMap[reg].cur+=cur; rMap[reg].inv+=inv;
+  });
+  const sKeys=Object.keys(sMap).sort((a,b)=>sMap[b].cur-sMap[a].cur);
+  const rKeys=Object.keys(rMap).sort((a,b)=>rMap[b].cur-rMap[a].cur);
+  const pal=DISTINCT_COLORS;
+  safeDestroy('sectorDonut');
+  charts.sec=new Chart(document.getElementById('sectorDonut'),{
+    type:'doughnut',
+    data:{labels:sKeys,datasets:[{data:sKeys.map(k=>+sMap[k].cur.toFixed(0)),backgroundColor:sKeys.map((_,i)=>pal[i%pal.length]),borderWidth:2,borderColor:'#fff'}]},
+    options:{
+      cutout:'55%',responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:32,right:90,bottom:32,left:90}},
+      plugins:{
+        legend:{display:false}, // callout labels replace legend for major sectors
+        tooltip:{callbacks:{label:ctx=>{
+          const tot=ctx.dataset.data.reduce((s,v)=>s+v,0);
+          const allocPct=(ctx.raw/tot*100).toFixed(1);
+          const sec=ctx.label;
+          const inv=sMap[sec]?sMap[sec].inv:0;
+          const ret=inv>0?(((ctx.raw-inv)/inv)*100).toFixed(1):null;
+          return [` ${ctx.label}: ${feur(ctx.raw)}`,` Alloc: ${allocPct}% of portfolio`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
+        }}}
+      },
+      onClick:(e,els)=>{if(els.length){filterBySector(sKeys[els[0].index]);}}
+    },
+    plugins:[calloutLabelPlugin]
+  });
+  safeDestroy('regionBar');
+  charts.reg=new Chart(document.getElementById('regionBar'),{
+    type:'bar',
+    data:{labels:rKeys,datasets:[
+      {label:'Invested',data:rKeys.map(k=>+rMap[k].inv.toFixed(0)),backgroundColor:rKeys.map((_,i)=>pal[i%pal.length]+'55'),borderColor:rKeys.map((_,i)=>pal[i%pal.length]),borderWidth:1.5,borderRadius:4},
+      {label:'Current Value',data:rKeys.map(k=>+rMap[k].cur.toFixed(0)),backgroundColor:rKeys.map((_,i)=>pal[i%pal.length]),borderRadius:4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,pointStyleWidth:8}},
+        tooltip:{callbacks:{label:ctx=>{
+          if(ctx.dataset.label==='Current Value'){
+            const totalCur=ctx.dataset.data.reduce((s,v)=>s+(+v||0),0);
+            const allocPct=totalCur>0?(ctx.raw/totalCur*100).toFixed(1):'0.0';
+            const inv=rMap[ctx.label]?rMap[ctx.label].inv:0;
+            const ret=inv>0?(((ctx.raw-inv)/inv)*100).toFixed(1):null;
+            return [` Current Value: ${feur(ctx.raw)}`,` Alloc: ${allocPct}% of regions`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
+          }
+          return ` ${ctx.dataset.label}: ${feur(ctx.raw)}`;
+        }}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}}},
+      onClick:(e,els)=>{if(els.length){filterByRegion(rKeys[els[0].index]);}}
+    }
+  });
+}
+function renderSectorBreakdown(){
+  const pos=getPositions(), sMap={};
+  let totalCur=0;
+  DB.instruments.forEach(inst=>{
+    const p=pos[inst.id]; if(!p) return;
+    const price=DB.prices[inst.id]||0;
+    const curVal=p.qty*price, pnl=curVal-p.cost;
+    const sec=inst.sector||'Other';
+    if(!sMap[sec]) sMap[sec]={holdings:[],cur:0,inv:0};
+    sMap[sec].holdings.push({inst,p,price,curVal,pnl,retPct:p.cost>0?pnl/p.cost:0});
+    sMap[sec].cur+=curVal; sMap[sec].inv+=p.cost;
+    totalCur+=curVal;
+  });
+  const sKeys=Object.keys(sMap).sort((a,b)=>sMap[b].cur-sMap[a].cur);
+  const pal=DISTINCT_COLORS;
+  const rows=sKeys.map((sec,i)=>{
+    const sm=sMap[sec];
+    const alloc=totalCur>0?(sm.cur/totalCur*100).toFixed(1):'0.0';
+    const retPct=sm.inv>0?(sm.cur-sm.inv)/sm.inv:0;
+    const holdRows=sm.holdings.sort((a,b)=>b.curVal-a.curVal).map(h=>`
+      <div class="bkd-hold-row">
+        <span class="bkd-ticker">${h.inst.ticker}</span>
+        <span class="bkd-hold-name">${h.inst.name}</span>
+        <span class="bkd-col-val">${feur(h.curVal)}</span>
+        <span class="bkd-col-ret ${pc(h.pnl)}">${fpct(h.retPct)}</span>
+      </div>`).join('');
+    return `<div class="bkd-sec">
+      <div class="bkd-hdr-row" onclick="this.closest('.bkd-sec').classList.toggle('open')">
+        <span class="bkd-dot" style="background:${pal[i%pal.length]}"></span>
+        <span class="bkd-sec-name">${sec}</span>
+        <span class="bkd-col-n">${sm.holdings.length} holding${sm.holdings.length>1?'s':''}</span>
+        <span class="bkd-col-val">${feur(sm.cur)}</span>
+        <span class="bkd-col-ret ${pc(sm.cur-sm.inv)}">${fpct(retPct)}</span>
+        <span class="bkd-col-alloc">${alloc}%</span>
+        <span class="bkd-arr">▾</span>
+      </div>
+      <div class="bkd-holdings">${holdRows}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('sectorBreakdown').innerHTML=`
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="chart-ttl" style="margin:0">Holdings by Sector — Granular Detail</div>
+        <span class="t2" style="font-size:11px">👆 Click a row to expand</span>
+      </div>
+      <div style="display:grid;grid-template-columns:12px 1fr 70px 90px 60px 42px 16px;gap:8px;padding:4px 6px;border-bottom:2px solid var(--bdr);margin-bottom:4px">
+        <span></span><span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--txt2);letter-spacing:.04em">Sector</span>
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--txt2);text-align:center">Holdings</span>
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--txt2);text-align:right">Current</span>
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--txt2);text-align:right">Return</span>
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--txt2);text-align:right">Alloc</span>
+        <span></span>
+      </div>
+      ${rows}
+    </div>`;
+}
+function filterBySector(sector){ activeSectorFilter=sector; activeRegionFilter=null; switchTabByName('holdings'); updateFilterChips(); renderHoldingsTable(computeCategories()); }
+function filterByRegion(region){ activeRegionFilter=region; activeSectorFilter=null; switchTabByName('holdings'); updateFilterChips(); renderHoldingsTable(computeCategories()); }
+function clearFilters(){ activeSectorFilter=null; activeRegionFilter=null; updateFilterChips(); renderHoldingsTable(computeCategories()); }
+function updateFilterChips(){
+  const chips=[];
+  if(activeSectorFilter) chips.push(`<span class="chip">Sector: ${activeSectorFilter}<span class="rm" onclick="clearFilters()">✕</span></span>`);
+  if(activeRegionFilter) chips.push(`<span class="chip">Region: ${activeRegionFilter}<span class="rm" onclick="clearFilters()">✕</span></span>`);
+  document.getElementById('activeFilters').innerHTML=chips.join('');
+}
+
+// ── RENDER HOLDINGS TAB ──
+function renderHoldingsTabs(cats){
+  document.getElementById('holdingTabs').innerHTML=cats.map(c=>{
+    const color=CAT_COLOR[c.label]||'#6B7280';
+    return`<button class="tab ${c.label===activeCategory?'active':''}" onclick="setActiveCat('${c.label}')"
+      style="${c.label===activeCategory?`background:${color};border-color:${color}`:''}">
+      ${c.label==='Commodity'?'Gold':c.label} (${c.holdings.length})
+    </button>`;
+  }).join('');
+}
+function renderHoldingsTable(cats){
+  const cat=cats.find(c=>c.label===activeCategory);
+  if(!cat){document.getElementById('holdTbody').innerHTML=`<tr><td colspan="14" class="empty">No data</td></tr>`;return;}
+  let holdings=[...cat.holdings];
+  if(activeSectorFilter) holdings=holdings.filter(h=>h.inst.sector===activeSectorFilter);
+  if(activeRegionFilter) holdings=holdings.filter(h=>h.inst.region===activeRegionFilter);
+  document.getElementById('holdThead').innerHTML=`<tr>
+    <th>Holding</th><th>Sector</th><th>Region</th>
+    <th class="num">Invested (€)</th><th class="num">Current (€)</th>
+    <th class="num">P&amp;L (€)</th><th class="num">P&amp;L %</th>
+    <th class="num">Units</th>
+    <th class="num" title="Click any price to edit inline">Price ✏️</th>
+    <th class="num">Income / Info</th><th class="num">Weight %</th><th class="num">1W</th><th class="num">1M</th><th></th>
+  </tr>`;
+  document.getElementById('holdTbody').innerHTML=holdings.map(h=>{
+    const sig=healthSig(h.pos.cost>0?h.pnl/h.pos.cost:0);
+    // Income / info cell
+    const annualTer=h.inst.ter>0?Math.round(h.curVal*h.inst.ter/100):0;
+    let incomeCell='';
+    if(h.divIncome>0) incomeCell+=`<span class="badge-div">÷ +${feur(h.divIncome,0)}</span> `;
+    if(h.inst.distType==='Acc') incomeCell+=`<span class="badge-acc">Acc</span> `;
+    if(h.inst.distType==='Dist') incomeCell+=`<span class="badge-acc" style="background:#F0FDF4;color:#16A34A">Dist</span> `;
+    if(h.inst.ter>0) incomeCell+=`<span class="badge-ter">TER ${h.inst.ter}% · €${annualTer}/yr</span>`;
+    if(!incomeCell) incomeCell='<span class="t2">—</span>';
+    // Weight %, 1W, 1M calculation
+    const totalPortVal=cats.reduce((s,c)=>s+c.current,0);
+    const weightPct=totalPortVal>0?h.curVal/totalPortVal*100:0;
+    const p1w=getPriceAt(h.inst.id,7);
+    const p1m=getPriceAt(h.inst.id,30);
+    const ch1w=p1w&&p1w>0?((h.price-p1w)/p1w):null;
+    const ch1m=p1m&&p1m>0?((h.price-p1m)/p1m):null;
+    const fmt1w=ch1w!==null?`<span class="${ch1w>=0?'tg':'tr'}">${ch1w>=0?'+':''}${(ch1w*100).toFixed(1)}%</span>`:`<span class="t2">—</span>`;
+    const fmt1m=ch1m!==null?`<span class="${ch1m>=0?'tg':'tr'}">${ch1m>=0?'+':''}${(ch1m*100).toFixed(1)}%</span>`:`<span class="t2">—</span>`;
+    // Stale price warning: skip Cash category (Option A)
+    let staleIcon='';
+    if(h.inst.category!=='Cash'&&DB.lastPriceUpdateDate){
+      const lastUpd=DB.lastPriceUpdateDate[h.inst.id];
+      if(lastUpd){
+        const daysSince=Math.round((new Date()-new Date(lastUpd))/(1000*60*60*24));
+        if(daysSince>7) staleIcon=`<span title="Price not updated in ${daysSince} day${daysSince!==1?'s':''} — update needed" style="margin-left:4px;font-size:12px;cursor:help">⚠️</span>`;
+      }
+    }
+    return`<tr>
+      <td><span class="fw7">${h.inst.name}</span>${staleIcon}<span class="itag it-${h.inst.category.toLowerCase()}">${h.inst.ticker}</span>${h.inst.distType?`<span class="rtag">${h.inst.distType}</span>`:''}</td>
+      <td class="t2" style="font-size:11px">${h.inst.sector}</td>
+      <td><span class="rtag">${h.inst.region}</span></td>
+      <td class="num">${feur(h.pos.cost,0)}</td>
+      <td class="num fw7">${feur(h.curVal,0)}</td>
+      <td class="num ${pc(h.pnl)} fw7">${h.pnl>=0?'+':''}${feur(h.pnl,0)}</td>
+      <td class="num ${pc(h.pnl)}">${fpct(h.pos.cost>0?h.pnl/h.pos.cost:0,1)}</td>
+      <td class="num" style="font-size:12px">${fmt(h.pos.qty,h.pos.qty<10?4:2)}${h.inst.unit?`<span style="font-size:10px;color:var(--txt2);margin-left:2px">${h.inst.unit}</span>`:''}</td>
+      <td class="num"><input class="price-inp" type="number" value="${Math.round(h.price)}" step="1" min="0"
+        onkeydown="if(event.key==='Enter')this.blur()"
+        onblur="updatePriceInline('${h.inst.id}',this.value)"
+        title="Current: €${Math.round(h.price)} — edit &amp; press Enter or click away to save"></td>
+      <td class="num" style="font-size:11px">${incomeCell}</td>
+      <td class="num" style="font-size:11px">${weightPct.toFixed(1)}%</td>
+      <td class="num" style="font-size:11px">${fmt1w}</td>
+      <td class="num" style="font-size:11px">${fmt1m}</td>
+      <td><div style="display:flex;gap:4px;justify-content:flex-end;align-items:center">
+        <span class="sig s${sig[0]}"></span>
+        <button class="btn btn-o btn-xs" onclick="quickAdd('${h.inst.id}')" title="Add transaction">＋</button>
+        <button class="btn btn-g btn-xs" onclick="showInstHistory('${h.inst.id}')" title="View history">📋</button>
+      </div></td>
+    </tr>`;
+  }).join('')||`<tr><td colspan="14" class="empty">No holdings match this filter</td></tr>`;
+  const names=holdings.map(h=>h.inst.ticker);
+  const pcts=holdings.map(h=>h.pos.cost>0?+(h.pnl/h.pos.cost*100).toFixed(2):0);
+  safeDestroy('holdBar');
+  charts.hBar=new Chart(document.getElementById('holdBar'),{
+    type:'bar',
+    data:{labels:names,datasets:[{label:'P&L %',data:pcts,backgroundColor:pcts.map(p=>p>=0?'rgba(16,185,129,.75)':'rgba(239,68,68,.75)'),borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw>=0?'+':''}${ctx.raw}%`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>v+'%',font:{size:10}}}}
+    }
+  });
+  const vals=holdings.map(h=>+h.curVal.toFixed(0));
+  const catOffset={ETF:0,Stock:5,Crypto:10,Commodity:13,Cash:16}[activeCategory]||0;
+  const pieColors=holdings.map((_,i)=>DISTINCT_COLORS[(catOffset+i)%DISTINCT_COLORS.length]);
+  safeDestroy('holdPie');
+  charts.hPie=new Chart(document.getElementById('holdPie'),{
+    type:'doughnut',
+    data:{labels:names,datasets:[{data:vals,backgroundColor:pieColors,borderWidth:2,borderColor:'#fff'}]},
+    options:{cutout:'55%',responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'right',labels:{font:{size:10},padding:8,usePointStyle:true,pointStyleWidth:6}},
+        tooltip:{callbacks:{label:ctx=>{const tot=ctx.dataset.data.reduce((s,v)=>s+v,0);return ` ${ctx.label}: ${feur(ctx.raw)} (${(ctx.raw/tot*100).toFixed(1)}%)`;}}}
+      }
+    }
+  });
+}
+
+// ── TRANSITION TAB ──
+function updateLeaveHoursTotal(){
+  const h=parseFloat(document.getElementById('cfg_leaveHours')?.value)||0;
+  const r=parseFloat(document.getElementById('cfg_leaveHoursRate')?.value)||0;
+  const el=document.getElementById('leaveHoursTotalCalc');
+  if(el) el.textContent=feur(h*r);
+}
+function refreshPhaseLabels(){
+  const t=DB.transition;
+  const ph1=t.phaseName1||'Phase 1', ph2=t.phaseName2||'Phase 2', ph3=t.phaseName3||'Phase 3';
+  const h1=document.getElementById('phaseHdr1'); if(h1) h1.textContent='📘 '+ph1;
+  const h2=document.getElementById('phaseHdr2'); if(h2) h2.innerHTML='⚠️ '+ph2+' <span style="font-weight:400;font-style:italic;text-transform:none">(leave blank if none)</span>';
+  const h3=document.getElementById('phaseHdr3'); if(h3) h3.textContent='🎯 '+ph3;
+}
+function loadTransitionSettings(){
+  const t=DB.transition;
+  ['salary','exp1','sav1','gexp','ww','wexp','sav3','buf','severance','leaveHours','leaveHoursRate','wwDuration'].forEach(k=>{
+    const el=document.getElementById('cfg_'+k); if(el) el.value=t[k]||0;
+  });
+  ['enddate','gstart','gend','wstart','endproj','severanceMonth','leaveHoursMonth'].forEach(k=>{
+    const el=document.getElementById('cfg_'+k); if(el) el.value=t[k]||'';
+  });
+  ['phaseName1','phaseName2','phaseName3'].forEach(k=>{
+    const el=document.getElementById('cfg_'+k); if(el) el.value=t[k]||'';
+  });
+  refreshPhaseLabels();
+  const mod=t.modified||{};
+  Object.keys(mod).forEach(k=>{
+    const inp=document.getElementById('cfg_'+k);
+    const badge=document.getElementById('est_'+k);
+    if(inp) inp.classList.add('modified');
+    if(badge){ badge.textContent='actual'; badge.className='badge badge-act'; }
+  });
+}
+function onTransitionInput(key, el){
+  if(!DB.transition.modified) DB.transition.modified={};
+  DB.transition[key] = el.type==='number'?parseFloat(el.value)||0:el.value;
+  DB.transition.modified[key]=true;
+  el.classList.add('modified');
+  const badge=document.getElementById('est_'+key);
+  if(badge){ badge.textContent='actual'; badge.className='badge badge-act'; }
+  debounce(rebuildCashFlow,800)();
+}
+function resetTransitionDefaults(){
+  if(!confirm('Reset all transition settings to defaults?')) return;
+  DB.transition=JSON.parse(JSON.stringify(DEFAULT_TRANSITION));
+  saveDB();
+  loadTransitionSettings();
+  rebuildCashFlow();
+  notify('↺ Cash Flow settings reset to defaults.');
+}
+
+function buildCFData(){
+  const t=DB.transition;
+  const parseMonth=m=>{ const[y,mo]=m.split('-').map(Number); return{y,mo}; };
+  const monthsBetween=(a,b)=>{ const pa=parseMonth(a),pb=parseMonth(b); return(pb.y-pa.y)*12+(pb.mo-pa.mo); };
+  const rows=[], startM='2026-04', endM=t.endproj||'2028-12';
+  let cur=startM, wwCount=0;
+  while(monthsBetween(cur,endM)>=0){
+    let income=0, exp=0, phase='employed';
+    if(cur<=(t.enddate||'')){ income=t.salary; exp=-t.exp1; phase='employed'; }
+    else if(t.gstart&&t.gend&&cur>=t.gstart&&cur<=t.gend){ income=0; exp=-t.gexp; phase='gap'; }
+    else if(t.wstart&&cur>=t.wstart){
+      if(t.wwDuration>0&&wwCount>=t.wwDuration){ income=0; exp=-t.wexp; phase='post-ww'; }
+      else{ income=t.ww; exp=-t.wexp; phase='ww'; wwCount++; }
+    }
+    rows.push({m:fmtM(cur),mRaw:cur,income,exp,phase});
+    cur=addM(cur,1);
+  }
+  return rows;
+}
+
+function buildSavingsProjection(cfData){
+  const t=DB.transition;
+  let bal=t.buf||0;
+  return cfData.map(row=>{
+    let oneTime=0;
+    if(t.severance>0&&t.severanceMonth&&row.mRaw===t.severanceMonth) oneTime+=t.severance;
+    const leaveHoursPayout=(t.leaveHours||0)*(t.leaveHoursRate||0);
+    if(leaveHoursPayout>0&&t.leaveHoursMonth&&row.mRaw===t.leaveHoursMonth) oneTime+=leaveHoursPayout;
+    bal+=oneTime;
+    const sav=row.phase==='employed'?t.sav1:row.phase==='ww'?t.sav3:0;
+    bal+=sav;
+    return{m:row.m,v:+bal.toFixed(0),spike:oneTime>0};
+  });
+}
+
+function rebuildCashFlow(){
+  saveDB();
+  const t=DB.transition;
+  const runwayMonths=t.exp1>0?Math.floor((t.buf||0)/t.exp1):0;
+  document.getElementById('runwayVal').textContent=runwayMonths;
+  document.getElementById('runwayFill').style.width=Math.min(100,runwayMonths/36*100)+'%';
+  document.getElementById('savBuf').textContent=feur(t.buf||0);
+  document.getElementById('monBurn').textContent='−'+feur(t.exp1||0)+'/mo';
+  document.getElementById('wwBen').textContent='+'+feur(t.ww||0)+'/mo';
+  const net=(t.ww||0)-(t.wexp||0);
+  document.getElementById('netMon').innerHTML=`<span class="${net>=0?'tg':'tr'}">${net>=0?'+':''}${feur(net)}/mo</span>`;
+  document.getElementById('sevVal').innerHTML=t.severance>0?`<span class="tg">${feur(t.severance)} <span style="font-size:10px;color:var(--txt2)">${t.severanceMonth?'('+fmtM(t.severanceMonth)+')':''}</span></span>`:`<span class="t2" style="font-style:italic">placeholder</span>`;
+  const _lhp=(t.leaveHours||0)*(t.leaveHoursRate||0);
+  document.getElementById('leaveHoursVal').innerHTML=_lhp>0?`<span class="tg">${feur(_lhp)} <span style="font-size:10px;color:var(--txt2)">${t.leaveHoursMonth?'('+fmtM(t.leaveHoursMonth)+')':''}</span></span>`:`<span class="t2" style="font-style:italic">placeholder</span>`;
+  document.getElementById('wwDurVal').innerHTML=t.wwDuration>0?`${t.wwDuration} months`:`<span class="t2" style="font-style:italic">placeholder</span>`;
+
+  // Phase tags
+  let wwEndTag='';
+  if(t.wwDuration>0&&t.wstart){
+    const wwEnd=addM(t.wstart,t.wwDuration-1);
+    wwEndTag=` → ${fmtM(wwEnd)}`;
+  }
+  const ph1=t.phaseName1||'Phase 1', ph2=t.phaseName2||'Phase 2', ph3=t.phaseName3||'Phase 3';
+  document.getElementById('phaseTags').innerHTML=`
+    <span class="ph-tag" style="background:#EFF6FF;color:#2563EB">📘 ${ph1} → ${t.enddate?fmtM(t.enddate):'?'}</span>
+    ${t.gstart&&t.gend?`<span class="ph-tag" style="background:#FEF2F2;color:#EF4444">⚠️ ${ph2}: ${fmtM(t.gstart)} – ${fmtM(t.gend)}</span>`:''}
+    <span class="ph-tag" style="background:#F5F3FF;color:#7C3AED">🎯 ${ph3}: ${t.wstart?fmtM(t.wstart):'?'}${wwEndTag}</span>`;
+  // Update chart legend and runway card labels
+  const el1=document.getElementById('lgd1'); if(el1) el1.textContent=ph1+' income';
+  const el2=document.getElementById('lgd2'); if(el2) el2.textContent=ph2+' (€0 income)';
+  const el3=document.getElementById('lgd3'); if(el3) el3.textContent=ph3+' income';
+  const el4=document.getElementById('lgd4'); if(el4) el4.textContent='Post-'+ph3;
+  const rb=document.getElementById('rwyBenLabel'); if(rb) rb.textContent='🎯 '+ph3+' Income';
+  const rs=document.getElementById('rwyBenSub'); if(rs) rs.textContent='Monthly income ('+ph3+')';
+  const rd=document.getElementById('rwyDurLabel'); if(rd) rd.textContent='⏱ '+ph3+' Duration';
+
+  const cfData=buildCFData();
+  const incColors=cfData.map(d=>d.phase==='employed'?'#3B82F6':d.phase==='gap'?'#EF4444':d.phase==='ww'?'#8B5CF6':'#94A3B8');
+  const oneTimeData=cfData.map(row=>{
+    let ot=0;
+    if(t.severance>0&&t.severanceMonth&&row.mRaw===t.severanceMonth) ot+=t.severance;
+    const _lp=(t.leaveHours||0)*(t.leaveHoursRate||0);
+    if(_lp>0&&t.leaveHoursMonth&&row.mRaw===t.leaveHoursMonth) ot+=_lp;
+    return ot;
+  });
+  safeDestroy('cfChart');
+  charts.cf=new Chart(document.getElementById('cfChart'),{
+    type:'bar',
+    data:{labels:cfData.map(d=>d.m),datasets:[
+      {label:'Income',data:cfData.map(d=>d.income),backgroundColor:incColors,borderRadius:3,order:1},
+      {label:'Expenses',data:cfData.map(d=>Math.abs(d.exp)),backgroundColor:'#F59E0B44',borderColor:'#F59E0B',borderWidth:1,borderRadius:3,order:2}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${feur(ctx.raw)}`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v),font:{size:9}}}}
+    }
+  });
+
+  const savData=buildSavingsProjection(cfData);
+  const ctx2=document.getElementById('savChart').getContext('2d');
+  const grad=ctx2.createLinearGradient(0,0,0,200);
+  grad.addColorStop(0,'rgba(16,185,129,.25)');grad.addColorStop(1,'rgba(16,185,129,0)');
+  safeDestroy('savChart');
+  charts.sav=new Chart(document.getElementById('savChart'),{
+    type:'line',
+    data:{labels:savData.map(d=>d.m),datasets:[{
+      label:'Projected Savings (€)',
+      data:savData.map(d=>d.v),
+      borderColor:'#10B981',borderWidth:2,backgroundColor:grad,fill:true,tension:0.35,
+      pointRadius:savData.map(d=>d.spike?7:3),
+      pointHoverRadius:savData.map(d=>d.spike?9:5),
+      pointBackgroundColor:savData.map(d=>d.spike?'#F59E0B':'#10B981'),
+      pointBorderColor:savData.map(d=>d.spike?'#92400E':'#10B981'),
+      pointBorderWidth:savData.map(d=>d.spike?2:1)
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const d=savData[ctx.dataIndex];return d.spike?` Savings: ${feur(ctx.raw)} ⬆ one-time inflow`:` Savings: ${feur(ctx.raw)}`;} }}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:9}}}}
+    }
+  });
+}
+
+// ── NAVIGATION ──
+function switchTab(name, btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(btn) btn.classList.add('active');
+  else document.querySelectorAll('.mtab').forEach(t=>{if(t.textContent.toLowerCase().includes(name.slice(0,4)))t.classList.add('active');});
+  if(name==='transition') loadTransitionSettings();
+  if(name==='tax') renderTaxTab();
+}
+function switchTabByName(name){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelectorAll('.mtab').forEach(t=>{
+    if((name==='overview'&&t.textContent.includes('Overview'))||(name==='holdings'&&t.textContent.includes('Holdings'))||(name==='transition'&&t.textContent.includes('Cash Flow'))||(name==='tax'&&t.textContent.includes('Tax')))
+      t.classList.add('active');
+  });
+  if(name==='transition') loadTransitionSettings();
+  if(name==='tax') renderTaxTab();
+}
+function jumpToHoldings(cat){
+  activeCategory=cat; activeSectorFilter=null; activeRegionFilter=null;
+  updateFilterChips(); switchTabByName('holdings');
+  const cats=computeCategories(); renderHoldingsTabs(cats); renderHoldingsTable(cats);
+  document.querySelectorAll('.cat-card').forEach(el=>el.classList.toggle('active',el.id==='cat-'+cat));
+}
+function setActiveCat(cat){ activeCategory=cat; const cats=computeCategories(); renderHoldingsTabs(cats); renderHoldingsTable(cats); }
+
+// ── PERIOD DROPDOWN ──
+function togglePeriodMenu(ctx){
+  const btn=document.getElementById(ctx+'PeriodBtn');
+  const menu=document.getElementById(ctx+'PeriodMenu');
+  const isOpen=menu.classList.contains('open');
+  document.querySelectorAll('.period-menu').forEach(m=>m.classList.remove('open'));
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('open'));
+  if(!isOpen){ menu.classList.add('open'); btn.classList.add('open'); }
+}
+function setPeriod(p,el){
+  document.querySelectorAll('.pm-item[data-p]').forEach(i=>{ const sp=i.querySelector('span:not(.pm-lock)'); if(sp) sp.textContent=''; i.classList.remove('active'); });
+  document.querySelectorAll('.ovw-ptab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const sp=el.querySelector('span:not(.pm-lock)'); if(sp) sp.textContent='✓';
+  const label=el.textContent.replace('✓','').replace('🔒','').trim();
+  document.querySelectorAll('[id$="PeriodLabel"]').forEach(l=>l.textContent=label);
+  document.querySelectorAll('.period-menu').forEach(m=>m.classList.remove('open'));
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('open'));
+  // Sync overview tabs ↔ dropdown
+  if(el.classList.contains('ovw-ptab')){
+    const match=document.querySelector(`.pm-item[data-p="${p}"]`);
+    if(match){ match.classList.add('active'); const sp2=match.querySelector('span:not(.pm-lock)'); if(sp2) sp2.textContent='✓'; }
+  } else {
+    const match=document.querySelector(`.ovw-ptab[data-p="${p}"]`);
+    if(match) match.classList.add('active');
+  }
+}
+function updatePeriodMenuLocks(){
+  // Compute date span from priceHistory of non-Cash instruments only
+  const nonCash=DB.instruments.filter(i=>i.category!=='Cash');
+  let earliest=null, latest=null;
+  nonCash.forEach(inst=>{
+    const hist=DB.priceHistory[inst.id];
+    if(!hist||hist.length<1) return;
+    if(!earliest||hist[0].date<earliest) earliest=hist[0].date;
+    const last=hist[hist.length-1].date;
+    if(!latest||last>latest) latest=last;
+  });
+  let spanDays=0;
+  if(earliest&&latest) spanDays=Math.round((new Date(latest)-new Date(earliest))/(1000*60*60*24));
+  // Sync the overview period tab strip
+  const ovwMap={7:'ovw-weekly',30:'ovw-monthly',90:'ovw-quarterly',180:'ovw-6m',365:'ovw-annual'};
+  const ovwLabels={7:'Weekly',30:'Monthly',90:'Quarterly',180:'6 Months',365:'Annual'};
+  const ovwP={7:'7d',30:'30d',90:'90d',180:'180d',365:'365d'};
+  [7,30,90,180,365].forEach(days=>{
+    const el=document.getElementById(ovwMap[days]);
+    if(!el) return;
+    if(spanDays>=days){
+      el.classList.remove('locked');
+      el.setAttribute('data-p',ovwP[days]);
+      el.setAttribute('onclick',`setPeriod('${ovwP[days]}',this)`);
+      el.textContent=ovwLabels[days];
+    } else {
+      el.classList.add('locked');
+      el.removeAttribute('data-p');
+      el.setAttribute('onclick','periodLockedNotice()');
+      el.textContent=`${ovwLabels[days]} 🔒`;
+    }
+  });
+}
+function periodLockedNotice(){ notify('⏳ Unlocks automatically as weekly price history builds. Keep updating prices each Monday!'); }
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.period-wrap')){
+    document.querySelectorAll('.period-menu').forEach(m=>m.classList.remove('open'));
+    document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('open'));
+  }
+});
+
+// ── INSTRUMENT SELECT ──
+function populateInstSel(){
+  const sel=document.getElementById('tx_inst'), cur=sel.value;
+  sel.innerHTML=`<option value="">— select —</option><option value="__new__">＋ Add new instrument</option>`;
+  [...DB.instruments].sort((a,b)=>a.name.localeCompare(b.name)).forEach(inst=>{
+    const o=document.createElement('option'); o.value=inst.id;
+    o.textContent=`${inst.name} (${inst.ticker}) — ${inst.category}`; sel.appendChild(o);
+  });
+  sel.value=cur||'';
+}
+function onInstChange(){
+  const v=document.getElementById('tx_inst').value;
+  document.querySelectorAll('.ni-fields').forEach(el=>el.classList.toggle('show',v==='__new__'));
+}
+function onTxTypeChange(){
+  const isDiv=document.getElementById('tx_type').value==='dividend';
+  document.getElementById('qty_row').style.display=isDiv?'none':'';
+  document.getElementById('fees_row').style.display=isDiv?'none':'';
+  document.getElementById('price_lbl').textContent=isDiv?'Total Amount Received (€) *':'Price per Unit (€) *';
+  if(isDiv) document.getElementById('tx_qty').value='1';
+  calcTotal();
+}
+function updatePriceInline(instId, rawVal){
+  const v=parseFloat(rawVal);
+  if(isNaN(v)||v<0) return;
+  snapshotPrice(instId, DB.prices[instId]||v);
+  DB.prices[instId]=v;
+  snapshotPrice(instId, v);
+  if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
+  DB.lastPriceUpdateDate[instId]=new Date().toISOString().slice(0,10);
+  saveDB();
+  refreshAll();
+  notify('✅ Price updated.');
+}
+function calcTotal(){
+  const isDiv=document.getElementById('tx_type').value==='dividend';
+  const q=parseFloat(document.getElementById('tx_qty').value)||0;
+  const p=parseFloat(document.getElementById('tx_price').value)||0;
+  const f=parseFloat(document.getElementById('tx_fees').value)||0;
+  const tot=isDiv?p:(q*p+f);
+  const el=document.getElementById('tx_total');
+  el.textContent=tot>0?feur(tot,2):'€ —';
+  el.style.color=isDiv?'#059669':'';
+}
+function quickAdd(iid){
+  openModal('txModal');
+  setTimeout(()=>{ populateInstSel(); document.getElementById('tx_inst').value=iid; document.getElementById('tx_date').value=new Date().toISOString().slice(0,10); },50);
+}
+
+// ── CRUD ──
+function saveTx(){
+  let iid=document.getElementById('tx_inst').value;
+  if(!iid){ notify('⚠️ Select an instrument.','warn'); return; }
+  if(iid==='__new__'){
+    const name=document.getElementById('ni_name').value.trim();
+    if(!name){ notify('⚠️ Instrument name required.','warn'); return; }
+    const ni={
+      id:'i'+Date.now(),name,ticker:document.getElementById('ni_ticker').value.trim().toUpperCase(),
+      category:document.getElementById('ni_cat').value,sector:document.getElementById('ni_sector').value,
+      industry:document.getElementById('ni_industry').value.trim(),country:document.getElementById('ni_country').value.trim(),
+      region:document.getElementById('ni_region').value,currency:document.getElementById('ni_currency').value.trim()||'EUR',
+      broker:document.getElementById('ni_broker').value.trim(),ter:parseFloat(document.getElementById('ni_ter').value)||null,
+      distType:document.getElementById('ni_distType').value||null,
+    };
+    DB.instruments.push(ni);
+    DB.prices[ni.id]=parseFloat(document.getElementById('tx_price').value)||0;
+    iid=ni.id;
+  }
+  const type=document.getElementById('tx_type').value;
+  const qty=type==='dividend'?1:parseFloat(document.getElementById('tx_qty').value);
+  const price=parseFloat(document.getElementById('tx_price').value);
+  const date=document.getElementById('tx_date').value;
+  if(!price||!date){ notify('⚠️ Amount and date required.','warn'); return; }
+  if(type!=='dividend'&&!qty){ notify('⚠️ Quantity required.','warn'); return; }
+  DB.transactions.push({id:'tx'+Date.now(),iid,type,date,qty,price,fees:type==='dividend'?0:parseFloat(document.getElementById('tx_fees').value)||0,notes:document.getElementById('tx_notes').value.trim()});
+  saveDB(); closeModal('txModal'); refreshAll(); notify('✅ Transaction saved.');
+}
+function deleteTx(id){
+  if(!confirm('Delete this transaction?')) return;
+  DB.transactions=DB.transactions.filter(t=>t.id!==id);
+  saveDB(); renderHistory(); refreshAll(); notify('🗑 Transaction deleted.');
+}
+function showInstHistory(iid){ openModal('historyModal'); setTimeout(()=>{ populateHistFilter(); document.getElementById('histFilter').value=iid; renderHistory(); },50); }
+function populateHistFilter(){
+  const sel=document.getElementById('histFilter');
+  sel.innerHTML=`<option value="all">All instruments</option>`;
+  [...DB.instruments].sort((a,b)=>a.name.localeCompare(b.name)).forEach(inst=>{
+    const n=DB.transactions.filter(t=>t.iid===inst.id).length; if(!n) return;
+    const o=document.createElement('option'); o.value=inst.id; o.textContent=`${inst.name} (${n} tx)`; sel.appendChild(o);
+  });
+}
+function renderHistory(){
+  const f=document.getElementById('histFilter').value;
+  const txs=[...DB.transactions].filter(t=>f==='all'||t.iid===f).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('histCount').textContent=`${txs.length} transaction${txs.length!==1?'s':''}`;
+  document.getElementById('histBody').innerHTML=txs.length?txs.map(tx=>{
+    const inst=instById(tx.iid);
+    const isDiv=tx.type==='dividend';
+    const tot=isDiv?(tx.price||0):(tx.qty*tx.price+(tx.fees||0));
+    const typeBadge=isDiv
+      ?`<span class="badge badge-div-tx" style="background:#ECFDF5;color:#059669;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700">DIV</span>`
+      :`<span class="badge ${tx.type==='buy'?'bg':'br'}">${tx.type.toUpperCase()}</span>`;
+    return`<tr>
+      <td>${fdate(tx.date)}</td>
+      <td><span class="fw7">${inst?inst.name:tx.iid}</span>${inst?`<span class="itag it-${inst.category.toLowerCase()}">${inst.ticker}</span>`:''}</td>
+      <td>${typeBadge}</td>
+      <td class="num" style="font-size:12px">${isDiv?'<span class="t2">—</span>':fmt(tx.qty,tx.qty<10?4:2)}</td>
+      <td class="num" style="font-size:12px">${isDiv?'<span class="t2">—</span>':feur(tx.price,tx.price<10?4:2)}</td>
+      <td class="num" style="font-size:12px">${(tx.fees&&!isDiv)?feur(tx.fees,2):'—'}</td>
+      <td class="num fw7" style="${isDiv?'color:#059669':''}">${isDiv?'+':''} ${feur(tot,0)}</td>
+      <td class="t2" style="font-size:12px">${tx.notes||'—'}</td>
+      <td><button class="btn btn-d btn-xs" onclick="deleteTx('${tx.id}')">✕</button></td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="9" class="empty">No transactions</td></tr>`;
+}
+
+// ── INSTRUMENT MANAGER ──
+function openInstModal(){
+  document.getElementById('instModal').classList.add('open');
+  showInstList();
+}
+function showInstList(){
+  document.getElementById('instListView').style.display='';
+  document.getElementById('instFormView').style.display='none';
+  document.getElementById('instModalFoot').innerHTML='<button class="btn btn-g" onclick="closeModal(\'instModal\')">Close</button>';
+  const sorted=[...DB.instruments].sort((a,b)=>a.name.localeCompare(b.name));
+  document.getElementById('instCount').textContent=sorted.length+' instrument'+(sorted.length!==1?'s':'')+' configured';
+  document.getElementById('instListBody').innerHTML=sorted.map(i=>{
+    const txCount=DB.transactions.filter(t=>t.iid===i.id).length;
+    return`<tr>
+      <td style="font-weight:600">${i.name}</td>
+      <td><span class="itag it-${i.category.toLowerCase()}">${i.ticker||'—'}</span></td>
+      <td>${i.category}</td>
+      <td style="font-size:12px;color:var(--txt2)">${i.sector||'—'}</td>
+      <td style="font-size:12px;color:var(--txt2)">${i.broker||'—'}</td>
+      <td class="num" style="font-size:12px">${i.withholdingRate!=null?i.withholdingRate+'%':'—'}</td>
+      <td class="num" style="font-size:12px">${i.ter?i.ter+'%':'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-g btn-xs" onclick="showInstForm('${i.id}')">✏️ Edit</button>
+        <button class="btn btn-d btn-xs" onclick="deleteInst('${i.id}')" ${txCount>0?`title="${txCount} transaction(s) exist — will also delete them"`:''}>🗑</button>
+      </td></tr>`;
+  }).join('')||(DB.instruments.length===0?'<tr><td colspan="8" class="empty" style="padding:24px">No instruments yet. Click ＋ Add Instrument to get started.</td></tr>':'');
+}
+function showInstForm(editId){
+  document.getElementById('instListView').style.display='none';
+  document.getElementById('instFormView').style.display='';
+  document.getElementById('inst_editId').value=editId||'';
+  document.getElementById('instFormTitle').textContent=editId?'Edit Instrument':'New Instrument';
+  document.getElementById('instModalFoot').innerHTML=`
+    <button class="btn btn-g" onclick="showInstList()">Cancel</button>
+    <button class="btn btn-p" onclick="saveInstForm()">💾 Save Instrument</button>`;
+  // Populate form
+  const inst=editId?DB.instruments.find(i=>i.id===editId):null;
+  const setVal=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v??''; };
+  setVal('inst_name', inst?.name);
+  setVal('inst_ticker', inst?.ticker);
+  setVal('inst_cat', inst?.category||'ETF');
+  setVal('inst_broker', inst?.broker);
+  setVal('inst_sector', inst?.sector||'Other');
+  setVal('inst_industry', inst?.industry);
+  setVal('inst_country', inst?.country);
+  setVal('inst_region', inst?.region||'Global');
+  setVal('inst_currency', inst?.currency||'EUR');
+  setVal('inst_distType', inst?.distType||'');
+  setVal('inst_ter', inst?.ter??'');
+  setVal('inst_wht', inst?.withholdingRate??'');
+  setVal('inst_unit', inst?.unit||'');
+  setVal('inst_interest', inst?.interestRate??'');
+}
+function saveInstForm(){
+  const name=document.getElementById('inst_name').value.trim();
+  if(!name){ notify('⚠️ Instrument name is required.','warn'); return; }
+  const editId=document.getElementById('inst_editId').value;
+  const getV=id=>document.getElementById(id)?.value.trim()||'';
+  const getN=id=>{ const v=parseFloat(document.getElementById(id)?.value); return isNaN(v)?undefined:v; };
+  const obj={
+    name, ticker:getV('inst_ticker').toUpperCase(),
+    category:getV('inst_cat')||'ETF',
+    broker:getV('inst_broker'), sector:getV('inst_sector'),
+    industry:getV('inst_industry'), country:getV('inst_country'),
+    region:getV('inst_region')||'Global', currency:getV('inst_currency')||'EUR',
+    exchange:getV('inst_broker'),
+    distType:getV('inst_distType')||undefined,
+    ter:getN('inst_ter'), withholdingRate:getN('inst_wht'),
+    unit:getV('inst_unit')||undefined, interestRate:getN('inst_interest')
+  };
+  if(editId){
+    const idx=DB.instruments.findIndex(i=>i.id===editId);
+    if(idx>-1){ DB.instruments[idx]={...DB.instruments[idx],...obj}; }
+  } else {
+    obj.id='i'+Date.now();
+    DB.instruments.push(obj);
+    DB.prices[obj.id]=0;
+    const today=new Date().toISOString().slice(0,10);
+    DB.lastPriceUpdateDate[obj.id]=today;
+  }
+  saveDB(); refreshAll();
+  notify('✅ Instrument saved.');
+  showInstList();
+}
+function deleteInst(id){
+  const inst=DB.instruments.find(i=>i.id===id);
+  if(!inst) return;
+  const txCount=DB.transactions.filter(t=>t.iid===id).length;
+  const msg=txCount>0
+    ?`Delete "${inst.name}" AND its ${txCount} transaction(s)? This cannot be undone.`
+    :`Delete "${inst.name}"? This cannot be undone.`;
+  if(!confirm(msg)) return;
+  DB.instruments=DB.instruments.filter(i=>i.id!==id);
+  DB.transactions=DB.transactions.filter(t=>t.iid!==id);
+  delete DB.prices[id]; delete DB.priceHistory[id]; delete DB.lastPriceUpdateDate[id];
+  saveDB(); refreshAll();
+  notify('🗑 Instrument deleted.');
+  showInstList();
+}
+
+// ── UPDATE PRICES ──
+function openUpdatePricesModal(){
+  const pos=getPositions();
+  document.getElementById('pricesList').innerHTML=[...DB.instruments].filter(i=>pos[i.id]).map(inst=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bdr)">
+      <div><span class="fw7">${inst.name}</span><span class="itag it-${inst.category.toLowerCase()}">${inst.ticker}</span><span class="t2" style="font-size:11px;margin-left:6px">${inst.sector} · ${inst.region}</span></div>
+      <input class="finp" type="number" id="price_${inst.id}" step="any" value="${DB.prices[inst.id]||0}" style="width:110px;text-align:right">
+    </div>`).join('');
+  openModal('pricesModal');
+}
+function savePrices(){
+  const pos=getPositions();
+  const today=new Date().toISOString().slice(0,10);
+  if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
+  DB.instruments.filter(i=>pos[i.id]).forEach(inst=>{
+    const el=document.getElementById('price_'+inst.id);
+    if(el){ const v=parseFloat(el.value); if(!isNaN(v)&&v>=0) { snapshotPrice(inst.id, DB.prices[inst.id]||v); DB.prices[inst.id]=v; DB.lastPriceUpdateDate[inst.id]=today; } }
+  });
+  const now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('lastUpd').textContent='Last updated: '+now;
+  saveDB(); closeModal('pricesModal'); refreshAll(); notify('✅ Prices updated & dashboard refreshed.');
+}
+
+// ── MODAL HELPERS ──
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+  if(id==='txModal'){ populateInstSel(); document.getElementById('tx_date').value=new Date().toISOString().slice(0,10); }
+  if(id==='historyModal'){ populateHistFilter(); renderHistory(); }
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el&&el.id!=='wizOverlay')el.classList.remove('open');}));
+
+// ── NOTIFICATION & DEBOUNCE ──
+function notify(msg,type='ok'){
+  const n=document.getElementById('notif'); n.textContent=msg;
+  n.style.background=type==='warn'?'#B45309':'#1F2937';
+  n.classList.add('show'); setTimeout(()=>n.classList.remove('show'),3500);
+}
+let _debounceTimer=null;
+function debounce(fn,ms){ return(...args)=>{ clearTimeout(_debounceTimer); _debounceTimer=setTimeout(()=>fn(...args),ms); }; }
+
+// ── FULL REFRESH ──
+function refreshAll(){
+  const cats=computeCategories();
+  renderKPIs(cats); renderAlloc(cats); renderCatCards(cats);
+  renderSectorRegion(); renderSectorBreakdown(); renderHoldingsTabs(cats); renderHoldingsTable(cats);
+  rebuildCashFlow();
+  updatePeriodMenuLocks();
+}
+
+// ── TAX HELPERS ──
+function calcBox1Income(year){
+  const t=DB.transition; let total=0;
+  for(let mo=1;mo<=12;mo++){
+    const ms=`${year}-${String(mo).padStart(2,'0')}`; let inc=0;
+    if(t.enddate&&ms<=t.enddate) inc=t.salary||0;
+    else if(t.gstart&&t.gend&&ms>=t.gstart&&ms<=t.gend) inc=0;
+    else if(t.wstart&&ms>=t.wstart){
+      if(t.wwDuration>0){const wwEnd=addM(t.wstart,t.wwDuration-1);if(ms<=wwEnd)inc=t.ww||0;}
+      else inc=t.ww||0;
+    }
+    total+=inc;
+  }
+  return total;
+}
+function calcBox1Tax(income){
+  if(income<=0) return 0;
+  const overrideRate=(DB.taxSettings?.box1EffectiveRate||0)/100;
+  if(overrideRate>0) return income*overrideRate;
+  // NL 2025 brackets (default)
+  const b1=38441,b2=76817,r1=0.3582,r2=0.3748,r3=0.4950;
+  if(income<=b1) return income*r1;
+  if(income<=b2) return b1*r1+(income-b1)*r2;
+  return b1*r1+(b2-b1)*r2+(income-b2)*r3;
+}
+function updateInstWithholdingRate(instId,rawVal){
+  const v=parseFloat(rawVal);
+  if(isNaN(v)||v<0||v>100) return;
+  const inst=instById(instId);
+  if(inst){inst.withholdingRate=v;saveDB();renderTaxTab();}
+}
+
+// ── TAX TAB ──
+function saveTaxSettings(){
+  const dr=parseFloat(document.getElementById('tax_divRate').value)||15;
+  const cr=parseFloat(document.getElementById('tax_cgRate').value)||36;
+  const fr=parseFloat(document.getElementById('tax_ficRate').value)||6.36;
+  const al=parseFloat(document.getElementById('tax_allowance').value)||57000;
+  const b1=parseFloat(document.getElementById('tax_box1Rate')?.value)||0;
+  const b2=parseFloat(document.getElementById('tax_box2Rate')?.value)||26.9;
+  DB.taxSettings={dividendWithholdingRate:dr,capitalGainsRate:cr,fictitiousReturnRate:fr,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2};
+  saveDB(); renderTaxTab(); refreshAll();
+}
+function renderTaxTab(){
+  const cats=computeCategories();
+  const pos=getPositions();
+  const divs=getDividends();
+  const globalWHRate=(DB.taxSettings?.dividendWithholdingRate||15)/100;
+  const box3Rate=(DB.taxSettings?.capitalGainsRate||36)/100;
+  const currentYear=new Date().getFullYear();
+  const t=DB.transition;
+  // Populate settings inputs
+  const drEl=document.getElementById('tax_divRate');
+  const crEl=document.getElementById('tax_cgRate');
+  if(drEl) drEl.value=DB.taxSettings?.dividendWithholdingRate||15;
+  if(crEl) crEl.value=DB.taxSettings?.capitalGainsRate||36;
+  const frEl=document.getElementById('tax_ficRate');
+  const alEl=document.getElementById('tax_allowance');
+  if(frEl) frEl.value=DB.taxSettings?.fictitiousReturnRate??6.36;
+  if(alEl) alEl.value=DB.taxSettings?.box3Allowance??57000;
+  const b1El=document.getElementById('tax_box1Rate');
+  const b2El=document.getElementById('tax_box2Rate');
+  if(b1El) b1El.value=DB.taxSettings?.box1EffectiveRate??0;
+  if(b2El) b2El.value=DB.taxSettings?.box2Rate??26.9;
+
+  // ── BOX 1 ──
+  const box1Income=calcBox1Income(currentYear);
+  const box1GrossTax=calcBox1Tax(box1Income);
+  const phases=[];
+  if(t.enddate){
+    let mos=0;
+    for(let m=1;m<=12;m++){const ms=`${currentYear}-${String(m).padStart(2,'0')}`;if(ms<=t.enddate)mos++;}
+    if(mos>0) phases.push({label:'📘 '+(t.phaseName1||'Phase 1'),color:'#2563EB',months:mos,monthly:t.salary||0});
+  }
+  if(t.gstart&&t.gend){
+    let mos=0;
+    for(let m=1;m<=12;m++){const ms=`${currentYear}-${String(m).padStart(2,'0')}`;if(ms>=t.gstart&&ms<=t.gend)mos++;}
+    if(mos>0) phases.push({label:'⚠️ '+(t.phaseName2||'Phase 2'),color:'#EF4444',months:mos,monthly:0});
+  }
+  if(t.wstart){
+    let mos=0;
+    for(let m=1;m<=12;m++){
+      const ms=`${currentYear}-${String(m).padStart(2,'0')}`;
+      if(ms>=t.wstart){
+        if(t.wwDuration>0){const wwEnd=addM(t.wstart,t.wwDuration-1);if(ms<=wwEnd)mos++;}
+        else mos++;
+      }
+    }
+    if(mos>0) phases.push({label:'🎯 '+(t.phaseName3||'Phase 3'),color:'#7C3AED',months:mos,monthly:t.ww||0});
+  }
+  const phaseRows=phases.map(ph=>`
+    <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+      <span style="font-weight:600;color:${ph.color}">${ph.label}</span>
+      <span class="num">${ph.months} mo</span>
+      <span class="num">${feur(ph.monthly)}/mo</span>
+      <span class="num fw7">${feur(ph.months*ph.monthly)}</span>
+    </div>`).join('');
+  document.getElementById('taxBox1').innerHTML=`
+    <div class="tax-card">
+      <div class="tax-hdr" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px">
+        <span>Phase <a class="lnk" onclick="switchTabByName('transition')" style="margin-left:6px">→ Cash Flow tab</a></span>
+        <span class="num">Months ${currentYear}</span><span class="num">Monthly</span><span class="num">Annual</span>
+      </div>
+      ${phaseRows.length?phaseRows:`<div style="padding:16px;text-align:center;color:var(--txt2);font-size:13px">Set up your income phases in the Cash Flow tab to see Box 1 income here.</div>`}
+      ${phaseRows.length?`<div class="tax-row fw7" style="grid-template-columns:2fr 1fr 1fr 1fr;background:var(--neu-l)">
+        <span>Total Box 1 Income</span><span></span><span></span><span class="num">${feur(box1Income)}</span>
+      </div>
+      <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:var(--err-l)">
+        <span class="fw6" style="color:var(--err)">Estimated Box 1 Tax</span>
+        <span class="num" style="font-size:11px;color:var(--txt2)">before credits</span><span></span>
+        <span class="num fw7 tr">${feur(box1GrossTax)}</span>
+      </div>`:''}
+      <div style="margin-top:10px;padding:10px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:11px;color:#92400E">
+        ${(DB.taxSettings?.box1EffectiveRate||0)>0
+          ? `⚠️ Using your custom effective rate of <strong>${DB.taxSettings.box1EffectiveRate}%</strong>. Excludes personal tax credits and deductions. Consult a tax advisor for your specific situation.`
+          : `⚠️ Using NL 2025 progressive brackets (35.82% · 37.48% · 49.50%). Set a custom effective rate in Tax Settings to override. Excludes credits and deductions.`
+        }
+      </div>
+    </div>`;
+
+  // ── BOX 2 ──
+  const box2Pct=(DB.taxSettings?.box2Rate??26.9);
+  document.getElementById('taxBox2').innerHTML=`
+    <div class="tax-card" style="border:1.5px dashed var(--bdr)">
+      <div style="display:flex;align-items:center;gap:16px;padding:6px 0">
+        <div style="font-size:32px">🏢</div>
+        <div style="flex:1">
+          <div class="fw7" style="font-size:14px;color:var(--txt2)">Not yet applicable</div>
+          <div style="font-size:12px;color:var(--txt2);margin-top:4px">Box 2 applies when you own ≥ 5% of a company (BV/NV). Activate this section once your business is set up.</div>
+          <div style="font-size:11px;color:var(--txt2);margin-top:6px">Configured rate: <strong>${box2Pct}%</strong> · Editable in Tax Settings above · Director salary → Box 1</div>
+        </div>
+        <span class="badge bn" style="white-space:nowrap">Coming soon</span>
+      </div>
+    </div>`;
+
+  // ── BOX 3 ──
+  const totalNW=cats.reduce((s,c)=>s+c.current,0);
+  const freeAllowance=DB.taxSettings?.box3Allowance??57000;
+  const taxableBase=Math.max(0,totalNW-freeAllowance);
+  const fictitiousReturnRate=(DB.taxSettings?.fictitiousReturnRate??6.36)/100;
+  const fictitiousReturn=taxableBase*fictitiousReturnRate;
+  const box3Tax=fictitiousReturn*box3Rate;
+  document.getElementById('taxBox3Table').innerHTML=`
+    <div class="tax-card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:4px 0">
+        <div class="kpi" style="margin:0">
+          <div class="kpi-lbl">Total Portfolio Value</div>
+          <div class="kpi-val">${feur(totalNW)}</div>
+          <div class="kpi-sub t2">All assets at current prices</div>
+        </div>
+        <div class="kpi" style="margin:0">
+          <div class="kpi-lbl">Taxable Base</div>
+          <div class="kpi-val">${feur(taxableBase)}</div>
+          <div class="kpi-sub t2">After €${fmt(freeAllowance)} tax-free allowance</div>
+        </div>
+        <div class="kpi err" style="margin:0">
+          <div class="kpi-lbl">Estimated Box 3 Tax</div>
+          <div class="kpi-val tr">${feur(box3Tax)}</div>
+          <div class="kpi-sub t2">${(fictitiousReturnRate*100).toFixed(2)}% fictitious return × ${(box3Rate*100).toFixed(0)}% rate</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:12px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:12px;color:#92400E">
+        ⚠️ Estimate based on a ${(fictitiousReturnRate*100).toFixed(2)}% fictitious return × ${(box3Rate*100).toFixed(0)}% wealth tax rate, with a €${fmt(freeAllowance)} tax-free allowance. Rates are editable above. Consult a tax advisor for your jurisdiction.
+      </div>
+    </div>`;
+
+  // ── DIVIDEND WITHHOLDING (per-instrument) ──
+  const divInsts=DB.instruments.filter(i=>divs[i.id]>0);
+  const divRows=divInsts.map(i=>{
+    const gross=divs[i.id];
+    const instRate=i.withholdingRate!==undefined&&i.withholdingRate!==null?i.withholdingRate:(DB.taxSettings?.dividendWithholdingRate||15);
+    const tax=gross*(instRate/100), net=gross-tax;
+    return`<div class="tax-row" style="grid-template-columns:2fr 90px 1fr 1fr 1fr">
+      <span><span class="fw7">${i.name}</span> <span class="itag it-${i.category.toLowerCase()}">${i.ticker}</span></span>
+      <span style="display:flex;align-items:center;gap:3px;justify-content:flex-end">
+        <input type="number" value="${instRate}" min="0" max="100" step="0.1"
+          style="width:52px;padding:2px 5px;border:1.5px solid var(--bdr);border-radius:4px;font-size:12px;font-weight:600;text-align:right;background:#fff;-moz-appearance:textfield"
+          onblur="updateInstWithholdingRate('${i.id}',this.value)"
+          onkeydown="if(event.key==='Enter')this.blur()"
+          title="Withholding rate for ${i.ticker}">%
+      </span>
+      <span class="num">${feur(gross,2)}</span>
+      <span class="num tr">&minus;${feur(tax,2)}</span>
+      <span class="num tg fw7">${feur(net,2)}</span>
+    </div>`;
+  });
+  const totalDivGross=divInsts.reduce((s,i)=>s+(divs[i.id]||0),0);
+  const totalDivTax=divInsts.reduce((s,i)=>{
+    const r=i.withholdingRate!==undefined&&i.withholdingRate!==null?i.withholdingRate/100:globalWHRate;
+    return s+(divs[i.id]||0)*r;
+  },0);
+  document.getElementById('taxDivTable').innerHTML=`
+    <div class="tax-card">
+      <div class="tax-hdr" style="display:grid;grid-template-columns:2fr 90px 1fr 1fr 1fr;gap:8px">
+        <span>Instrument</span><span class="num">Rate ✏️</span><span class="num">Gross</span><span class="num">Withheld</span><span class="num">Net</span>
+      </div>
+      ${divRows.length?divRows.join(''):`<div style="padding:20px;text-align:center;color:var(--txt2);font-size:13px">No dividend transactions yet. Add them via ＋ Add Transaction → Dividend / Distribution.</div>`}
+      ${divRows.length?`<div class="tax-row fw7" style="grid-template-columns:2fr 90px 1fr 1fr 1fr;background:var(--neu-l)">
+        <span>Total</span><span></span>
+        <span class="num">${feur(totalDivGross,2)}</span>
+        <span class="num tr">&minus;${feur(totalDivTax,2)}</span>
+        <span class="num tg">${feur(totalDivGross-totalDivTax,2)}</span>
+      </div>`:''}
+    </div>`;
+
+  // ── TER ──
+  const etfs=DB.instruments.filter(i=>i.category==='ETF'&&i.ter>0&&pos[i.id]);
+  const terRows=etfs.map(i=>{
+    const p=pos[i.id],curVal=p.qty*(DB.prices[i.id]||0);
+    const annualCost=curVal*i.ter/100;
+    return`<div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+      <span><span class="fw7">${i.name}</span> <span class="itag it-etf">${i.ticker}</span></span>
+      <span class="num">${i.ter}%</span>
+      <span class="num">${feur(curVal,0)}</span>
+      <span><span class="badge-acc${i.distType==='Dist'?' style="background:#F0FDF4;color:#16A34A"':''}">${i.distType||'—'}</span></span>
+      <span class="num tr fw7">&minus;${feur(annualCost,0)}/yr</span>
+    </div>`;
+  });
+  const totalTerCost=etfs.reduce((s,i)=>{const p=pos[i.id],curVal=p.qty*(DB.prices[i.id]||0);return s+curVal*i.ter/100;},0);
+  document.getElementById('taxTerTable').innerHTML=`
+    <div class="tax-card">
+      <div class="tax-hdr" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:8px">
+        <span>ETF</span><span class="num">TER</span><span class="num">Position Value</span><span>Type</span><span class="num">Annual Cost</span>
+      </div>
+      ${terRows.join('')}
+      <div class="tax-row fw7" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;background:var(--neu-l)">
+        <span>Total Annual TER Cost</span><span></span><span></span><span></span>
+        <span class="num tr">&minus;${feur(totalTerCost,0)}/yr</span>
+      </div>
+    </div>`;
+}
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded',()=>{
+  loadDB();
+  // Snapshot current prices as baseline
+  DB.instruments.forEach(i=>{ if(DB.prices[i.id]) snapshotPrice(i.id, DB.prices[i.id]); });
+  saveDB();
+  const cats=computeCategories();
+  if(cats.length) activeCategory=cats[0].label;
+  refreshAll();
+  document.getElementById('lastUpd').textContent='Last updated: '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  // Show onboarding wizard on first launch (empty DB)
+  if(DB.instruments.length===0) showWizard();
+});
+// ── SAVE ON CLOSE / NAVIGATE AWAY ──
+window.addEventListener('beforeunload', ()=>{ saveDB(); });
+window.addEventListener('pagehide', ()=>{ saveDB(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') saveDB(); });
+</script>
+</body>
+</html>
