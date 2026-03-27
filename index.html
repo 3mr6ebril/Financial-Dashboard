@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Amr · Financial Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -41,6 +42,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .biz-tab{padding:9px 20px;font-size:13px;font-weight:500;color:var(--txt2);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s}
 .biz-tab:hover{color:var(--pri)}
 .biz-tab.active{color:var(--pri);border-bottom-color:var(--pri);font-weight:700}
+.drag-handle{color:var(--bdr);cursor:grab;font-size:18px;line-height:1;padding-right:8px;user-select:none;flex-shrink:0;transition:color .15s}
+.drag-handle:hover{color:var(--txt2)}
+.drag-handle:active{cursor:grabbing}
+.sortable-ghost{opacity:.3;background:var(--neu-l);border-radius:var(--rs)}
+.biz-period-chip{padding:4px 11px;border-radius:20px;border:1.5px solid var(--bdr);background:none;font-size:11px;font-weight:600;color:var(--txt2);cursor:pointer;transition:all .15s}
+.biz-period-chip.active{background:var(--pri);color:#fff;border-color:var(--pri)}
+.biz-period-chip:hover:not(.active){border-color:var(--pri);color:var(--pri)}
 .biz-entry-row{display:grid;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bdr);align-items:center;font-size:13px}
 .biz-entry-row:last-child{border-bottom:none}
 .biz-entry-row:hover{background:var(--neu-l)}
@@ -326,9 +334,30 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     <div class="tab ovw-ptab locked" id="ovw-6m" onclick="periodLockedNotice()">6 Months 🔒</div>
     <div class="tab ovw-ptab locked" id="ovw-annual" onclick="periodLockedNotice()">Annual 🔒</div>
   </div>
+  <!-- Rearrangeable sections wrapper -->
+  <div id="ovwSections">
+  <!-- Section 1: Business Income with period filter -->
+  <div class="section" id="s-biz-income">
+    <div class="sec-hdr" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <div class="sec-ttl"><span class="sec-n">1</span>Business Income</div>
+      </div>
+      <a class="lnk" onclick="switchTabByName('biz')">View detail →</a>
+    </div>
+    <div id="bizIncomeCards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px"></div>
+    <div class="card" style="padding:16px 16px 12px">
+      <div class="chart-ttl">Revenue vs Costs vs Net Profit by Business</div>
+      <div style="position:relative;height:200px"><canvas id="bizIncomeChart"></canvas></div>
+    </div>
+  </div>
+
   <div class="section" id="s-alloc">
     <div class="sec-hdr">
-      <div class="sec-ttl"><span class="sec-n">2</span>Asset Allocation</div>
+      <div style="display:flex;align-items:center">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <div class="sec-ttl"><span class="sec-n">2</span>Asset Allocation</div>
+      </div>
       <a class="lnk" onclick="switchTabByName('holdings')">View all holdings →</a>
     </div>
     <div class="g g2">
@@ -346,14 +375,20 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   </div>
   <div class="section" id="s-cats">
     <div class="sec-hdr">
-      <div class="sec-ttl"><span class="sec-n">3</span>Category Performance</div>
+      <div style="display:flex;align-items:center">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <div class="sec-ttl"><span class="sec-n">3</span>Category Performance</div>
+      </div>
       <span class="t2" style="font-size:12px">Click a card to open Holdings →</span>
     </div>
     <div class="g g5" id="catGrid"></div>
   </div>
   <div class="section" id="s-sectors">
     <div class="sec-hdr">
-      <div class="sec-ttl"><span class="sec-n">4</span>Sector &amp; Region Breakdown</div>
+      <div style="display:flex;align-items:center">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <div class="sec-ttl"><span class="sec-n">4</span>Sector &amp; Region Breakdown</div>
+      </div>
       <span class="t2" style="font-size:12px">👆 Click to filter Holdings</span>
     </div>
     <div class="g g3">
@@ -372,7 +407,10 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   </div>
   <div class="section" id="s-nwhistory">
     <div class="sec-hdr">
-      <div class="sec-ttl"><span class="sec-n">5</span>Net Worth Over Time</div>
+      <div style="display:flex;align-items:center">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <div class="sec-ttl"><span class="sec-n">5</span>Net Worth Over Time</div>
+      </div>
       <span class="t2" style="font-size:12px" id="nwHistoryMeta">Auto-snapshot · 1 data point per day</span>
     </div>
     <div class="card" id="nwHistoryCard">
@@ -400,6 +438,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       </div>
     </div>
   </div>
+  </div><!-- /ovwSections -->
 </div>
 
 <!-- TAB: HOLDINGS -->
@@ -1247,7 +1286,8 @@ function getDefaults(){
     transition:JSON.parse(JSON.stringify(DEFAULT_TRANSITION)),
     settings:{currency:'€',country:''},
     netWorthHistory:[],
-    businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES))
+    businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES)),
+    sectionOrder:['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory']
   };
 }
 function loadDB(){
@@ -1273,6 +1313,7 @@ function loadDB(){
         if(!DB.settings) DB.settings={currency:'€',country:''};
         if(!DB.netWorthHistory) DB.netWorthHistory=[];
         if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
+        if(!DB.sectionOrder) DB.sectionOrder=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
         // biz3 (Self Trading) is Box 3 — remove if it has no entries
         DB.businesses=DB.businesses.filter(b=>b.id!=='biz3'||b.entries.length>0);
         if(!DB.lastPriceUpdateDate){
@@ -1614,6 +1655,7 @@ function importDB(event){
       if(!DB.settings) DB.settings={currency:'€',country:''};
       if(!DB.netWorthHistory) DB.netWorthHistory=[];
       if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
+      if(!DB.sectionOrder) DB.sectionOrder=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
       if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
       saveDB();
       const cats=computeCategories();
@@ -2316,6 +2358,8 @@ function setPeriod(p,el){
     const match=document.querySelector(`.ovw-ptab[data-p="${p}"]`);
     if(match) match.classList.add('active');
   }
+  bizIncomePeriod=p;
+  renderBizIncomeOverview();
 }
 function updatePeriodMenuLocks(){
   // Compute date span from priceHistory of non-Cash instruments only
@@ -2616,12 +2660,31 @@ let _debounceTimer=null;
 function debounce(fn,ms){ return(...args)=>{ clearTimeout(_debounceTimer); _debounceTimer=setTimeout(()=>fn(...args),ms); }; }
 
 // ── FULL REFRESH ──
+// ── SECTION REORDER ──
+const DEFAULT_SECTION_ORDER=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
+function applySectionOrder(){
+  const container=document.getElementById('ovwSections');
+  if(!container) return;
+  const order=DB.sectionOrder||DEFAULT_SECTION_ORDER;
+  order.forEach(id=>{const el=document.getElementById(id);if(el) container.appendChild(el);});
+  renumberSections();
+}
+function renumberSections(){
+  const container=document.getElementById('ovwSections');
+  if(!container) return;
+  [...container.children].forEach((sec,i)=>{
+    const n=sec.querySelector('.sec-n');
+    if(n) n.textContent=i+1;
+  });
+}
+
 function refreshAll(){
   const cats=computeCategories();
   renderKPIs(cats); renderAlloc(cats); renderCatCards(cats);
   renderSectorRegion(); renderSectorBreakdown(); renderHoldingsTabs(cats); renderHoldingsTable(cats);
   rebuildCashFlow();
   renderNWChart(cats);
+  renderBizIncomeOverview();
   updatePeriodMenuLocks();
 }
 
@@ -2874,6 +2937,91 @@ function renderTaxTab(){
 }
 
 // ── BUSINESS MIX ──
+// ── BUSINESS INCOME OVERVIEW (Overview tab section 1) ──
+let bizIncomePeriod='all';
+function getBizDateRange(period){
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const today=fmt(now);
+  if(period==='all') return{start:'2000-01-01',end:'2099-12-31'};
+  if(period==='annual') return{start:`${now.getFullYear()}-01-01`,end:today};
+  if(period==='monthly') return{start:`${now.getFullYear()}-${pad(now.getMonth()+1)}-01`,end:today};
+  if(period==='quarterly'){const q=Math.floor(now.getMonth()/3);return{start:`${now.getFullYear()}-${pad(q*3+1)}-01`,end:today};}
+  if(period==='weekly'){const d=new Date(now);d.setDate(d.getDate()-((d.getDay()+6)%7));return{start:fmt(d),end:today};}
+  if(period==='6m'){const d=new Date(now);d.setMonth(d.getMonth()-6);return{start:fmt(d),end:today};}
+  return{start:'2000-01-01',end:'2099-12-31'};
+}
+function getBizPLForRange(bizId,start,end){
+  const biz=(DB.businesses||[]).find(b=>b.id===bizId);
+  if(!biz) return{revenue:0,expenses:0,profit:0};
+  const entries=biz.entries.filter(e=>e.date>=start&&e.date<=end);
+  const revenue=entries.filter(e=>e.type==='revenue').reduce((s,e)=>s+e.amount,0);
+  const expenses=entries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+  return{revenue,expenses,profit:revenue-expenses};
+}
+function getTradingPLForRange(start,end){
+  const txs=[...DB.transactions].sort((a,b)=>a.date.localeCompare(b.date));
+  const pos={};let dividends=0,realizedNet=0,fees=0;
+  txs.forEach(tx=>{
+    if(!pos[tx.iid]) pos[tx.iid]={qty:0,cost:0};
+    const p=pos[tx.iid];
+    const inRange=tx.date>=start&&tx.date<=end;
+    if(tx.type==='buy'){p.cost+=tx.qty*tx.price+(tx.fees||0);p.qty+=tx.qty;if(inRange)fees+=(tx.fees||0);}
+    else if(tx.type==='sell'){const avg=p.qty>0?p.cost/p.qty:0;const gain=tx.qty*tx.price-tx.qty*avg-(tx.fees||0);p.cost-=avg*tx.qty;p.qty-=tx.qty;if(inRange)realizedNet+=gain;}
+    else if(tx.type==='dividend'&&inRange){dividends+=(tx.qty||1)*(tx.price||0);}
+  });
+  return{revenue:dividends+Math.max(0,realizedNet),expenses:fees+Math.max(0,-realizedNet),profit:dividends+realizedNet-fees,dividends,realizedNet,fees};
+}
+function renderBizIncomeOverview(){
+  const cardsEl=document.getElementById('bizIncomeCards');
+  if(!cardsEl) return;
+  const{start,end}=getBizDateRange(bizIncomePeriod);
+  let totalRev=0,totalCost=0,totalNet=0;
+  const bizData=[];
+  (DB.businesses||[]).forEach(biz=>{
+    const p=getBizPLForRange(biz.id,start,end);
+    totalRev+=p.revenue;totalCost+=p.expenses;totalNet+=p.profit;
+    bizData.push({name:biz.name,icon:biz.icon,color:biz.color,pl:p});
+  });
+  const tpl=getTradingPLForRange(start,end);
+  totalRev+=tpl.revenue;totalCost+=tpl.expenses;totalNet+=tpl.profit;
+  bizData.push({name:'Self Trading',icon:'📈',color:'#F59E0B',pl:{revenue:tpl.revenue,expenses:tpl.expenses,profit:tpl.profit},badge:'Box 3'});
+  let html='';
+  bizData.forEach(b=>{
+    html+=`<div class="card" style="border-left:3px solid ${b.color}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:20px">${b.icon}</span>
+        <div>
+          <div style="font-weight:700;font-size:13px">${b.name}</div>
+          ${b.badge?`<div style="font-size:10px;color:var(--txt2)">${b.badge}</div>`:''}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">
+        <div><div style="color:var(--txt2);font-size:10px;margin-bottom:2px">Revenue</div><div style="font-weight:700;font-size:13px;color:var(--ok)">${feur(b.pl.revenue)}</div></div>
+        <div><div style="color:var(--txt2);font-size:10px;margin-bottom:2px">Costs</div><div style="font-weight:700;font-size:13px;color:var(--err)">${feur(b.pl.expenses)}</div></div>
+        <div><div style="color:var(--txt2);font-size:10px;margin-bottom:2px">Net</div><div style="font-weight:700;font-size:13px;color:${b.pl.profit>=0?'var(--pri)':'var(--err)'}">${b.pl.profit>=0?'+':''}${feur(b.pl.profit)}</div></div>
+      </div>
+    </div>`;
+  });
+  cardsEl.innerHTML=html;
+  const labels=bizData.map(b=>b.icon+' '+b.name);
+  safeDestroy('bizIncomeChart');
+  charts.bizIncome=new Chart(document.getElementById('bizIncomeChart'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Revenue',data:bizData.map(b=>b.pl.revenue),backgroundColor:'#10B98133',borderColor:'#10B981',borderWidth:1.5,borderRadius:4},
+      {label:'Costs',data:bizData.map(b=>b.pl.expenses),backgroundColor:'#EF444433',borderColor:'#EF4444',borderWidth:1.5,borderRadius:4},
+      {label:'Net Profit',data:bizData.map(b=>b.pl.profit),backgroundColor:bizData.map(b=>b.pl.profit>=0?'#6366F133':'#EF444433'),borderColor:bizData.map(b=>b.pl.profit>=0?'#6366F1':'#EF4444'),borderWidth:1.5,borderRadius:4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'top',labels:{font:{size:10},boxWidth:12,padding:8}},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${feur(ctx.raw)}`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(Math.abs(v)/1000)+'K',font:{size:9}}}}
+    }
+  });
+}
+
 function getTradingPL(year){
   // Revenue = dividends YTD + realized gains from sells YTD
   // Expenses = trading fees YTD + realized losses YTD
@@ -3190,6 +3338,7 @@ async function gistFetch(){
     if(!DB.settings) DB.settings={currency:'€',country:''};
     if(!DB.netWorthHistory) DB.netWorthHistory=[];
     if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
+    if(!DB.sectionOrder) DB.sectionOrder=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
     if(!DB.transition) DB.transition=JSON.parse(JSON.stringify(DEFAULT_TRANSITION));
     if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
     if(!DB.priceHistory) DB.priceHistory={};
@@ -3275,7 +3424,22 @@ window.addEventListener('DOMContentLoaded',()=>{
   try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
   const cats=computeCategories();
   if(cats.length) activeCategory=cats[0].label;
+  applySectionOrder();
   refreshAll();
+  // Init drag-to-reorder for Overview sections
+  const ovwSortEl=document.getElementById('ovwSections');
+  if(ovwSortEl&&typeof Sortable!=='undefined'){
+    Sortable.create(ovwSortEl,{
+      handle:'.drag-handle',
+      animation:150,
+      ghostClass:'sortable-ghost',
+      onEnd(){
+        DB.sectionOrder=[...ovwSortEl.children].map(el=>el.id);
+        renumberSections();
+        saveDB();
+      }
+    });
+  }
   // Daily net worth snapshot (must be after refreshAll so prices are current)
   snapshotNetWorth(computeCategories());
   try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
@@ -3288,7 +3452,7 @@ window.addEventListener('DOMContentLoaded',()=>{
       if(fetched){
         const cats2=computeCategories();
         if(cats2.length) activeCategory=cats2[0].label;
-        refreshAll(); loadTransitionSettings();
+        applySectionOrder(); refreshAll(); loadTransitionSettings();
         snapshotNetWorth(computeCategories());
         try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
         document.getElementById('lastUpd').textContent='Last updated: '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
