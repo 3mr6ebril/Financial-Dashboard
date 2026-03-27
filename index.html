@@ -287,6 +287,18 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   .section{break-inside:avoid;margin-bottom:16pt}
   a{color:#000!important;text-decoration:none!important}
 }
+/* ── LEDGER ── */
+.ldg-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--bdr);gap:10px}
+.ldg-row:last-child{border-bottom:none}
+.ldg-lbl{flex:1;font-size:13px;color:var(--txt);line-height:1.3}
+.ldg-lbl small{display:block;font-size:10px;color:var(--txt2);margin-top:1px}
+.ldg-inp{width:110px;text-align:right;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;font-size:13px;background:var(--bg);color:var(--txt)}
+.ldg-auto{width:110px;text-align:right;font-size:13px;font-weight:600;padding-right:2px;flex-shrink:0}
+.ldg-total-row{display:flex;align-items:center;padding:10px 0 4px;font-weight:700;font-size:14px}
+.ldg-sum-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bdr)}
+.ldg-sum-row:last-child{border-bottom:none}
+.ldg-mon-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
+.ldg-mon-lbl{font-size:22px;font-weight:800;letter-spacing:-.4px;text-align:center}
 </style>
 </head>
 <body>
@@ -316,6 +328,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     <button class="mtab" onclick="switchTab('tax',this)">💰 Tax</button>
     <button class="mtab" onclick="switchTab('biz',this)">💼 Business</button>
     <button class="mtab" onclick="switchTab('balance',this)">⚖️ Balance Sheet</button>
+    <button class="mtab" onclick="switchTab('ledger',this)">📒 Ledger</button>
     <button class="mtab" onclick="switchTab('settings',this)" style="margin-left:auto;border-left:1px solid var(--bdr);padding-left:20px">⚙️ Settings</button>
   </div>
 </header>
@@ -685,6 +698,13 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
             <input class="ts-inp" id="cfg_endproj" type="month" oninput="rebuildCashFlow()">
           </div>
         </div>
+        <div class="g" style="grid-template-columns:1fr;gap:16px;margin-top:12px">
+          <div class="ts-field">
+            <label class="ts-lbl">Expected Monthly Business Income (€) <span class="badge badge-est" id="est_bizPlanIncome">estimated</span></label>
+            <input class="ts-inp" id="cfg_bizPlanIncome" type="number" placeholder="0" oninput="onTransitionInput('bizPlanIncome',this);rebuildCashFlow()">
+            <div style="font-size:10px;color:var(--txt2);margin-top:4px">Added to all phases — makes the Ledger deviation chart compare like-for-like (plan vs actual)</div>
+          </div>
+        </div>
       </div>
 
     <!-- Charts -->
@@ -807,6 +827,31 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           </div>
         </div>
       </div>
+      <!-- BTW Registration -->
+      <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bdr)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div>
+            <div class="ts-lbl" style="margin-bottom:2px">🧾 BTW / VAT Registration</div>
+            <div class="t2" style="font-size:11px">Enable when KOR threshold is exceeded. Enter all business revenue &amp; expenses excl. BTW.</div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600">
+            <input type="checkbox" id="tax_btwEnabled" onchange="saveTaxSettings()" style="width:16px;height:16px;accent-color:var(--pri);cursor:pointer">
+            BTW registered
+          </label>
+        </div>
+        <div id="btwRateFields" style="display:none">
+          <div class="g" style="grid-template-columns:1fr 2fr;gap:16px;align-items:start">
+            <div>
+              <label class="ts-lbl">Standard BTW Rate (%)</label>
+              <input class="ts-inp" type="number" id="tax_btwRate" value="21" min="0" max="100" step="0.1" oninput="saveTaxSettings()" style="margin-top:6px">
+              <div class="t2" style="font-size:11px;margin-top:4px">Standard: 21%. Reduced (9%) for food, books, some services.</div>
+            </div>
+            <div style="padding:12px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:11px;color:#92400E;line-height:1.6">
+              ⚠️ Once BTW-registered you must <strong>file quarterly</strong> (aangifte omzetbelasting). Enter all Business tab revenue &amp; costs <strong>excl. BTW</strong>. The BTW section below shows what you owe to the Belastingdienst each quarter.
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <!-- Box 1 -->
@@ -832,6 +877,22 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       <span class="t2" id="box3SubHdr" style="font-size:12px">Wealth tax on portfolio above the configured allowance</span>
     </div>
     <div id="taxBox3Table"></div>
+  </div>
+  <!-- BTW -->
+  <div class="section" id="taxBTWSection">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">🧾</span>BTW / VAT</div>
+      <span class="t2" style="font-size:12px">Value Added Tax — quarterly remittance to Belastingdienst</span>
+    </div>
+    <div id="taxBTW"></div>
+  </div>
+  <!-- Tax Year Summary -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">📅</span>Tax Year Summary</div>
+      <span class="t2" style="font-size:12px" id="taxYearHdr">Estimated annual tax position · All boxes combined</span>
+    </div>
+    <div id="taxYearSummary"></div>
   </div>
   <!-- Dividend Withholding -->
   <div class="section">
@@ -913,6 +974,49 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     <div class="mftr">
       <button class="btn btn-g" onclick="closeModal('liabilityModal')">Cancel</button>
       <button class="btn btn-p" onclick="saveLiability()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: LEDGER -->
+<div class="tab-content" id="tab-ledger">
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">📒</span>Monthly Ledger</div>
+    </div>
+    <!-- Month navigator -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="ldg-mon-nav">
+        <button class="btn btn-sm" onclick="ledgerPrevMonth()">← Prev</button>
+        <div style="text-align:center">
+          <div class="ldg-mon-lbl" id="ldgMonthLabel">—</div>
+          <div style="font-size:11px;color:var(--txt2);margin-top:3px">Actual income &amp; expenses · Enter net amounts received</div>
+        </div>
+        <button class="btn btn-sm" onclick="ledgerNextMonth()">Next →</button>
+      </div>
+    </div>
+    <!-- Income + Expenses grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+      <div class="card">
+        <div class="card-title">💰 Income</div>
+        <div id="ldgIncomeCard"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">💸 Expenses</div>
+        <div id="ldgExpenseCard"></div>
+      </div>
+    </div>
+    <!-- Summary -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">📊 Month Summary</div>
+      <div id="ldgSummaryCard"></div>
+    </div>
+    <!-- Deviation chart -->
+    <div class="card">
+      <div class="card-title">📈 Actual vs Planned</div>
+      <div class="t2" style="font-size:11px;margin-bottom:12px">Bars = monthly net cash flow (green = surplus, red = burn). Lines = cumulative actual balance vs modelled runway.</div>
+      <canvas id="deviationChart" height="220"></canvas>
+      <div id="ldgChartEmpty" class="t2" style="text-align:center;padding:30px;font-size:13px;display:none">Enter ledger data for at least one month to see the chart.</div>
     </div>
   </div>
 </div>
@@ -1366,6 +1470,7 @@ const DEFAULT_PRICES = {
 };
 const DEFAULT_TRANSITION = {
   phaseName1:'Employment Phase',phaseName2:'Career Gap',phaseName3:'Benefits Phase',
+  bizPlanIncome:0,
   salary:0,exp1:0,sav1:0,enddate:'',
   gstart:'',gend:'',gexp:0,
   wstart:'',ww:0,wexp:0,sav3:0,
@@ -1394,14 +1499,15 @@ function getDefaults(){
     transactions:[],
     prices:{},
     priceHistory:{},
-    taxSettings:{dividendWithholdingRate:15,capitalGainsRate:36,fictitiousReturnRate:6.36,box3Allowance:57000,box1EffectiveRate:0,box2Rate:26.9,entrepreneurDeductionsEnabled:false,zelfstandigenaftrek:2470,startersaftrekEnabled:false,startersaftrek:2123,mkbVrijstelling:12.7,korThreshold:20000},
+    taxSettings:{dividendWithholdingRate:15,capitalGainsRate:36,fictitiousReturnRate:6.36,box3Allowance:57000,box1EffectiveRate:0,box2Rate:26.9,entrepreneurDeductionsEnabled:false,zelfstandigenaftrek:2470,startersaftrekEnabled:false,startersaftrek:2123,mkbVrijstelling:12.7,korThreshold:20000,btwEnabled:false,btwRate:21},
     lastPriceUpdateDate:{},
     transition:JSON.parse(JSON.stringify(DEFAULT_TRANSITION)),
     settings:{currency:'€',country:''},
     netWorthHistory:[],
     liabilities:[],
     businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES)),
-    sectionOrder:['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory']
+    sectionOrder:['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'],
+    ledger:{months:{}}
   };
 }
 function loadDB(){
@@ -1424,11 +1530,14 @@ function loadDB(){
         if(DB.taxSettings.startersaftrek===undefined) DB.taxSettings.startersaftrek=2123;
         if(DB.taxSettings.mkbVrijstelling===undefined) DB.taxSettings.mkbVrijstelling=12.7;
         if(DB.taxSettings.korThreshold===undefined) DB.taxSettings.korThreshold=20000;
+        if(DB.taxSettings.btwEnabled===undefined) DB.taxSettings.btwEnabled=false;
+        if(DB.taxSettings.btwRate===undefined) DB.taxSettings.btwRate=21;
         // Migrate phase names
         if(!DB.transition) DB.transition={};
         if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
         if(!DB.transition.phaseName2) DB.transition.phaseName2='Career Gap';
         if(!DB.transition.phaseName3) DB.transition.phaseName3='Benefits Phase';
+        if(DB.transition.bizPlanIncome===undefined) DB.transition.bizPlanIncome=0;
         // Migrate settings
         if(!DB.settings) DB.settings={currency:'€',country:''};
         if(!DB.netWorthHistory) DB.netWorthHistory=[];
@@ -1437,6 +1546,7 @@ function loadDB(){
         if(!DB.sectionOrder) DB.sectionOrder=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
         // Ensure biz3 (Self Trading) always exists — for manual entry support alongside auto-calc
         if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
+        if(!DB.ledger) DB.ledger={months:{}};
         if(!DB.lastPriceUpdateDate){
           // First-time migration: initialise tracking dates to today so no immediate stale warnings
           DB.lastPriceUpdateDate={};
@@ -1775,10 +1885,13 @@ function importDB(event){
       if(DB.taxSettings.startersaftrek===undefined) DB.taxSettings.startersaftrek=2123;
       if(DB.taxSettings.mkbVrijstelling===undefined) DB.taxSettings.mkbVrijstelling=12.7;
       if(DB.taxSettings.korThreshold===undefined) DB.taxSettings.korThreshold=20000;
+      if(DB.taxSettings.btwEnabled===undefined) DB.taxSettings.btwEnabled=false;
+      if(DB.taxSettings.btwRate===undefined) DB.taxSettings.btwRate=21;
       if(!DB.transition) DB.transition={};
       if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
       if(!DB.transition.phaseName2) DB.transition.phaseName2='Career Gap';
       if(!DB.transition.phaseName3) DB.transition.phaseName3='Benefits Phase';
+      if(DB.transition.bizPlanIncome===undefined) DB.transition.bizPlanIncome=0;
       if(!DB.settings) DB.settings={currency:'€',country:''};
       if(!DB.netWorthHistory) DB.netWorthHistory=[];
       if(!DB.liabilities) DB.liabilities=[];
@@ -1786,6 +1899,7 @@ function importDB(event){
       if(!DB.sectionOrder) DB.sectionOrder=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
       if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
       if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
+      if(!DB.ledger) DB.ledger={months:{}};
       saveDB();
       const cats=computeCategories();
       if(cats.length) activeCategory=cats[0].label;
@@ -2248,7 +2362,7 @@ function refreshPhaseLabels(){
 }
 function loadTransitionSettings(){
   const t=DB.transition;
-  ['salary','exp1','sav1','gexp','ww','wexp','sav3','buf','severance','leaveHours','leaveHoursRate','wwDuration'].forEach(k=>{
+  ['salary','exp1','sav1','gexp','ww','wexp','sav3','buf','severance','leaveHours','leaveHoursRate','wwDuration','bizPlanIncome'].forEach(k=>{
     const el=document.getElementById('cfg_'+k); if(el) el.value=t[k]||0;
   });
   ['enddate','gstart','gend','wstart','endproj','severanceMonth','leaveHoursMonth'].forEach(k=>{
@@ -2298,6 +2412,7 @@ function buildCFData(){
       if(t.wwDuration>0&&wwCount>=t.wwDuration){ income=0; exp=-t.wexp; phase='post-ww'; }
       else{ income=t.ww; exp=-t.wexp; phase='ww'; wwCount++; }
     }
+    income+=(t.bizPlanIncome||0);
     rows.push({m:fmtM(cur),mRaw:cur,income,exp,phase});
     cur=addM(cur,1);
   }
@@ -2314,7 +2429,7 @@ function buildSavingsProjection(cfData){
     if(leaveHoursPayout>0&&t.leaveHoursMonth&&row.mRaw===t.leaveHoursMonth) oneTime+=leaveHoursPayout;
     bal+=oneTime;
     const sav=row.phase==='employed'?t.sav1:row.phase==='ww'?t.sav3:0;
-    bal+=sav;
+    bal+=sav+(t.bizPlanIncome||0);
     return{m:row.m,v:+bal.toFixed(0),spike:oneTime>0};
   });
 }
@@ -2443,19 +2558,21 @@ function switchTab(name, btn){
   if(name==='tax') renderTaxTab();
   if(name==='biz') renderBizTab();
   if(name==='balance') renderBalanceSheet();
+  if(name==='ledger') renderLedger();
 }
 function switchTabByName(name){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   document.querySelectorAll('.mtab').forEach(t=>{
-    if((name==='overview'&&t.textContent.includes('Overview'))||(name==='holdings'&&t.textContent.includes('Holdings'))||(name==='transition'&&t.textContent.includes('Cash Flow'))||(name==='tax'&&t.textContent.includes('Tax'))||(name==='biz'&&t.textContent.includes('Business'))||(name==='balance'&&t.textContent.includes('Balance'))||(name==='settings'&&t.textContent.includes('Settings')))
+    if((name==='overview'&&t.textContent.includes('Overview'))||(name==='holdings'&&t.textContent.includes('Holdings'))||(name==='transition'&&t.textContent.includes('Cash Flow'))||(name==='tax'&&t.textContent.includes('Tax'))||(name==='biz'&&t.textContent.includes('Business'))||(name==='balance'&&t.textContent.includes('Balance'))||(name==='ledger'&&t.textContent.includes('Ledger'))||(name==='settings'&&t.textContent.includes('Settings')))
       t.classList.add('active');
   });
   if(name==='transition') loadTransitionSettings();
   if(name==='tax') renderTaxTab();
   if(name==='biz') renderBizTab();
   if(name==='balance') renderBalanceSheet();
+  if(name==='ledger') renderLedger();
 }
 function jumpToHoldings(cat){
   activeCategory=cat; activeSectorFilter=null; activeRegionFilter=null;
@@ -2881,7 +2998,9 @@ function saveTaxSettings(){
   const starterDed=parseFloat(document.getElementById('tax_starterDed')?.value)||2123;
   const mkbPct=parseFloat(document.getElementById('tax_mkbPct')?.value)||12.7;
   const korThr=parseFloat(document.getElementById('tax_korThreshold')?.value)||20000;
-  DB.taxSettings={dividendWithholdingRate:dr,capitalGainsRate:cr,fictitiousReturnRate:fr,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2,entrepreneurDeductionsEnabled:zzpEnabled,zelfstandigenaftrek:zzpDed,startersaftrekEnabled:starterEnabled,startersaftrek:starterDed,mkbVrijstelling:mkbPct,korThreshold:korThr};
+  const btwEnabled=document.getElementById('tax_btwEnabled')?.checked||false;
+  const btwRate=parseFloat(document.getElementById('tax_btwRate')?.value)||21;
+  DB.taxSettings={dividendWithholdingRate:dr,capitalGainsRate:cr,fictitiousReturnRate:fr,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2,entrepreneurDeductionsEnabled:zzpEnabled,zelfstandigenaftrek:zzpDed,startersaftrekEnabled:starterEnabled,startersaftrek:starterDed,mkbVrijstelling:mkbPct,korThreshold:korThr,btwEnabled,btwRate};
   saveDB(); renderTaxTab(); refreshAll();
 }
 function renderTaxTab(){
@@ -2917,6 +3036,12 @@ function renderTaxTab(){
   if(starterDedEl) starterDedEl.value=DB.taxSettings?.startersaftrek??2123;
   if(mkbPctEl) mkbPctEl.value=DB.taxSettings?.mkbVrijstelling??12.7;
   if(korThrEl) korThrEl.value=DB.taxSettings?.korThreshold??20000;
+  const btwEnabledEl=document.getElementById('tax_btwEnabled');
+  const btwRateEl=document.getElementById('tax_btwRate');
+  const btwRateFields=document.getElementById('btwRateFields');
+  if(btwEnabledEl) btwEnabledEl.checked=DB.taxSettings?.btwEnabled||false;
+  if(btwRateEl) btwRateEl.value=DB.taxSettings?.btwRate??21;
+  if(btwRateFields) btwRateFields.style.display=(DB.taxSettings?.btwEnabled)?'block':'none';
 
   // ── BOX 1 ──
   const box1Income=calcBox1Income(currentYear);
@@ -3064,6 +3189,106 @@ function renderTaxTab(){
       <div style="margin-top:12px;padding:12px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:12px;color:#92400E">
         ⚠️ Estimate based on a ${(fictitiousReturnRate*100).toFixed(2)}% fictitious return × ${(box3Rate*100).toFixed(0)}% wealth tax rate, with a €${fmt(freeAllowance)} tax-free allowance. Rates are editable above. Consult a tax advisor for your jurisdiction.
       </div>
+    </div>`;
+
+  // ── BTW / VAT ──
+  const ts2=DB.taxSettings||{};
+  const btwOn=ts2.btwEnabled||false;
+  const btwR=(ts2.btwRate||21)/100;
+  const box1BizRevYear=box1Bizs.reduce((s,biz)=>s+getBizPL(biz.id,currentYear).revenue,0);
+  const box1BizExpYear=box1Bizs.reduce((s,biz)=>s+getBizPL(biz.id,currentYear).expenses,0);
+  const btwCollected=btwOn?box1BizRevYear*btwR:0;
+  const btwPaid=btwOn?box1BizExpYear*btwR:0;
+  const btwNet=btwCollected-btwPaid;
+  const btwQ=btwNet/4;
+  const taxBTWEl=document.getElementById('taxBTW');
+  if(taxBTWEl){
+    if(!btwOn){
+      taxBTWEl.innerHTML=`<div class="tax-card" style="border:1.5px dashed var(--bdr)">
+        <div style="display:flex;align-items:center;gap:16px;padding:6px 0">
+          <div style="font-size:32px">🧾</div>
+          <div style="flex:1">
+            <div class="fw7" style="font-size:14px;color:var(--txt2)">BTW exempt — KOR active</div>
+            <div style="font-size:12px;color:var(--txt2);margin-top:4px">You are currently under the KOR threshold (€${fmt(ts2.korThreshold||20000)}) and exempt from charging or remitting VAT. Enable BTW registration in Tax Settings when your revenue exceeds the threshold.</div>
+          </div>
+        </div>
+      </div>`;
+    } else {
+      taxBTWEl.innerHTML=`<div class="tax-card">
+        <div class="tax-hdr" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px">
+          <span>BTW Flow</span><span class="num">Rate</span><span class="num">Base (excl.)</span><span class="num">Amount</span>
+        </div>
+        <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+          <span class="fw6">BTW Collected (on revenue)</span>
+          <span class="num">${(btwR*100).toFixed(0)}%</span>
+          <span class="num">${feur(box1BizRevYear)}</span>
+          <span class="num fw7 tg">+${feur(btwCollected)}</span>
+        </div>
+        <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+          <span class="fw6">BTW Paid (on expenses)</span>
+          <span class="num">${(btwR*100).toFixed(0)}%</span>
+          <span class="num">${feur(box1BizExpYear)}</span>
+          <span class="num fw7 tg">−${feur(btwPaid)}</span>
+        </div>
+        <div class="tax-row fw7" style="grid-template-columns:2fr 1fr 1fr 1fr;background:var(${btwNet>=0?'--err-l':'--ok-l'})">
+          <span style="color:var(${btwNet>=0?'--err':'--ok'})">Net BTW to Remit (annual)</span><span></span><span></span>
+          <span class="num ${btwNet>=0?'tr':'tg'}">${feur(btwNet)}</span>
+        </div>
+        <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:var(--neu-l)">
+          <span class="fw6">Quarterly Aangifte (÷ 4)</span><span></span><span></span>
+          <span class="num fw7">${feur(btwQ)}</span>
+        </div>
+        <div style="margin-top:10px;padding:10px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:11px;color:#92400E">
+          ⚠️ File quarterly via <strong>Mijn Belastingdienst Zakelijk</strong>. Due dates: April 30, July 31, October 31, January 31. These figures are based on Business tab entries only — ensure revenue and expenses are entered excl. BTW.
+        </div>
+      </div>`;
+    }
+  }
+
+  // ── TAX YEAR SUMMARY ──
+  const divEntries=DB.instruments.filter(i=>divs[i.id]>0);
+  const totalDivWHT=divEntries.reduce((s,i)=>{
+    const r=(i.withholdingRate!==undefined&&i.withholdingRate!==null?i.withholdingRate:(ts2.dividendWithholdingRate||15))/100;
+    return s+divs[i.id]*r;
+  },0);
+  const salaryGross=phases.reduce((s,ph)=>s+ph.months*ph.monthly,0);
+  const payrollWHTEst=salaryGross*(ts2.box1EffectiveRate>0?ts2.box1EffectiveRate/100:(salaryGross>0?calcBox1Tax(salaryGross)/salaryGross:0));
+  const box1NetDue=Math.max(0,box1GrossTax-payrollWHTEst-totalDivWHT);
+  const grandTotal=box1GrossTax+box3Tax+(btwOn?btwNet:0);
+  const grandDue=box1NetDue+box3Tax+(btwOn?btwNet:0);
+  const effectiveRate=box1Income>0?((box1GrossTax/box1Income)*100):0;
+  const voorlopigQ=(box1NetDue+box3Tax)/4;
+  const yr=currentYear;
+  document.getElementById('taxYearHdr').textContent=`Estimated annual tax position · ${yr}`;
+  document.getElementById('taxYearSummary').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div class="tax-card">
+        <div style="font-weight:700;font-size:13px;margin-bottom:12px;color:var(--txt2);text-transform:uppercase;letter-spacing:.05em">Box 1 — Income Tax</div>
+        ${salaryGross>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px"><span>Employment income</span><span class="fw6">${feur(salaryGross)}</span></div>`:''}
+        ${bizProfit!==0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px"><span>Business profit (self-empl.)</span><span class="fw6">${feur(bizProfit)}</span></div>`:''}
+        ${zzpEnabled?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span>ZZP deductions</span><span class="fw6">−${feur(bizProfit-taxableBizIncome)}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:13px;font-weight:700"><span>Taxable Box 1 income</span><span>${feur(box1Income)}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:var(--err)"><span>Gross Box 1 tax</span><span class="fw6 tr">−${feur(box1GrossTax)}</span></div>
+        ${payrollWHTEst>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span>Payroll WHT already paid (est.)</span><span class="fw6">+${feur(payrollWHTEst)}</span></div>`:''}
+        ${totalDivWHT>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span>Dividend WHT credit</span><span class="fw6">+${feur(totalDivWHT)}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;font-weight:800;color:var(--err)"><span>Net Box 1 due</span><span>−${feur(box1NetDue)}</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="tax-card">
+          <div style="font-weight:700;font-size:13px;margin-bottom:12px;color:var(--txt2);text-transform:uppercase;letter-spacing:.05em">Box 3 + ${btwOn?'BTW':'Other'}</div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:var(--err)"><span>Box 3 wealth tax</span><span class="fw6 tr">−${feur(box3Tax)}</span></div>
+          ${btwOn?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:var(--err)"><span>BTW net to remit</span><span class="fw6 tr">−${feur(btwNet)}</span></div>`:''}
+        </div>
+        <div class="tax-card" style="background:var(--err-l);border-color:var(--err)">
+          <div style="font-weight:700;font-size:13px;margin-bottom:12px;color:var(--err);text-transform:uppercase;letter-spacing:.05em">⚡ Bottom Line</div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:14px;font-weight:800;color:var(--err)"><span>Total estimated tax due</span><span>−${feur(grandDue)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px"><span>Effective Box 1 rate</span><span class="fw6">${effectiveRate.toFixed(1)}%</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px"><span>Quarterly voorlopige aanslag (est.)</span><span class="fw7 tr">−${feur(voorlopigQ)}/qtr</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:10px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:11px;color:#92400E">
+      ⚠️ Estimates only. Payroll WHT assumes your effective Box 1 rate. Excludes heffingskortingen (tax credits), personal deductions, and provisional assessments already received. Consult a belastingadviseur for your definitive aanslag.
     </div>`;
 
   // ── DIVIDEND WITHHOLDING (per-instrument) ──
@@ -3362,6 +3587,283 @@ function deleteLiability(id){
   saveDB(); renderBalanceSheet(); renderKPIs(computeCategories());
 }
 
+// ── LEDGER ──
+let _ldgMonth = new Date().toISOString().slice(0,7);
+
+function getLedgerMonth(ym){
+  if(!DB.ledger) DB.ledger={months:{}};
+  if(!DB.ledger.months[ym]) DB.ledger.months[ym]={
+    salary:0,uwv:0,portfolioWithdrawal:0,other:0,
+    expenses:{housing:0,food:0,transport:0,subscriptions:0,insurance:0,other:0},
+    closingCash:null,notes:''
+  };
+  // Ensure expenses sub-object always has all keys (migration safety)
+  const d=DB.ledger.months[ym];
+  if(!d.expenses) d.expenses={};
+  ['housing','food','transport','subscriptions','insurance','other'].forEach(k=>{ if(d.expenses[k]===undefined) d.expenses[k]=0; });
+  return d;
+}
+
+function getLedgerBizNet(ym){
+  // Auto: biz1+biz2 net profit for month (Box 1 businesses only, not Self Trading)
+  const bizs=(DB.businesses||[]).filter(b=>b.id!=='biz3');
+  let net=0;
+  bizs.forEach(biz=>{
+    const entries=(biz.entries||[]).filter(e=>e.date.startsWith(ym));
+    const rev=entries.filter(e=>e.type==='revenue').reduce((s,e)=>s+e.amount,0);
+    const exp=entries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+    net+=rev-exp;
+  });
+  return net;
+}
+
+function getLedgerDividends(ym){
+  // Auto: net dividends in month (after per-instrument withholding tax)
+  const instMap={};
+  DB.instruments.forEach(i=>{ instMap[i.id]=i.withholdingRate??DB.taxSettings?.dividendWithholdingRate??15; });
+  return (DB.transactions||[]).filter(tx=>tx.type==='dividend'&&tx.date.startsWith(ym))
+    .reduce((s,tx)=>{ const whr=(instMap[tx.iid]??15)/100; return s+(tx.qty||1)*(tx.price||0)*(1-whr); },0);
+}
+
+function getLedgerTradingNet(ym){
+  // Auto: realized gains/losses − fees for the month + biz3 manual entries (platform fees etc.)
+  // Dividends excluded — already captured by getLedgerDividends
+  const start=ym+'-01', end=ym+'-31';
+  const tradingCats=new Set(['ETF','Stock','Crypto']);
+  const instCat={}; DB.instruments.forEach(i=>{ instCat[i.id]=i.category; });
+  const txs=[...DB.transactions].sort((a,b)=>a.date.localeCompare(b.date));
+  const pos={};
+  let realizedNet=0, fees=0;
+  txs.forEach(tx=>{
+    if(!tradingCats.has(instCat[tx.iid])) return;
+    if(!pos[tx.iid]) pos[tx.iid]={qty:0,cost:0};
+    const p=pos[tx.iid];
+    const inRange=tx.date>=start&&tx.date<=end;
+    if(tx.type==='buy'){ p.cost+=tx.qty*tx.price+(tx.fees||0); p.qty+=tx.qty; if(inRange) fees+=(tx.fees||0); }
+    else if(tx.type==='sell'){
+      const avg=p.qty>0?p.cost/p.qty:0;
+      const gain=tx.qty*tx.price-tx.qty*avg-(tx.fees||0);
+      p.cost-=avg*tx.qty; p.qty-=tx.qty;
+      if(inRange) realizedNet+=gain;
+    }
+    // dividends: skip — already in getLedgerDividends
+  });
+  const biz3=getBizPLForRange('biz3',start,end);
+  return realizedNet - fees + biz3.profit;
+}
+
+function getPlannedNetForMonth(ym){
+  // Returns planned {income, expense, net} from runway model for given month
+  const rows=buildCFData();
+  const row=rows.find(r=>r.mRaw===ym);
+  if(!row) return null;
+  return{income:row.income,expense:row.exp,net:row.income+row.exp};
+}
+
+function getLedgerTaxProvision(bizNet, tradingNet){
+  // Estimated Box 1 tax on gross business income (biz1+biz2 only — salary/UWV already net, divs/trading = Box 3)
+  const taxable=Math.max(0, bizNet);
+  const rate=DB.taxSettings?.box1EffectiveRate>0
+    ? DB.taxSettings.box1EffectiveRate/100
+    : 0.3748; // default NL ~37.48% bracket
+  return taxable * rate;
+}
+
+function getLedgerActualNetForMonth(ym){
+  const d=getLedgerMonth(ym);
+  const bizNet=getLedgerBizNet(ym);
+  const divs=getLedgerDividends(ym);
+  const tradingNet=getLedgerTradingNet(ym);
+  const taxProvision=getLedgerTaxProvision(bizNet, tradingNet);
+  const totalIncome=(d.salary||0)+(d.uwv||0)+bizNet+divs+tradingNet+(d.portfolioWithdrawal||0)+(d.other||0);
+  const totalExp=Object.values(d.expenses||{}).reduce((s,v)=>s+(v||0),0)+taxProvision;
+  return{totalIncome,totalExp,net:totalIncome-totalExp,bizNet,divs,tradingNet,taxProvision};
+}
+
+function ledgerPrevMonth(){ _ldgMonth=addM(_ldgMonth,-1); renderLedger(); }
+function ledgerNextMonth(){ _ldgMonth=addM(_ldgMonth,1); renderLedger(); }
+
+function updateLedgerCalc(){
+  const ym=_ldgMonth;
+  const d=getLedgerMonth(ym);
+  ['salary','uwv','portfolioWithdrawal','other'].forEach(f=>{ const el=document.getElementById('ldg_'+f); if(el) d[f]=parseFloat(el.value)||0; });
+  ['housing','food','transport','subscriptions','insurance','other'].forEach(f=>{ const el=document.getElementById('ldgx_'+f); if(el) d.expenses[f]=parseFloat(el.value)||0; });
+  const cc=document.getElementById('ldg_closingCash'); if(cc) d.closingCash=cc.value===''?null:parseFloat(cc.value)||0;
+  const nt=document.getElementById('ldg_notes'); if(nt) d.notes=nt.value;
+  saveDB();
+  const{totalIncome,totalExp,net}=getLedgerActualNetForMonth(ym);
+  const ti=document.getElementById('ldg_totalIncome'); if(ti) ti.textContent=feur(totalIncome);
+  const te=document.getElementById('ldg_totalExp'); if(te) te.textContent=feur(totalExp);
+  const nEl=document.getElementById('ldg_net'); if(nEl){nEl.textContent=(net>=0?'+':'')+feur(net);nEl.className=net>=0?'tg':'tr';}
+  const planned=getPlannedNetForMonth(ym);
+  if(planned!==null){
+    const pEl=document.getElementById('ldg_planned'); if(pEl) pEl.textContent=(planned.net>=0?'+':'')+feur(planned.net);
+    const dev=net-planned.net;
+    const dEl=document.getElementById('ldg_deviation'); if(dEl){dEl.textContent=(dev>=0?'+':'')+feur(dev);dEl.className=dev>=0?'tg':'tr';}
+  }
+  renderDeviationChart();
+}
+
+function renderLedger(){
+  const ym=_ldgMonth;
+  const d=getLedgerMonth(ym);
+  const bizNet=getLedgerBizNet(ym);
+  const divs=getLedgerDividends(ym);
+  const{totalIncome,totalExp,net,tradingNet,taxProvision}=getLedgerActualNetForMonth(ym);
+  const planned=getPlannedNetForMonth(ym);
+  const dev=planned!==null?net-planned.net:null;
+
+  document.getElementById('ldgMonthLabel').textContent=fmtM(ym);
+
+  const incRows=[
+    {id:'salary',label:'Salary / Severance',sub:'net received from employer'},
+    {id:'uwv',label:'UWV Benefit',sub:'net benefit received'},
+    {id:'portfolioWithdrawal',label:'Portfolio Withdrawal',sub:'explicit drawdown to fund expenses'},
+    {id:'other',label:'Other Income',sub:'freelance, one-off, gifts'}
+  ];
+  const expRows=[
+    {id:'housing',label:'Housing',sub:'rent, mortgage, utilities'},
+    {id:'food',label:'Food &amp; Groceries',sub:''},
+    {id:'transport',label:'Transport',sub:'fuel, OV, car'},
+    {id:'subscriptions',label:'Subscriptions',sub:'streaming, tools, gym'},
+    {id:'insurance',label:'Insurance',sub:'health, home, liability'},
+    {id:'other',label:'Other Expenses',sub:'miscellaneous'}
+  ];
+
+  const incHTML=
+    incRows.map(r=>`
+      <div class="ldg-row">
+        <div class="ldg-lbl">${r.label}<small>${r.sub}</small></div>
+        <input class="ldg-inp" id="ldg_${r.id}" type="number" min="0" step="0.01" placeholder="0" value="${d[r.id]||''}" oninput="updateLedgerCalc()">
+      </div>`).join('')+
+    `<div class="ldg-row">
+        <div class="ldg-lbl">Business Net (auto)<small>Mushroom Farm + Coaching gross profit</small></div>
+        <div class="ldg-auto ${bizNet>0?'tg':bizNet<0?'tr':''}">${bizNet!==0?(bizNet>=0?'+':'')+feur(bizNet):'—'}</div>
+      </div>
+      <div class="ldg-row">
+        <div class="ldg-lbl">Dividends (auto)<small>net after withholding tax</small></div>
+        <div class="ldg-auto ${divs>0?'tg':''}">${divs>0?feur(divs):'—'}</div>
+      </div>
+      <div class="ldg-row">
+        <div class="ldg-lbl">Self Trading (auto)<small>realized gains/losses − fees + biz3 entries</small></div>
+        <div class="ldg-auto ${tradingNet>0?'tg':tradingNet<0?'tr':''}">${tradingNet!==0?(tradingNet>=0?'+':'')+feur(tradingNet):'—'}</div>
+      </div>
+      <div class="ldg-row ldg-total-row">
+        <div style="flex:1;font-weight:700">Total Income</div>
+        <div style="font-weight:800;font-size:15px" id="ldg_totalIncome">${feur(totalIncome)}</div>
+      </div>`;
+
+  const expHTML=
+    expRows.map(r=>`
+      <div class="ldg-row">
+        <div class="ldg-lbl">${r.label}${r.sub?`<small>${r.sub}</small>`:''}</div>
+        <input class="ldg-inp" id="ldgx_${r.id}" type="number" min="0" step="0.01" placeholder="0" value="${(d.expenses||{})[r.id]||''}" oninput="updateLedgerCalc()">
+      </div>`).join('')+
+    `<div class="ldg-row">
+        <div class="ldg-lbl">Tax Provision (auto)<small>est. Box 1 on biz profit · ${DB.taxSettings?.box1EffectiveRate>0?DB.taxSettings.box1EffectiveRate+'%':'37.48% default'}</small></div>
+        <div class="ldg-auto ${taxProvision>0?'tr':''}">${taxProvision>0?'−'+feur(taxProvision):'—'}</div>
+      </div>
+      <div class="ldg-row ldg-total-row">
+        <div style="flex:1;font-weight:700">Total Expenses (incl. tax)</div>
+        <div style="font-weight:800;font-size:15px" id="ldg_totalExp">${feur(totalExp)}</div>
+      </div>`;
+
+  const summaryHTML=`
+    <div class="ldg-sum-row">
+      <span class="t2" style="font-size:13px">Net Cash Flow</span>
+      <span style="font-size:20px;font-weight:800" id="ldg_net" class="${net>=0?'tg':'tr'}">${(net>=0?'+':'')+feur(net)}</span>
+    </div>
+    ${planned!==null?`
+    <div class="ldg-sum-row">
+      <span class="t2" style="font-size:13px">Model Prediction</span>
+      <span style="font-size:15px;font-weight:600" id="ldg_planned">${(planned.net>=0?'+':'')+feur(planned.net)}</span>
+    </div>
+    <div class="ldg-sum-row">
+      <span class="t2" style="font-size:13px">Deviation vs Plan<small style="display:block;font-size:10px">${dev!==null?Math.abs(dev)<10?'on track':dev>0?'ahead of plan':'behind plan':''}</small></span>
+      <span style="font-size:15px;font-weight:700" id="ldg_deviation" class="${dev!==null&&dev>=0?'tg':'tr'}">${dev!==null?(dev>=0?'+':'')+feur(dev):'—'}</span>
+    </div>`:''
+    }
+    <div class="ldg-sum-row">
+      <div>
+        <span class="t2" style="font-size:13px">Closing Cash Balance</span>
+        <small style="display:block;font-size:10px;color:var(--txt2)">Actual bank balance at month end — reconciliation anchor</small>
+      </div>
+      <input class="ldg-inp" id="ldg_closingCash" type="number" step="0.01" placeholder="—" value="${d.closingCash!==null&&d.closingCash!==undefined?d.closingCash:''}" oninput="updateLedgerCalc()">
+    </div>
+    <div class="ldg-sum-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+      <span class="t2" style="font-size:13px">Notes</span>
+      <textarea id="ldg_notes" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:12px;resize:vertical;min-height:48px" oninput="updateLedgerCalc()" placeholder="Any notes for this month…">${d.notes||''}</textarea>
+    </div>`;
+
+  document.getElementById('ldgIncomeCard').innerHTML=incHTML;
+  document.getElementById('ldgExpenseCard').innerHTML=expHTML;
+  document.getElementById('ldgSummaryCard').innerHTML=summaryHTML;
+  renderDeviationChart();
+}
+
+function renderDeviationChart(){
+  const allMonths=Object.keys(DB.ledger?.months||{}).sort();
+  const emptyEl=document.getElementById('ldgChartEmpty');
+  const ctxEl=document.getElementById('deviationChart');
+  if(allMonths.length===0){
+    safeDestroy('deviationChart');
+    if(emptyEl) emptyEl.style.display='block';
+    if(ctxEl) ctxEl.style.display='none';
+    return;
+  }
+  if(emptyEl) emptyEl.style.display='none';
+  if(ctxEl) ctxEl.style.display='block';
+
+  const cfData=buildCFData();
+  const savProj=buildSavingsProjection(cfData);
+  const planMap={};
+  cfData.forEach((r,i)=>{ planMap[r.mRaw]={net:r.income+r.exp,cumul:savProj[i].v}; });
+
+  const t=DB.transition;
+  let actCumul=t.buf||0;
+  const labels=[],actualNets=[],plannedNets=[],actualCumul=[],plannedCumul=[];
+
+  allMonths.forEach(ym=>{
+    const{net}=getLedgerActualNetForMonth(ym);
+    const plan=planMap[ym]||null;
+    labels.push(fmtM(ym));
+    actualNets.push(net);
+    plannedNets.push(plan?plan.net:null);
+    const d=DB.ledger.months[ym];
+    if(d.closingCash!==null&&d.closingCash!==undefined){ actCumul=d.closingCash; }
+    else { actCumul+=net; }
+    actualCumul.push(+actCumul.toFixed(0));
+    plannedCumul.push(plan?plan.cumul:null);
+  });
+
+  safeDestroy('deviationChart');
+  if(!ctxEl) return;
+  charts.deviation=new Chart(ctxEl,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Actual Net',data:actualNets,backgroundColor:actualNets.map(v=>v>=0?'rgba(16,185,129,0.7)':'rgba(239,68,68,0.7)'),borderColor:actualNets.map(v=>v>=0?'#10B981':'#EF4444'),borderWidth:1,yAxisID:'y',order:2},
+        {label:'Planned Net',type:'bar',data:plannedNets,backgroundColor:'rgba(100,116,139,0.2)',borderColor:'rgba(100,116,139,0.45)',borderWidth:1,yAxisID:'y',order:3},
+        {label:'Actual Balance',data:actualCumul,type:'line',borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.07)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#10B981',fill:false,tension:0.3,yAxisID:'y2',order:0},
+        {label:'Modelled Balance',data:plannedCumul,type:'line',borderDash:[5,4],borderColor:'#6366F1',backgroundColor:'transparent',borderWidth:2,pointRadius:3,pointBackgroundColor:'#6366F1',fill:false,tension:0.3,yAxisID:'y2',order:1}
+      ]
+    },
+    options:{
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y>=0?'':'-'}${feur(Math.abs(c.parsed.y))}`}}
+      },
+      scales:{
+        y:{title:{display:true,text:'Monthly Net (€)',font:{size:11}},grid:{color:'rgba(0,0,0,0.05)'},ticks:{callback:v=>feur(v)}},
+        y2:{position:'right',title:{display:true,text:'Cumulative (€)',font:{size:11}},grid:{drawOnChartArea:false},ticks:{callback:v=>feur(v)}}
+      }
+    }
+  });
+}
+
 function renderBizTab(){
   const year=new Date().getFullYear();
   document.getElementById('bizYearLabel').textContent=year+' YTD';
@@ -3647,6 +4149,8 @@ async function gistFetch(){
     if(DB.taxSettings.startersaftrek===undefined) DB.taxSettings.startersaftrek=2123;
     if(DB.taxSettings.mkbVrijstelling===undefined) DB.taxSettings.mkbVrijstelling=12.7;
     if(DB.taxSettings.korThreshold===undefined) DB.taxSettings.korThreshold=20000;
+    if(DB.taxSettings.btwEnabled===undefined) DB.taxSettings.btwEnabled=false;
+    if(DB.taxSettings.btwRate===undefined) DB.taxSettings.btwRate=21;
     if(!DB.settings) DB.settings={currency:'€',country:''};
     if(!DB.netWorthHistory) DB.netWorthHistory=[];
     if(!DB.liabilities) DB.liabilities=[];
@@ -3654,8 +4158,10 @@ async function gistFetch(){
     if(!DB.sectionOrder) DB.sectionOrder=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
     if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
     if(!DB.transition) DB.transition=JSON.parse(JSON.stringify(DEFAULT_TRANSITION));
+    if(DB.transition.bizPlanIncome===undefined) DB.transition.bizPlanIncome=0;
     if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
     if(!DB.priceHistory) DB.priceHistory={};
+    if(!DB.ledger) DB.ledger={months:{}};
     try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
     const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     setSyncStatus('ok','Synced '+now);
