@@ -37,6 +37,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .pm-item.locked{color:#D1D5DB;cursor:default}
 .pm-item.locked:hover{background:#fff}
 .pm-lock{font-size:10px}
+.sync-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid transparent;cursor:default;white-space:nowrap}
+.sync-idle{background:var(--neu-l);color:var(--neu);border-color:var(--bdr)}
+.sync-pending{background:var(--wrn-l);color:var(--wrn);border-color:#FDE68A}
+.sync-ok{background:var(--ok-l);color:var(--ok);border-color:#BBF7D0}
+.sync-err{background:var(--err-l);color:var(--err);border-color:#FECACA}
 .main-tabs{display:flex;gap:0;border-top:1px solid var(--bdr);margin-top:2px}
 .mtab{padding:10px 22px;font-size:13px;font-weight:500;color:var(--txt2);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px}
 .mtab:hover{color:var(--pri)}
@@ -271,6 +276,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     <div class="brand">
       <h1>💼 Financial Dashboard</h1>
       <span class="upd-badge" id="lastUpd">Last updated: 25 Mar 2026</span>
+      <span id="syncStatusHdr" class="sync-pill sync-idle" title="Cloud sync status" style="cursor:pointer" onclick="switchTabByName('settings')">☁ —</span>
     </div>
     <div class="hdr-right">
       <button class="btn btn-g btn-sm" onclick="openInstModal()">⚙ Instruments</button>
@@ -289,6 +295,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     <button class="mtab" onclick="switchTab('holdings',this)">📋 Holdings</button>
     <button class="mtab" onclick="switchTab('transition',this)">💸 Cash Flow</button>
     <button class="mtab" onclick="switchTab('tax',this)">💰 Tax</button>
+    <button class="mtab" onclick="switchTab('settings',this)">⚙️ Settings</button>
   </div>
 </header>
 
@@ -708,6 +715,63 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   </div>
 </div>
 
+<!-- TAB: SETTINGS -->
+<div class="tab-content" id="tab-settings">
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">☁</span>Cloud Sync</div>
+      <span id="syncStatusBadge" class="sync-pill sync-idle">☁ Not configured</span>
+    </div>
+    <div class="card" style="max-width:820px">
+      <p style="color:var(--txt2);font-size:13px;margin-bottom:20px;line-height:1.7">
+        Sync your dashboard to a <strong>private GitHub Gist</strong> — only you can see it. Once connected, every change auto-saves to the cloud within 2 seconds. Open the same <code style="font-size:12px;background:var(--neu-l);padding:1px 5px;border-radius:4px">https://</code> link on your phone, iPad, or any other device and your data loads automatically.
+      </p>
+
+      <!-- ── NOT CONNECTED ── -->
+      <div id="syncConnectSection">
+        <div style="background:var(--pri-l);border:1px solid #BFDBFE;border-radius:var(--rs);padding:16px;margin-bottom:18px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:var(--pri)">📋 One-time setup — takes about 2 minutes</div>
+          <ol style="color:var(--txt);font-size:13px;line-height:2.2;padding-left:20px">
+            <li>Go to <strong>github.com</strong> → click your avatar (top-right) → <strong>Settings</strong></li>
+            <li>Scroll to the bottom of the left sidebar → <strong>Developer settings</strong></li>
+            <li>Click <strong>Personal access tokens</strong> → <strong>Tokens (classic)</strong></li>
+            <li>Click <strong>Generate new token (classic)</strong></li>
+            <li>Name it <em>"Financial Dashboard"</em>, set expiry to <em>No expiration</em></li>
+            <li>Under <em>Select scopes</em>, check only <strong>✅ gist</strong></li>
+            <li>Click <strong>Generate token</strong> — copy it immediately (it won't show again)</li>
+            <li>Paste it below and click <strong>Connect</strong></li>
+          </ol>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <input id="syncTokenInput" type="password" class="ts-inp" placeholder="Paste your token here (ghp_...)" style="flex:1;min-width:260px;font-family:monospace;font-size:12px;letter-spacing:.03em">
+          <button class="btn btn-p" onclick="connectGist()" style="white-space:nowrap;padding:9px 20px;font-size:13px">☁️ Connect</button>
+        </div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:10px;display:flex;align-items:center;gap:5px">
+          🔒 Your token is stored <strong>only on this device</strong> in localStorage. It is never uploaded anywhere except to GitHub's own API (api.github.com).
+        </div>
+      </div>
+
+      <!-- ── CONNECTED ── -->
+      <div id="syncConnectedSection" style="display:none">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:18px;background:var(--ok-l);border:1px solid #BBF7D0;border-radius:var(--rs);margin-bottom:18px">
+          <div>
+            <div style="font-weight:700;font-size:14px;color:var(--ok);margin-bottom:6px">✅ Cloud sync is active</div>
+            <div style="font-size:12px;color:var(--txt2)">Private Gist ID: <code id="syncGistIdDisplay" style="font-size:11px;background:#fff;padding:2px 7px;border-radius:4px;border:1px solid var(--bdr)">—</code></div>
+            <div id="syncLastSync" style="font-size:12px;color:var(--txt2);margin-top:5px">Last synced: —</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-g btn-sm" onclick="gistPush(true)" style="font-size:12px">🔄 Sync now</button>
+            <button class="btn btn-sm" style="background:var(--err-l);color:var(--err);border:1.5px solid #FECACA;font-size:12px" onclick="disconnectGist()">✕ Disconnect</button>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--txt2);line-height:1.7">
+          <strong>How it works:</strong> Every time you add a transaction, update a price, or change any setting, the data is automatically pushed to your private Gist within 2 seconds. When you open the dashboard on a new device, it pulls the latest version from the cloud before showing anything.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </div><!-- /main -->
 
 <button class="fab" onclick="openModal('txModal')" title="Add Transaction">＋</button>
@@ -1097,7 +1161,7 @@ function loadDB(){
   }catch(e){}
   DB=getDefaults(); saveDB();
 }
-function saveDB(){ try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){} }
+function saveDB(){ try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){} scheduleGistPush(); }
 // ── ONBOARDING WIZARD ──
 let _wizStep=1;
 const _wizTitles=['Set Your Currency & Country','Add Your Investment Instruments','Enter Starting Prices','Configure Your Cash Flow Phases'];
@@ -2023,7 +2087,7 @@ function switchTabByName(name){
   document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   document.querySelectorAll('.mtab').forEach(t=>{
-    if((name==='overview'&&t.textContent.includes('Overview'))||(name==='holdings'&&t.textContent.includes('Holdings'))||(name==='transition'&&t.textContent.includes('Cash Flow'))||(name==='tax'&&t.textContent.includes('Tax')))
+    if((name==='overview'&&t.textContent.includes('Overview'))||(name==='holdings'&&t.textContent.includes('Holdings'))||(name==='transition'&&t.textContent.includes('Cash Flow'))||(name==='tax'&&t.textContent.includes('Tax'))||(name==='settings'&&t.textContent.includes('Settings')))
       t.classList.add('active');
   });
   if(name==='transition') loadTransitionSettings();
@@ -2603,18 +2667,182 @@ function renderTaxTab(){
     </div>`;
 }
 
+// ── GIST CLOUD SYNC ──
+const GIST_TOKEN_KEY='findb_gist_token';
+const GIST_ID_KEY='findb_gist_id';
+let _syncDebounce=null;
+
+function getSyncToken(){return localStorage.getItem(GIST_TOKEN_KEY)||'';}
+function getSyncGistId(){return localStorage.getItem(GIST_ID_KEY)||'';}
+
+function setSyncStatus(status,msg){
+  const icons={ok:'✅',pending:'⏳',error:'❌',idle:'☁'};
+  const labels={ok:'Synced',pending:'Syncing…',error:'Sync error',idle:'Not configured'};
+  const cls={ok:'sync-ok',pending:'sync-pending',error:'sync-err',idle:'sync-idle'};
+  const text=(icons[status]||'☁')+' '+(msg||labels[status]||status);
+  ['syncStatusBadge','syncStatusHdr'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.className=(id==='syncStatusHdr'?'sync-pill ':'sync-pill ')+cls[status];
+    el.textContent=text;
+  });
+}
+
+function scheduleGistPush(){
+  if(!getSyncToken()||!getSyncGistId()) return;
+  clearTimeout(_syncDebounce);
+  _syncDebounce=setTimeout(()=>gistPush(false),2000);
+}
+
+async function gistPush(showNotif){
+  const token=getSyncToken(), gistId=getSyncGistId();
+  if(!token||!gistId) return;
+  setSyncStatus('pending');
+  try{
+    const res=await fetch(`https://api.github.com/gists/${gistId}`,{
+      method:'PATCH',
+      headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+      body:JSON.stringify({files:{'findb.json':{content:JSON.stringify(DB)}}})
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    setSyncStatus('ok','Synced '+now);
+    const lsEl=document.getElementById('syncLastSync');
+    if(lsEl) lsEl.textContent='Last synced: '+new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    if(showNotif) notify('☁️ Data synced to cloud.');
+  }catch(e){
+    setSyncStatus('error','Sync failed');
+    console.error('Gist push failed:',e);
+  }
+}
+
+async function gistFetch(){
+  const token=getSyncToken(), gistId=getSyncGistId();
+  if(!token||!gistId) return false;
+  setSyncStatus('pending','Loading from cloud…');
+  try{
+    const res=await fetch(`https://api.github.com/gists/${gistId}`,{headers:{Authorization:`Bearer ${token}`}});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    const content=data.files?.['findb.json']?.content;
+    if(!content||content==='{}') { setSyncStatus('ok','Connected (no data yet)'); return false; }
+    const parsed=JSON.parse(content);
+    if(!parsed.instruments) { setSyncStatus('ok','Connected'); return false; }
+    DB=parsed;
+    // run migrations
+    if(!DB.taxSettings) DB.taxSettings={dividendWithholdingRate:15,capitalGainsRate:36,fictitiousReturnRate:6.36,box3Allowance:57000,box1EffectiveRate:0,box2Rate:26.9};
+    if(DB.taxSettings.fictitiousReturnRate===undefined) DB.taxSettings.fictitiousReturnRate=6.36;
+    if(DB.taxSettings.box3Allowance===undefined) DB.taxSettings.box3Allowance=57000;
+    if(DB.taxSettings.box1EffectiveRate===undefined) DB.taxSettings.box1EffectiveRate=0;
+    if(DB.taxSettings.box2Rate===undefined) DB.taxSettings.box2Rate=26.9;
+    if(!DB.settings) DB.settings={currency:'€',country:''};
+    if(!DB.transition) DB.transition=JSON.parse(JSON.stringify(DEFAULT_TRANSITION));
+    if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
+    if(!DB.priceHistory) DB.priceHistory={};
+    try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
+    const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    setSyncStatus('ok','Synced '+now);
+    const lsEl=document.getElementById('syncLastSync');
+    if(lsEl) lsEl.textContent='Last synced: '+new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    return true;
+  }catch(e){
+    setSyncStatus('error','Load failed');
+    console.error('Gist fetch failed:',e);
+    return false;
+  }
+}
+
+async function connectGist(){
+  const tokenEl=document.getElementById('syncTokenInput');
+  const token=(tokenEl?.value||'').trim();
+  if(!token){ alert('Please paste your GitHub Personal Access Token first.'); return; }
+  setSyncStatus('pending','Connecting…');
+  try{
+    // validate token
+    const userRes=await fetch('https://api.github.com/user',{headers:{Authorization:`Bearer ${token}`}});
+    if(!userRes.ok) throw new Error('Invalid token — please check and try again.');
+    const user=await userRes.json();
+    let gistId=getSyncGistId();
+    // check if existing gist is still valid
+    if(gistId){
+      const chk=await fetch(`https://api.github.com/gists/${gistId}`,{headers:{Authorization:`Bearer ${token}`}});
+      if(!chk.ok) gistId='';
+    }
+    // create private gist if none
+    if(!gistId){
+      const createRes=await fetch('https://api.github.com/gists',{
+        method:'POST',
+        headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+        body:JSON.stringify({description:'Financial Dashboard Data',public:false,files:{'findb.json':{content:JSON.stringify(DB)}}})
+      });
+      if(!createRes.ok) throw new Error('Could not create Gist — make sure your token has the "gist" scope.');
+      const newGist=await createRes.json();
+      gistId=newGist.id;
+    }
+    localStorage.setItem(GIST_TOKEN_KEY,token);
+    localStorage.setItem(GIST_ID_KEY,gistId);
+    if(tokenEl) tokenEl.value='';
+    updateSyncUI();
+    const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    setSyncStatus('ok','Connected as @'+user.login);
+    notify('☁️ Connected as @'+user.login+'! Data is now syncing automatically.');
+    await gistPush(false);
+  }catch(e){
+    setSyncStatus('error',e.message||'Connection failed');
+    alert('Connection failed:\n\n'+e.message);
+  }
+}
+
+function disconnectGist(){
+  if(!confirm('Disconnect cloud sync?\n\nYour data stays saved locally. You can reconnect anytime.')) return;
+  localStorage.removeItem(GIST_TOKEN_KEY);
+  localStorage.removeItem(GIST_ID_KEY);
+  setSyncStatus('idle');
+  updateSyncUI();
+  notify('Cloud sync disconnected.');
+}
+
+function updateSyncUI(){
+  const connected=!!(getSyncToken()&&getSyncGistId());
+  const cs=document.getElementById('syncConnectSection');
+  const ss=document.getElementById('syncConnectedSection');
+  const gd=document.getElementById('syncGistIdDisplay');
+  if(cs) cs.style.display=connected?'none':'block';
+  if(ss) ss.style.display=connected?'block':'none';
+  if(gd&&connected) gd.textContent=getSyncGistId();
+}
+
 // ── INIT ──
 window.addEventListener('DOMContentLoaded',()=>{
   loadDB();
   // Snapshot current prices as baseline
   DB.instruments.forEach(i=>{ if(DB.prices[i.id]) snapshotPrice(i.id, DB.prices[i.id]); });
-  saveDB();
+  // Don't call saveDB() here so we don't trigger a gist push on every page load
+  try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
   const cats=computeCategories();
   if(cats.length) activeCategory=cats[0].label;
   refreshAll();
   document.getElementById('lastUpd').textContent='Last updated: '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-  // Show onboarding wizard on first launch (empty DB)
-  if(DB.instruments.length===0) showWizard();
+  // ── Sync init ──
+  updateSyncUI();
+  if(getSyncToken()&&getSyncGistId()){
+    setSyncStatus('pending','Loading from cloud…');
+    gistFetch().then(fetched=>{
+      if(fetched){
+        const cats2=computeCategories();
+        if(cats2.length) activeCategory=cats2[0].label;
+        refreshAll(); loadTransitionSettings();
+        document.getElementById('lastUpd').textContent='Last updated: '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+      } else {
+        if(getSyncGistId()) setSyncStatus('ok','Connected');
+      }
+      if(DB.instruments.length===0) showWizard();
+    });
+  } else {
+    setSyncStatus('idle');
+    // Show onboarding wizard on first launch (empty DB)
+    if(DB.instruments.length===0) showWizard();
+  }
 });
 // ── SAVE ON CLOSE / NAVIGATE AWAY ──
 window.addEventListener('beforeunload', ()=>{ saveDB(); });
