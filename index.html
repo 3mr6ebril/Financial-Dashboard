@@ -37,6 +37,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .pm-item.locked{color:#D1D5DB;cursor:default}
 .pm-item.locked:hover{background:#fff}
 .pm-lock{font-size:10px}
+.biz-tabs{display:flex;gap:0;border-bottom:2px solid var(--bdr);margin-bottom:20px}
+.biz-tab{padding:9px 20px;font-size:13px;font-weight:500;color:var(--txt2);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s}
+.biz-tab:hover{color:var(--pri)}
+.biz-tab.active{color:var(--pri);border-bottom-color:var(--pri);font-weight:700}
+.biz-entry-row{display:grid;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bdr);align-items:center;font-size:13px}
+.biz-entry-row:last-child{border-bottom:none}
+.biz-entry-row:hover{background:var(--neu-l)}
+.st-paid{background:#DCFCE7;color:#16A34A;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.st-pending{background:#FEF9C3;color:#92400E;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.st-overdue{background:var(--err-l);color:var(--err);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.st-expense{background:var(--neu-l);color:var(--neu);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
 .sync-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid transparent;cursor:default;white-space:nowrap}
 .sync-idle{background:var(--neu-l);color:var(--neu);border-color:var(--bdr)}
 .sync-pending{background:var(--wrn-l);color:var(--wrn);border-color:#FDE68A}
@@ -295,7 +306,8 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     <button class="mtab" onclick="switchTab('holdings',this)">📋 Holdings</button>
     <button class="mtab" onclick="switchTab('transition',this)">💸 Cash Flow</button>
     <button class="mtab" onclick="switchTab('tax',this)">💰 Tax</button>
-    <button class="mtab" onclick="switchTab('settings',this)">⚙️ Settings</button>
+    <button class="mtab" onclick="switchTab('biz',this)">💼 Business</button>
+    <button class="mtab" onclick="switchTab('settings',this)" style="margin-left:auto;border-left:1px solid var(--bdr);padding-left:20px">⚙️ Settings</button>
   </div>
 </header>
 
@@ -499,6 +511,15 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <div class="cat-val tp" id="leaveHoursVal">—</div>
         <div class="cat-alloc">Payout on departure</div>
       </div>
+    </div>
+
+    <!-- Business Income summary linked to Business tab -->
+    <div class="card" style="margin-bottom:20px;cursor:pointer" onclick="switchTabByName('biz')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="sec-ttl" style="margin:0">💼 Business Income <span style="font-size:11px;font-weight:400;color:var(--txt2)" id="cfBizYear"></span></div>
+        <span style="font-size:11px;color:var(--pri);font-weight:600">→ Business tab</span>
+      </div>
+      <div class="g" style="grid-template-columns:repeat(3,1fr);gap:12px" id="cfBizCards"></div>
     </div>
 
       <!-- Editable Settings -->
@@ -802,6 +823,33 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   </div>
 </div>
 
+<!-- TAB: BUSINESS -->
+<div class="tab-content" id="tab-biz">
+  <!-- Business Summary -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">1</span>Business Overview</div>
+      <span class="t2" style="font-size:12px" id="bizYearLabel"></span>
+    </div>
+    <div class="g g3" id="bizSummaryCards"></div>
+  </div>
+  <!-- Business Detail -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">2</span>P&amp;L Detail</div>
+      <button class="btn btn-p btn-sm" onclick="openBizEntryModal()">＋ Add Entry</button>
+    </div>
+    <div class="card">
+      <div class="biz-tabs" id="bizDetailTabs"></div>
+      <div class="g g3" id="bizKpiRow" style="margin-bottom:20px"></div>
+      <div style="background:var(--neu-l);border-radius:var(--rs);overflow:hidden" id="bizEntriesWrap">
+        <div style="display:grid;gap:8px;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--txt2)" id="bizEntriesHdr"></div>
+        <div id="bizEntriesList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </div><!-- /main -->
 
 <button class="fab" onclick="openModal('txModal')" title="Add Transaction">＋</button>
@@ -907,6 +955,56 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal('pricesModal')">Cancel</button>
       <button class="btn btn-p" onclick="savePrices()">Save &amp; Refresh</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: BUSINESS ENTRY -->
+<div class="overlay" id="bizEntryModal">
+  <div class="modal">
+    <div class="mhdr"><span class="mtitle" id="bizEntryTitle">＋ Add Entry</span><button class="xbtn" onclick="closeModal('bizEntryModal')">✕</button></div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg ffull">
+          <label class="flbl">Business</label>
+          <select class="fsel" id="biz_id"></select>
+        </div>
+        <div class="fg">
+          <label class="flbl">Type *</label>
+          <select class="fsel" id="biz_type" onchange="onBizTypeChange()">
+            <option value="revenue">💰 Revenue</option>
+            <option value="expense">💸 Expense</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="flbl">Date *</label>
+          <input class="finp" type="date" id="biz_date">
+        </div>
+        <div class="fg">
+          <label class="flbl">Amount (€) *</label>
+          <input class="finp" type="number" id="biz_amount" step="0.01" placeholder="0.00">
+        </div>
+        <div class="fg">
+          <label class="flbl">Category</label>
+          <input class="finp" type="text" id="biz_category" placeholder="e.g. Product Sales, Session, Fee…">
+        </div>
+        <div class="fg" id="biz_status_row">
+          <label class="flbl">Invoice Status</label>
+          <select class="fsel" id="biz_status">
+            <option value="paid">✅ Paid</option>
+            <option value="pending">⏳ Pending</option>
+            <option value="overdue">🚨 Overdue</option>
+          </select>
+        </div>
+        <div class="fg ffull">
+          <label class="flbl">Description</label>
+          <input class="finp" type="text" id="biz_desc" placeholder="Optional notes">
+        </div>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="btn btn-g" onclick="closeModal('bizEntryModal')">Cancel</button>
+      <button class="btn btn-p" onclick="saveBizEntry()">Save Entry</button>
     </div>
   </div>
 </div>
@@ -1127,6 +1225,11 @@ const DEFAULT_TRANSITION = {
   modified:{}
 };
 
+const DEFAULT_BUSINESSES=[
+  {id:'biz1',name:'Mushroom Farm',icon:'🍄',color:'#10B981',entries:[]},
+  {id:'biz2',name:'Coaching',icon:'🎯',color:'#8B5CF6',entries:[]}
+];
+let activeBiz='biz1';
 let DB = {instruments:[],transactions:[],prices:{},priceHistory:{},taxSettings:{},lastPriceUpdateDate:{},transition:{}};
 let activeCategory = 'ETF';
 let activeSectorFilter = null;
@@ -1143,7 +1246,8 @@ function getDefaults(){
     lastPriceUpdateDate:{},
     transition:JSON.parse(JSON.stringify(DEFAULT_TRANSITION)),
     settings:{currency:'€',country:''},
-    netWorthHistory:[]
+    netWorthHistory:[],
+    businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES))
   };
 }
 function loadDB(){
@@ -1168,6 +1272,9 @@ function loadDB(){
         // Migrate settings
         if(!DB.settings) DB.settings={currency:'€',country:''};
         if(!DB.netWorthHistory) DB.netWorthHistory=[];
+        if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
+        // biz3 (Self Trading) is Box 3 — remove if it has no entries
+        DB.businesses=DB.businesses.filter(b=>b.id!=='biz3'||b.entries.length>0);
         if(!DB.lastPriceUpdateDate){
           // First-time migration: initialise tracking dates to today so no immediate stale warnings
           DB.lastPriceUpdateDate={};
@@ -1505,6 +1612,8 @@ function importDB(event){
       if(!DB.transition.phaseName2) DB.transition.phaseName2='Career Gap';
       if(!DB.transition.phaseName3) DB.transition.phaseName3='Benefits Phase';
       if(!DB.settings) DB.settings={currency:'€',country:''};
+      if(!DB.netWorthHistory) DB.netWorthHistory=[];
+      if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
       if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
       saveDB();
       const cats=computeCategories();
@@ -1626,10 +1735,25 @@ function renderKPIs(cats){
   const ret=inv>0?pnl/inv:0;
   const h=portfolioHealth(cats);
   const hc={green:'var(--ok)',amber:'var(--wrn)',red:'var(--err)'};
+  const yr=new Date().getFullYear();
+  // Business income YTD (Box 1 businesses + Self Trading)
+  const bizPL=(DB.businesses||[]).reduce((acc,biz)=>{const p=getBizPL(biz.id,yr);return{rev:acc.rev+p.revenue,cost:acc.cost+p.expenses,net:acc.net+p.profit};},{rev:0,cost:0,net:0});
+  const tpl=getTradingPL(yr);
+  const totalBizRev=bizPL.rev+tpl.revenue;
+  const totalBizCost=bizPL.cost+tpl.expenses;
+  const totalBizNet=bizPL.net+tpl.profit;
   document.getElementById('kpiGrid').innerHTML=`
     <div class="kpi"><div class="kpi-lbl">Total Net Worth</div><div class="kpi-val">${feur(nw)}</div><div class="kpi-sub"><span class="badge bn">all assets</span><span class="t2">${DB.instruments.length} instruments</span></div></div>
-    <div class="kpi ${ret>=0?'ok':'err'}"><div class="kpi-lbl">Total P&amp;L</div><div class="kpi-val ${pc(pnl)}">${pnl>=0?'+':''}${feur(pnl)}</div><div class="kpi-sub"><span class="badge ${pnl>=0?'bg':'br'}">${fpct(ret)}</span><span class="t2">vs cost basis</span></div></div>
-    <div class="kpi"><div class="kpi-lbl">Total Cost Basis</div><div class="kpi-val">${feur(inv)}</div><div class="kpi-sub"><span class="t2">${DB.transactions.length} transactions logged</span></div></div>
+    <div class="kpi ${ret>=0?'ok':'err'}"><div class="kpi-lbl">Portfolio P&amp;L</div><div class="kpi-val ${pc(pnl)}">${pnl>=0?'+':''}${feur(pnl)}</div><div class="kpi-sub"><span class="badge ${pnl>=0?'bg':'br'}">${fpct(ret)}</span><span class="t2">vs cost basis</span></div></div>
+    <div class="kpi ${totalBizNet>=0?'ok':'err'}">
+      <div class="kpi-lbl">Business Income ${yr}</div>
+      <div class="kpi-val ${totalBizNet>=0?'tg':'tr'}">${totalBizNet>=0?'+':''}${feur(totalBizNet)}</div>
+      <div class="kpi-sub">
+        <span class="t2">Rev ${feur(totalBizRev)}</span>
+        <span class="t2">· Costs ${feur(totalBizCost)}</span>
+        <a class="lnk" onclick="switchTabByName('biz')" style="font-size:11px">→ Business</a>
+      </div>
+    </div>
     <div class="kpi">
       <div class="kpi-lbl">Portfolio Health Score</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0"><div class="hdot ${h.color}"></div><div style="font-size:16px;font-weight:700;color:${hc[h.color]}">${h.color==='green'?'🟢':h.color==='amber'?'🟡':'🔴'} ${h.label}</div></div>
@@ -2080,6 +2204,37 @@ function rebuildCashFlow(){
     }
   });
 
+  // Business income mini-cards in Cash Flow tab
+  const cfBizYr=new Date().getFullYear();
+  const cfBizYrEl=document.getElementById('cfBizYear');
+  if(cfBizYrEl) cfBizYrEl.textContent=cfBizYr;
+  const cfBizCardsEl=document.getElementById('cfBizCards');
+  if(cfBizCardsEl){
+    const yrStr=String(cfBizYr);
+    let bizHtml='';
+    (DB.businesses||[]).forEach(biz=>{
+      const p=getBizPL(biz.id,yrStr);
+      bizHtml+=`<div style="background:var(--bg);border-radius:8px;padding:12px;border-left:3px solid ${biz.color}">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px">${biz.icon} ${biz.name}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;font-size:11px">
+          <div><div style="color:var(--txt2)">Revenue</div><div style="font-weight:700;color:var(--ok)">${feur(p.revenue)}</div></div>
+          <div><div style="color:var(--txt2)">Costs</div><div style="font-weight:700;color:var(--err)">${feur(p.expenses)}</div></div>
+          <div><div style="color:var(--txt2)">Net</div><div style="font-weight:700;color:${p.profit>=0?'var(--pri)':'var(--err)'}">${p.profit>=0?'+':''}${feur(p.profit)}</div></div>
+        </div>
+      </div>`;
+    });
+    const tpl=getTradingPL(cfBizYr);
+    bizHtml+=`<div style="background:var(--bg);border-radius:8px;padding:12px;border-left:3px solid #F59E0B">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px">📈 Self Trading <span style="font-size:10px;color:var(--txt2);font-weight:400">(Box 3)</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;font-size:11px">
+        <div><div style="color:var(--txt2)">Revenue</div><div style="font-weight:700;color:var(--ok)">${feur(tpl.revenue)}</div></div>
+        <div><div style="color:var(--txt2)">Costs</div><div style="font-weight:700;color:var(--err)">${feur(tpl.expenses)}</div></div>
+        <div><div style="color:var(--txt2)">Net</div><div style="font-weight:700;color:${tpl.profit>=0?'var(--pri)':'var(--err)'}">${tpl.profit>=0?'+':''}${feur(tpl.profit)}</div></div>
+      </div>
+    </div>`;
+    cfBizCardsEl.innerHTML=bizHtml;
+  }
+
   const savData=buildSavingsProjection(cfData);
   const ctx2=document.getElementById('savChart').getContext('2d');
   const grad=ctx2.createLinearGradient(0,0,0,200);
@@ -2113,17 +2268,19 @@ function switchTab(name, btn){
   else document.querySelectorAll('.mtab').forEach(t=>{if(t.textContent.toLowerCase().includes(name.slice(0,4)))t.classList.add('active');});
   if(name==='transition') loadTransitionSettings();
   if(name==='tax') renderTaxTab();
+  if(name==='biz') renderBizTab();
 }
 function switchTabByName(name){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   document.querySelectorAll('.mtab').forEach(t=>{
-    if((name==='overview'&&t.textContent.includes('Overview'))||(name==='holdings'&&t.textContent.includes('Holdings'))||(name==='transition'&&t.textContent.includes('Cash Flow'))||(name==='tax'&&t.textContent.includes('Tax'))||(name==='settings'&&t.textContent.includes('Settings')))
+    if((name==='overview'&&t.textContent.includes('Overview'))||(name==='holdings'&&t.textContent.includes('Holdings'))||(name==='transition'&&t.textContent.includes('Cash Flow'))||(name==='tax'&&t.textContent.includes('Tax'))||(name==='biz'&&t.textContent.includes('Business'))||(name==='settings'&&t.textContent.includes('Settings')))
       t.classList.add('active');
   });
   if(name==='transition') loadTransitionSettings();
   if(name==='tax') renderTaxTab();
+  if(name==='biz') renderBizTab();
 }
 function jumpToHoldings(cat){
   activeCategory=cat; activeSectorFilter=null; activeRegionFilter=null;
@@ -2481,6 +2638,10 @@ function calcBox1Income(year){
     }
     total+=inc;
   }
+  // Add self-employment net profit from all businesses
+  if(DB.businesses) DB.businesses.forEach(biz=>{
+    const pl=getBizPL(biz.id,year); total+=pl.profit;
+  });
   return total;
 }
 function calcBox1Tax(income){
@@ -2565,14 +2726,26 @@ function renderTaxTab(){
       <span class="num">${feur(ph.monthly)}/mo</span>
       <span class="num fw7">${feur(ph.months*ph.monthly)}</span>
     </div>`).join('');
+  // Business self-employment rows
+  const bizRows=(DB.businesses||[]).map(biz=>{
+    const pl=getBizPL(biz.id,currentYear);
+    if(pl.revenue===0&&pl.expenses===0) return '';
+    return`<div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+      <span style="font-weight:600;color:${biz.color}">${biz.icon} ${biz.name} <span style="font-size:10px;font-weight:400;color:var(--txt2)">self-employment</span></span>
+      <span class="num" style="font-size:11px;color:var(--txt2)">Revenue ${feur(pl.revenue)}</span>
+      <span class="num" style="font-size:11px;color:var(--txt2)">Costs −${feur(pl.expenses)}</span>
+      <span class="num fw7 ${pl.profit>=0?'tg':'tr'}">${pl.profit>=0?'+':''}${feur(pl.profit)}</span>
+    </div>`;
+  }).join('');
   document.getElementById('taxBox1').innerHTML=`
     <div class="tax-card">
       <div class="tax-hdr" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px">
-        <span>Phase <a class="lnk" onclick="switchTabByName('transition')" style="margin-left:6px">→ Cash Flow tab</a></span>
+        <span>Income Source</span>
         <span class="num">Months ${currentYear}</span><span class="num">Monthly</span><span class="num">Annual</span>
       </div>
-      ${phaseRows.length?phaseRows:`<div style="padding:16px;text-align:center;color:var(--txt2);font-size:13px">Set up your income phases in the Cash Flow tab to see Box 1 income here.</div>`}
-      ${phaseRows.length?`<div class="tax-row fw7" style="grid-template-columns:2fr 1fr 1fr 1fr;background:var(--neu-l)">
+      ${phaseRows.length?phaseRows:`<div style="padding:12px;text-align:center;color:var(--txt2);font-size:13px">Set up your income phases in the Cash Flow tab.</div>`}
+      ${bizRows}
+      ${(phaseRows.length||bizRows)?`<div class="tax-row fw7" style="grid-template-columns:2fr 1fr 1fr 1fr;background:var(--neu-l)">
         <span>Total Box 1 Income</span><span></span><span></span><span class="num">${feur(box1Income)}</span>
       </div>
       <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:var(--err-l)">
@@ -2698,6 +2871,180 @@ function renderTaxTab(){
         <span class="num tr">&minus;${feur(totalTerCost,0)}/yr</span>
       </div>
     </div>`;
+}
+
+// ── BUSINESS MIX ──
+function getTradingPL(year){
+  // Revenue = dividends YTD + realized gains from sells YTD
+  // Expenses = trading fees YTD + realized losses YTD
+  // Net    = dividends + realized gains/losses - fees
+  const yr=String(year);
+  const txs=[...DB.transactions].sort((a,b)=>a.date.localeCompare(b.date));
+  const pos={};
+  let dividends=0, realizedNet=0, fees=0;
+  txs.forEach(tx=>{
+    if(!pos[tx.iid]) pos[tx.iid]={qty:0,cost:0};
+    const p=pos[tx.iid];
+    const inYear=tx.date.startsWith(yr);
+    if(tx.type==='buy'){
+      p.cost+=tx.qty*tx.price+(tx.fees||0);
+      p.qty+=tx.qty;
+      if(inYear) fees+=(tx.fees||0);
+    } else if(tx.type==='sell'){
+      const avg=p.qty>0?p.cost/p.qty:0;
+      const gain=tx.qty*tx.price-tx.qty*avg-(tx.fees||0);
+      p.cost-=avg*tx.qty; p.qty-=tx.qty;
+      if(inYear) realizedNet+=gain;
+    } else if(tx.type==='dividend'&&inYear){
+      dividends+=(tx.qty||1)*(tx.price||0);
+    }
+  });
+  const revenue=dividends+Math.max(0,realizedNet);
+  const expenses=fees+Math.max(0,-realizedNet);
+  const profit=dividends+realizedNet-fees;
+  return{revenue,expenses,profit,dividends,realizedNet,fees};
+}
+function getBizPL(bizId, year){
+  const biz=(DB.businesses||[]).find(b=>b.id===bizId);
+  if(!biz) return {revenue:0,expenses:0,profit:0};
+  const yr=String(year);
+  const entries=biz.entries.filter(e=>e.date.startsWith(yr));
+  const revenue=entries.filter(e=>e.type==='revenue').reduce((s,e)=>s+e.amount,0);
+  const expenses=entries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+  return {revenue,expenses,profit:revenue-expenses};
+}
+function getTotalBizPL(year){
+  return (DB.businesses||[]).reduce((acc,biz)=>{
+    const pl=getBizPL(biz.id,year);
+    return {revenue:acc.revenue+pl.revenue,expenses:acc.expenses+pl.expenses,profit:acc.profit+pl.profit};
+  },{revenue:0,expenses:0,profit:0});
+}
+function renderBizTab(){
+  const year=new Date().getFullYear();
+  document.getElementById('bizYearLabel').textContent=year+' YTD';
+  // ── Summary cards ──
+  const bizCards=(DB.businesses||[]).map(biz=>{
+    const pl=getBizPL(biz.id,year);
+    return`<div class="card" style="border-top:3px solid ${biz.color};cursor:pointer" onclick="setActiveBiz('${biz.id}')">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <span style="font-size:24px">${biz.icon}</span>
+        <div>
+          <div style="font-weight:700;font-size:14px">${biz.name}</div>
+          <div style="font-size:11px;color:var(--txt2)">${biz.entries.filter(e=>e.date.startsWith(year+'')).length} entries · Box 1</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        <div><div class="kpi-lbl">Revenue</div><div style="font-size:16px;font-weight:700;color:var(--ok)">${feur(pl.revenue)}</div></div>
+        <div><div class="kpi-lbl">Expenses</div><div style="font-size:16px;font-weight:700;color:var(--err)">${feur(pl.expenses)}</div></div>
+        <div><div class="kpi-lbl">Net Profit</div><div style="font-size:16px;font-weight:700;color:${pl.profit>=0?'var(--pri)':'var(--err)'}">${pl.profit>=0?'+':''}${feur(pl.profit)}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+  // Self Trading card — Revenue/Costs/Net Profit from real transactions (Box 3)
+  const tpl=getTradingPL(year);
+  const tradingCard=`<div class="card" style="border-top:3px solid #F59E0B;cursor:pointer" onclick="switchTabByName('holdings')">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:24px">📈</span>
+      <div>
+        <div style="font-weight:700;font-size:14px">Self Trading</div>
+        <div style="font-size:11px;color:var(--txt2)">Dividends + realized gains · <span style="color:#F59E0B;font-weight:600">Box 3</span></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+      <div><div class="kpi-lbl">Revenue</div><div style="font-size:16px;font-weight:700;color:var(--ok)">${feur(tpl.revenue)}</div></div>
+      <div><div class="kpi-lbl">Costs</div><div style="font-size:16px;font-weight:700;color:var(--err)">${feur(tpl.expenses)}</div></div>
+      <div><div class="kpi-lbl">Net Profit</div><div style="font-size:16px;font-weight:700;color:${tpl.profit>=0?'var(--pri)':'var(--err)'}">${tpl.profit>=0?'+':''}${feur(tpl.profit)}</div></div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--txt2);display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--bdr)">
+      <span>Div: <strong class="tg">${feur(tpl.dividends)}</strong></span>
+      <span>Realized: <strong class="${tpl.realizedNet>=0?'tg':'tr'}">${tpl.realizedNet>=0?'+':''}${feur(tpl.realizedNet)}</strong></span>
+      <span>Fees: <strong class="tr">−${feur(tpl.fees)}</strong></span>
+    </div>
+  </div>`;
+  document.getElementById('bizSummaryCards').innerHTML=bizCards+tradingCard;
+  // ── Detail tabs ──
+  document.getElementById('bizDetailTabs').innerHTML=(DB.businesses||[]).map(biz=>`
+    <button class="biz-tab ${biz.id===activeBiz?'active':''}" onclick="setActiveBiz('${biz.id}')">${biz.icon} ${biz.name}</button>
+  `).join('');
+  // ── Active business KPIs ──
+  const biz=(DB.businesses||[]).find(b=>b.id===activeBiz);
+  if(!biz) return;
+  const pl=getBizPL(activeBiz,year);
+  const entries=biz.entries.filter(e=>e.date.startsWith(year+'')).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('bizKpiRow').innerHTML=`
+    <div class="kpi ok"><div class="kpi-lbl">Revenue ${year}</div><div class="kpi-val tg">${feur(pl.revenue)}</div><div class="kpi-sub"><span class="t2">${entries.filter(e=>e.type==='revenue').length} entries</span></div></div>
+    <div class="kpi err"><div class="kpi-lbl">Expenses ${year}</div><div class="kpi-val tr">&minus;${feur(pl.expenses)}</div><div class="kpi-sub"><span class="t2">${entries.filter(e=>e.type==='expense').length} entries</span></div></div>
+    <div class="kpi ${pl.profit>=0?'ok':'err'}"><div class="kpi-lbl">Net Profit ${year}</div><div class="kpi-val ${pl.profit>=0?'tg':'tr'}">${pl.profit>=0?'+':''}${feur(pl.profit)}</div><div class="kpi-sub"><span class="badge ${pl.profit>=0?'bg':'br'}">${pl.revenue>0?(pl.profit/pl.revenue*100).toFixed(1)+'% margin':'—'}</span></div></div>
+  `;
+  // ── Entries table ──
+  const cols='1fr 90px 120px 2fr 100px 90px 40px';
+  document.getElementById('bizEntriesHdr').style.gridTemplateColumns=cols;
+  document.getElementById('bizEntriesHdr').innerHTML='<span>Date</span><span>Type</span><span>Category</span><span>Description</span><span class="num">Amount</span><span>Status</span><span></span>';
+  if(!entries.length){
+    document.getElementById('bizEntriesList').innerHTML=`<div style="padding:30px;text-align:center;color:var(--txt2);font-size:13px">No entries yet for ${year}. Click <strong>＋ Add Entry</strong> to start tracking.</div>`;
+    return;
+  }
+  document.getElementById('bizEntriesList').innerHTML=entries.map(e=>{
+    const isRev=e.type==='revenue';
+    const stClass=isRev?(e.status==='paid'?'st-paid':e.status==='overdue'?'st-overdue':'st-pending'):'st-expense';
+    const stLabel=isRev?(e.status==='paid'?'Paid':e.status==='overdue'?'Overdue':'Pending'):'—';
+    return`<div class="biz-entry-row" style="grid-template-columns:${cols}">
+      <span style="font-size:12px;color:var(--txt2)">${e.date}</span>
+      <span><span class="badge ${isRev?'bg':'br'}" style="font-size:11px">${isRev?'💰 Rev':'💸 Exp'}</span></span>
+      <span style="font-size:12px">${e.category||'—'}</span>
+      <span style="font-size:12px">${e.description||'—'}</span>
+      <span class="num fw7 ${isRev?'tg':'tr'}">${isRev?'+':'-'}${feur(e.amount)}</span>
+      <span><span class="${stClass}">${stLabel}</span></span>
+      <span><button style="background:none;border:none;cursor:pointer;color:var(--txt2);font-size:13px;padding:2px 6px" onclick="deleteBizEntry('${biz.id}','${e.id}')" title="Delete">✕</button></span>
+    </div>`;
+  }).join('');
+}
+function setActiveBiz(bizId){
+  activeBiz=bizId;
+  renderBizTab();
+}
+function openBizEntryModal(){
+  const sel=document.getElementById('biz_id');
+  if(sel){
+    sel.innerHTML=(DB.businesses||[]).map(b=>`<option value="${b.id}" ${b.id===activeBiz?'selected':''}>${b.icon} ${b.name}</option>`).join('');
+  }
+  document.getElementById('biz_date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('biz_amount').value='';
+  document.getElementById('biz_category').value='';
+  document.getElementById('biz_desc').value='';
+  document.getElementById('biz_type').value='revenue';
+  document.getElementById('biz_status').value='paid';
+  onBizTypeChange();
+  openModal('bizEntryModal');
+}
+function onBizTypeChange(){
+  const isRev=document.getElementById('biz_type').value==='revenue';
+  const row=document.getElementById('biz_status_row');
+  if(row) row.style.display=isRev?'block':'none';
+}
+function saveBizEntry(){
+  const bizId=document.getElementById('biz_id').value;
+  const type=document.getElementById('biz_type').value;
+  const date=document.getElementById('biz_date').value;
+  const amount=parseFloat(document.getElementById('biz_amount').value)||0;
+  const category=document.getElementById('biz_category').value.trim();
+  const desc=document.getElementById('biz_desc').value.trim();
+  const status=type==='revenue'?document.getElementById('biz_status').value:null;
+  if(!date||!amount){ alert('Date and amount are required.'); return; }
+  const biz=(DB.businesses||[]).find(b=>b.id===bizId);
+  if(!biz) return;
+  biz.entries.push({id:'e_'+Date.now(),date,type,category,description:desc,amount,status});
+  activeBiz=bizId;
+  saveDB(); closeModal('bizEntryModal'); renderBizTab(); renderTaxTab();
+  notify('✅ Entry saved to '+biz.name);
+}
+function deleteBizEntry(bizId, entryId){
+  const biz=(DB.businesses||[]).find(b=>b.id===bizId);
+  if(!biz) return;
+  if(!confirm('Delete this entry?')) return;
+  biz.entries=biz.entries.filter(e=>e.id!==entryId);
+  saveDB(); renderBizTab(); renderTaxTab();
+  notify('🗑 Entry deleted.');
 }
 
 // ── NET WORTH HISTORY ──
@@ -2842,6 +3189,7 @@ async function gistFetch(){
     if(DB.taxSettings.box2Rate===undefined) DB.taxSettings.box2Rate=26.9;
     if(!DB.settings) DB.settings={currency:'€',country:''};
     if(!DB.netWorthHistory) DB.netWorthHistory=[];
+    if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
     if(!DB.transition) DB.transition=JSON.parse(JSON.stringify(DEFAULT_TRANSITION));
     if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
     if(!DB.priceHistory) DB.priceHistory={};
