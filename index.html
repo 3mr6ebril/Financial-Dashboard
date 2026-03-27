@@ -358,6 +358,36 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     </div>
     <div id="sectorBreakdown" style="margin-top:16px"></div>
   </div>
+  <div class="section" id="s-nwhistory">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">5</span>Net Worth Over Time</div>
+      <span class="t2" style="font-size:12px" id="nwHistoryMeta">Auto-snapshot · 1 data point per day</span>
+    </div>
+    <div class="card" id="nwHistoryCard">
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:16px" id="nwStatRow">
+        <div style="flex:1;min-width:120px;text-align:center">
+          <div class="kpi-lbl">Starting Value</div>
+          <div style="font-size:20px;font-weight:800" id="nwStatStart">—</div>
+        </div>
+        <div style="flex:1;min-width:120px;text-align:center">
+          <div class="kpi-lbl">Current Value</div>
+          <div style="font-size:20px;font-weight:800" id="nwStatCurrent">—</div>
+        </div>
+        <div style="flex:1;min-width:120px;text-align:center">
+          <div class="kpi-lbl">All-Time Peak</div>
+          <div style="font-size:20px;font-weight:800" id="nwStatPeak">—</div>
+        </div>
+        <div style="flex:1;min-width:120px;text-align:center">
+          <div class="kpi-lbl">Total Growth</div>
+          <div style="font-size:20px;font-weight:800" id="nwStatGrowth">—</div>
+        </div>
+      </div>
+      <div style="position:relative;height:220px"><canvas id="nwChart"></canvas></div>
+      <div id="nwEmptyMsg" style="display:none;text-align:center;padding:40px;color:var(--txt2);font-size:13px">
+        📈 Your net worth chart will build up automatically — one data point per day you open the dashboard.
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- TAB: HOLDINGS -->
@@ -1112,7 +1142,8 @@ function getDefaults(){
     taxSettings:{dividendWithholdingRate:15,capitalGainsRate:36,fictitiousReturnRate:6.36,box3Allowance:57000,box1EffectiveRate:0,box2Rate:26.9},
     lastPriceUpdateDate:{},
     transition:JSON.parse(JSON.stringify(DEFAULT_TRANSITION)),
-    settings:{currency:'€',country:''}
+    settings:{currency:'€',country:''},
+    netWorthHistory:[]
   };
 }
 function loadDB(){
@@ -1136,6 +1167,7 @@ function loadDB(){
         if(!DB.transition.phaseName3) DB.transition.phaseName3='Benefits Phase';
         // Migrate settings
         if(!DB.settings) DB.settings={currency:'€',country:''};
+        if(!DB.netWorthHistory) DB.netWorthHistory=[];
         if(!DB.lastPriceUpdateDate){
           // First-time migration: initialise tracking dates to today so no immediate stale warnings
           DB.lastPriceUpdateDate={};
@@ -2432,6 +2464,7 @@ function refreshAll(){
   renderKPIs(cats); renderAlloc(cats); renderCatCards(cats);
   renderSectorRegion(); renderSectorBreakdown(); renderHoldingsTabs(cats); renderHoldingsTable(cats);
   rebuildCashFlow();
+  renderNWChart(cats);
   updatePeriodMenuLocks();
 }
 
@@ -2667,6 +2700,78 @@ function renderTaxTab(){
     </div>`;
 }
 
+// ── NET WORTH HISTORY ──
+function snapshotNetWorth(cats){
+  if(!DB.netWorthHistory) DB.netWorthHistory=[];
+  const today=new Date().toISOString().slice(0,10);
+  const nw=cats.reduce((s,c)=>s+c.current,0);
+  if(nw<=0) return; // don't snapshot empty portfolio
+  const last=DB.netWorthHistory[DB.netWorthHistory.length-1];
+  if(last&&last.date===today){ last.value=+nw.toFixed(2); return; } // update today's entry
+  DB.netWorthHistory.push({date:today,value:+nw.toFixed(2)});
+  // keep max 730 entries (~2 years)
+  if(DB.netWorthHistory.length>730) DB.netWorthHistory=DB.netWorthHistory.slice(-730);
+}
+
+function renderNWChart(cats){
+  const hist=DB.netWorthHistory||[];
+  const canvas=document.getElementById('nwChart');
+  const empty=document.getElementById('nwEmptyMsg');
+  const meta=document.getElementById('nwHistoryMeta');
+  if(!canvas) return;
+  if(hist.length<2){
+    canvas.style.display='none';
+    if(empty) empty.style.display='block';
+    const statIds=['nwStatStart','nwStatCurrent','nwStatPeak','nwStatGrowth'];
+    statIds.forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent='—'; });
+    return;
+  }
+  canvas.style.display='block';
+  if(empty) empty.style.display='none';
+  // Stats
+  const first=hist[0].value, last=hist[hist.length-1].value;
+  const peak=Math.max(...hist.map(h=>h.value));
+  const growth=first>0?((last-first)/first*100):0;
+  const growthColor=growth>=0?'var(--ok)':'var(--err)';
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.innerHTML=v; };
+  set('nwStatStart',feur(first));
+  set('nwStatCurrent',`<span style="color:var(--pri)">${feur(last)}</span>`);
+  set('nwStatPeak',`<span style="color:var(--ok)">${feur(peak)}</span>`);
+  set('nwStatGrowth',`<span style="color:${growthColor}">${growth>=0?'+':''}${growth.toFixed(1)}%</span>`);
+  if(meta) meta.textContent=`${hist.length} data point${hist.length!==1?'s':''} · since ${hist[0].date}`;
+  // Chart
+  safeDestroy('nwChart');
+  const labels=hist.map(h=>h.date);
+  const values=hist.map(h=>h.value);
+  charts.nw=new Chart(canvas,{
+    type:'line',
+    data:{labels,datasets:[{
+      label:'Net Worth',data:values,
+      borderColor:'#2563EB',borderWidth:2,pointRadius:hist.length>60?0:3,
+      pointBackgroundColor:'#2563EB',tension:0.3,fill:true,
+      backgroundColor:ctx=>{
+        const g=ctx.chart.ctx.createLinearGradient(0,0,0,220);
+        g.addColorStop(0,'rgba(37,99,235,0.18)'); g.addColorStop(1,'rgba(37,99,235,0.01)');
+        return g;
+      }
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{ticks:{font:{size:10},maxTicksLimit:8,maxRotation:0},grid:{display:false}},
+        y:{ticks:{font:{size:11},callback:v=>feur(v)},grid:{color:'rgba(0,0,0,.04)'}}
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          title:items=>items[0].label,
+          label:ctx=>' Net Worth: '+feur(ctx.raw)
+        }}
+      }
+    }
+  });
+}
+
 // ── GIST CLOUD SYNC ──
 const GIST_TOKEN_KEY='findb_gist_token';
 const GIST_ID_KEY='findb_gist_id';
@@ -2736,6 +2841,7 @@ async function gistFetch(){
     if(DB.taxSettings.box1EffectiveRate===undefined) DB.taxSettings.box1EffectiveRate=0;
     if(DB.taxSettings.box2Rate===undefined) DB.taxSettings.box2Rate=26.9;
     if(!DB.settings) DB.settings={currency:'€',country:''};
+    if(!DB.netWorthHistory) DB.netWorthHistory=[];
     if(!DB.transition) DB.transition=JSON.parse(JSON.stringify(DEFAULT_TRANSITION));
     if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
     if(!DB.priceHistory) DB.priceHistory={};
@@ -2822,6 +2928,9 @@ window.addEventListener('DOMContentLoaded',()=>{
   const cats=computeCategories();
   if(cats.length) activeCategory=cats[0].label;
   refreshAll();
+  // Daily net worth snapshot (must be after refreshAll so prices are current)
+  snapshotNetWorth(computeCategories());
+  try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
   document.getElementById('lastUpd').textContent='Last updated: '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   // ── Sync init ──
   updateSyncUI();
@@ -2832,6 +2941,8 @@ window.addEventListener('DOMContentLoaded',()=>{
         const cats2=computeCategories();
         if(cats2.length) activeCategory=cats2[0].label;
         refreshAll(); loadTransitionSettings();
+        snapshotNetWorth(computeCategories());
+        try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
         document.getElementById('lastUpd').textContent='Last updated: '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
       } else {
         if(getSyncGistId()) setSyncStatus('ok','Connected');
