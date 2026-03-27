@@ -315,6 +315,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     <button class="mtab" onclick="switchTab('transition',this)">💸 Cash Flow</button>
     <button class="mtab" onclick="switchTab('tax',this)">💰 Tax</button>
     <button class="mtab" onclick="switchTab('biz',this)">💼 Business</button>
+    <button class="mtab" onclick="switchTab('balance',this)">⚖️ Balance Sheet</button>
     <button class="mtab" onclick="switchTab('settings',this)" style="margin-left:auto;border-left:1px solid var(--bdr);padding-left:20px">⚙️ Settings</button>
   </div>
 </header>
@@ -761,6 +762,51 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <div class="t2" style="font-size:11px;margin-top:4px">Tax-free allowance per person before wealth tax applies.</div>
         </div>
       </div>
+      <!-- Entrepreneur Deductions -->
+      <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bdr)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div>
+            <div class="ts-lbl" style="margin-bottom:2px">🧾 Entrepreneur Deductions (ZZP)</div>
+            <div class="t2" style="font-size:11px">Zelfstandigenaftrek · Startersaftrek · MKB-winstvrijstelling — applied to Box 1 business profit only</div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600">
+            <input type="checkbox" id="tax_zzpEnabled" onchange="saveTaxSettings()" style="width:16px;height:16px;accent-color:var(--pri);cursor:pointer">
+            Apply deductions
+          </label>
+        </div>
+        <div class="g" style="grid-template-columns:repeat(3,1fr);gap:16px;align-items:end" id="zzpDeductionFields">
+          <div>
+            <label class="ts-lbl">Zelfstandigenaftrek (€)</label>
+            <input class="ts-inp" type="number" id="tax_zzpDed" value="2470" min="0" step="10"
+              oninput="saveTaxSettings()" style="margin-top:6px">
+            <div class="t2" style="font-size:11px;margin-top:4px">Fixed deduction from business profit. NL 2025: €2,470. Decreasing yearly toward €900 (2027).</div>
+          </div>
+          <div>
+            <label class="ts-lbl" style="display:flex;align-items:center;gap:8px">
+              Startersaftrek (€)
+              <label style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:400;cursor:pointer">
+                <input type="checkbox" id="tax_starterEnabled" onchange="saveTaxSettings()" style="width:13px;height:13px;accent-color:var(--pri)">
+                Apply
+              </label>
+            </label>
+            <input class="ts-inp" type="number" id="tax_starterDed" value="2123" min="0" step="10"
+              oninput="saveTaxSettings()" style="margin-top:6px">
+            <div class="t2" style="font-size:11px;margin-top:4px">Extra deduction in first 3 years as entrepreneur. NL 2025: €2,123.</div>
+          </div>
+          <div>
+            <label class="ts-lbl">MKB-winstvrijstelling (%)</label>
+            <input class="ts-inp" type="number" id="tax_mkbPct" value="12.7" min="0" max="100" step="0.1"
+              oninput="saveTaxSettings()" style="margin-top:6px">
+            <div class="t2" style="font-size:11px;margin-top:4px">% of remaining profit exempt from tax after ZZP deductions. NL 2025: 12.7%.</div>
+          </div>
+          <div>
+            <label class="ts-lbl">KOR Threshold (€)</label>
+            <input class="ts-inp" type="number" id="tax_korThreshold" value="20000" min="0" step="1000"
+              oninput="saveTaxSettings()" style="margin-top:6px">
+            <div class="t2" style="font-size:11px;margin-top:4px">BTW exemption threshold. Below this you don't charge or remit VAT (Kleineondernemersregeling).</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <!-- Box 1 -->
@@ -802,6 +848,72 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       <span class="t2" style="font-size:12px">Annual cost drag — already embedded in ETF NAV price</span>
     </div>
     <div id="taxTerTable"></div>
+  </div>
+</div>
+
+<!-- TAB: BALANCE SHEET -->
+<div class="tab-content" id="tab-balance">
+  <!-- Net Worth Summary -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">⚖</span>Balance Sheet</div>
+      <span class="t2" style="font-size:12px">Assets minus liabilities — your true financial position</span>
+    </div>
+    <div class="g g3" id="balanceKPIs"></div>
+  </div>
+  <!-- Assets -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">↑</span>Assets</div>
+      <span class="t2" style="font-size:12px">Portfolio value by category</span>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden" id="balanceAssets"></div>
+  </div>
+  <!-- Liabilities -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">↓</span>Liabilities</div>
+      <button class="btn btn-p btn-sm" onclick="openLiabilityModal()">＋ Add Liability</button>
+    </div>
+    <div id="balanceLiabilities"></div>
+  </div>
+</div>
+
+<!-- MODAL: LIABILITY -->
+<div class="overlay" id="liabilityModal">
+  <div class="modal">
+    <div class="mhdr"><span class="mtitle" id="liabilityModalTitle">＋ Add Liability</span><button class="xbtn" onclick="closeModal('liabilityModal')">✕</button></div>
+    <div class="mbody">
+      <input type="hidden" id="liab_id">
+      <div class="fgrid">
+        <div class="fg ffull">
+          <label class="flbl">Name *</label>
+          <input class="finp" type="text" id="liab_name" placeholder="e.g. ING Credit Card, Mortgage, Personal Loan">
+        </div>
+        <div class="fg">
+          <label class="flbl">Type *</label>
+          <select class="fsel" id="liab_type">
+            <option value="credit_card">💳 Credit Card</option>
+            <option value="mortgage">🏠 Mortgage</option>
+            <option value="loan">💼 Personal Loan</option>
+            <option value="car_loan">🚗 Car Loan</option>
+            <option value="other">📋 Other</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="flbl">Current Balance (€) *</label>
+          <input class="finp" type="number" id="liab_balance" step="0.01" min="0" placeholder="0.00">
+        </div>
+        <div class="fg ffull">
+          <label class="flbl">Notes</label>
+          <input class="finp" type="text" id="liab_notes" placeholder="Optional — e.g. ING bank, 3.5% interest">
+        </div>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="btn btn-g" onclick="closeModal('liabilityModal')">Cancel</button>
+      <button class="btn btn-p" onclick="saveLiability()">Save</button>
+    </div>
   </div>
 </div>
 
@@ -1266,7 +1378,8 @@ const DEFAULT_TRANSITION = {
 
 const DEFAULT_BUSINESSES=[
   {id:'biz1',name:'Mushroom Farm',icon:'🍄',color:'#10B981',entries:[]},
-  {id:'biz2',name:'Coaching',icon:'🎯',color:'#8B5CF6',entries:[]}
+  {id:'biz2',name:'Coaching',icon:'🎯',color:'#8B5CF6',entries:[]},
+  {id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]}
 ];
 let activeBiz='biz1';
 let DB = {instruments:[],transactions:[],prices:{},priceHistory:{},taxSettings:{},lastPriceUpdateDate:{},transition:{}};
@@ -1281,11 +1394,12 @@ function getDefaults(){
     transactions:[],
     prices:{},
     priceHistory:{},
-    taxSettings:{dividendWithholdingRate:15,capitalGainsRate:36,fictitiousReturnRate:6.36,box3Allowance:57000,box1EffectiveRate:0,box2Rate:26.9},
+    taxSettings:{dividendWithholdingRate:15,capitalGainsRate:36,fictitiousReturnRate:6.36,box3Allowance:57000,box1EffectiveRate:0,box2Rate:26.9,entrepreneurDeductionsEnabled:false,zelfstandigenaftrek:2470,startersaftrekEnabled:false,startersaftrek:2123,mkbVrijstelling:12.7,korThreshold:20000},
     lastPriceUpdateDate:{},
     transition:JSON.parse(JSON.stringify(DEFAULT_TRANSITION)),
     settings:{currency:'€',country:''},
     netWorthHistory:[],
+    liabilities:[],
     businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES)),
     sectionOrder:['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory']
   };
@@ -1304,6 +1418,12 @@ function loadDB(){
         if(DB.taxSettings.box3Allowance===undefined) DB.taxSettings.box3Allowance=57000;
         if(DB.taxSettings.box1EffectiveRate===undefined) DB.taxSettings.box1EffectiveRate=0;
         if(DB.taxSettings.box2Rate===undefined) DB.taxSettings.box2Rate=26.9;
+        if(DB.taxSettings.entrepreneurDeductionsEnabled===undefined) DB.taxSettings.entrepreneurDeductionsEnabled=false;
+        if(DB.taxSettings.zelfstandigenaftrek===undefined) DB.taxSettings.zelfstandigenaftrek=2470;
+        if(DB.taxSettings.startersaftrekEnabled===undefined) DB.taxSettings.startersaftrekEnabled=false;
+        if(DB.taxSettings.startersaftrek===undefined) DB.taxSettings.startersaftrek=2123;
+        if(DB.taxSettings.mkbVrijstelling===undefined) DB.taxSettings.mkbVrijstelling=12.7;
+        if(DB.taxSettings.korThreshold===undefined) DB.taxSettings.korThreshold=20000;
         // Migrate phase names
         if(!DB.transition) DB.transition={};
         if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
@@ -1312,10 +1432,11 @@ function loadDB(){
         // Migrate settings
         if(!DB.settings) DB.settings={currency:'€',country:''};
         if(!DB.netWorthHistory) DB.netWorthHistory=[];
+        if(!DB.liabilities) DB.liabilities=[];
         if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
         if(!DB.sectionOrder) DB.sectionOrder=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
-        // biz3 (Self Trading) is Box 3 — remove if it has no entries
-        DB.businesses=DB.businesses.filter(b=>b.id!=='biz3'||b.entries.length>0);
+        // Ensure biz3 (Self Trading) always exists — for manual entry support alongside auto-calc
+        if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
         if(!DB.lastPriceUpdateDate){
           // First-time migration: initialise tracking dates to today so no immediate stale warnings
           DB.lastPriceUpdateDate={};
@@ -1648,14 +1769,22 @@ function importDB(event){
       if(DB.taxSettings.box3Allowance===undefined) DB.taxSettings.box3Allowance=57000;
       if(DB.taxSettings.box1EffectiveRate===undefined) DB.taxSettings.box1EffectiveRate=0;
       if(DB.taxSettings.box2Rate===undefined) DB.taxSettings.box2Rate=26.9;
+      if(DB.taxSettings.entrepreneurDeductionsEnabled===undefined) DB.taxSettings.entrepreneurDeductionsEnabled=false;
+      if(DB.taxSettings.zelfstandigenaftrek===undefined) DB.taxSettings.zelfstandigenaftrek=2470;
+      if(DB.taxSettings.startersaftrekEnabled===undefined) DB.taxSettings.startersaftrekEnabled=false;
+      if(DB.taxSettings.startersaftrek===undefined) DB.taxSettings.startersaftrek=2123;
+      if(DB.taxSettings.mkbVrijstelling===undefined) DB.taxSettings.mkbVrijstelling=12.7;
+      if(DB.taxSettings.korThreshold===undefined) DB.taxSettings.korThreshold=20000;
       if(!DB.transition) DB.transition={};
       if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
       if(!DB.transition.phaseName2) DB.transition.phaseName2='Career Gap';
       if(!DB.transition.phaseName3) DB.transition.phaseName3='Benefits Phase';
       if(!DB.settings) DB.settings={currency:'€',country:''};
       if(!DB.netWorthHistory) DB.netWorthHistory=[];
+      if(!DB.liabilities) DB.liabilities=[];
       if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
       if(!DB.sectionOrder) DB.sectionOrder=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
+      if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
       if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
       saveDB();
       const cats=computeCategories();
@@ -1771,7 +1900,9 @@ const pc=n=>n>=0?'tg':'tr';
 
 // ── RENDER KPIs ──
 function renderKPIs(cats){
-  const nw=cats.reduce((s,c)=>s+c.current,0);
+  const portfolioValue=cats.reduce((s,c)=>s+c.current,0);
+  const totalLiab=getTotalLiabilities();
+  const nw=portfolioValue-totalLiab;
   const inv=cats.reduce((s,c)=>s+c.invested,0);
   const pnl=cats.reduce((s,c)=>s+c.pnl,0);
   const ret=inv>0?pnl/inv:0;
@@ -1779,13 +1910,13 @@ function renderKPIs(cats){
   const hc={green:'var(--ok)',amber:'var(--wrn)',red:'var(--err)'};
   const yr=new Date().getFullYear();
   // Business income YTD (Box 1 businesses + Self Trading)
-  const bizPL=(DB.businesses||[]).reduce((acc,biz)=>{const p=getBizPL(biz.id,yr);return{rev:acc.rev+p.revenue,cost:acc.cost+p.expenses,net:acc.net+p.profit};},{rev:0,cost:0,net:0});
+  const bizPL=(DB.businesses||[]).filter(b=>b.id!=='biz3').reduce((acc,biz)=>{const p=getBizPL(biz.id,yr);return{rev:acc.rev+p.revenue,cost:acc.cost+p.expenses,net:acc.net+p.profit};},{rev:0,cost:0,net:0});
   const tpl=getTradingPL(yr);
   const totalBizRev=bizPL.rev+tpl.revenue;
   const totalBizCost=bizPL.cost+tpl.expenses;
   const totalBizNet=bizPL.net+tpl.profit;
   document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi"><div class="kpi-lbl">Total Net Worth</div><div class="kpi-val">${feur(nw)}</div><div class="kpi-sub"><span class="badge bn">all assets</span><span class="t2">${DB.instruments.length} instruments</span></div></div>
+    <div class="kpi ${nw<0?'err':''}"><div class="kpi-lbl">True Net Worth</div><div class="kpi-val ${nw<0?'tr':''}">${feur(nw)}</div><div class="kpi-sub"><span class="badge bn">assets − liabilities</span>${totalLiab>0?`<span class="t2">Liabilities: −${feur(totalLiab)}</span>`:''}<a class="lnk" onclick="switchTabByName('balance')" style="font-size:11px">⚖️ Balance Sheet</a></div></div>
     <div class="kpi ${ret>=0?'ok':'err'}"><div class="kpi-lbl">Portfolio P&amp;L</div><div class="kpi-val ${pc(pnl)}">${pnl>=0?'+':''}${feur(pnl)}</div><div class="kpi-sub"><span class="badge ${pnl>=0?'bg':'br'}">${fpct(ret)}</span><span class="t2">vs cost basis</span></div></div>
     <div class="kpi ${totalBizNet>=0?'ok':'err'}">
       <div class="kpi-lbl">Business Income ${yr}</div>
@@ -2311,18 +2442,20 @@ function switchTab(name, btn){
   if(name==='transition') loadTransitionSettings();
   if(name==='tax') renderTaxTab();
   if(name==='biz') renderBizTab();
+  if(name==='balance') renderBalanceSheet();
 }
 function switchTabByName(name){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   document.querySelectorAll('.mtab').forEach(t=>{
-    if((name==='overview'&&t.textContent.includes('Overview'))||(name==='holdings'&&t.textContent.includes('Holdings'))||(name==='transition'&&t.textContent.includes('Cash Flow'))||(name==='tax'&&t.textContent.includes('Tax'))||(name==='biz'&&t.textContent.includes('Business'))||(name==='settings'&&t.textContent.includes('Settings')))
+    if((name==='overview'&&t.textContent.includes('Overview'))||(name==='holdings'&&t.textContent.includes('Holdings'))||(name==='transition'&&t.textContent.includes('Cash Flow'))||(name==='tax'&&t.textContent.includes('Tax'))||(name==='biz'&&t.textContent.includes('Business'))||(name==='balance'&&t.textContent.includes('Balance'))||(name==='settings'&&t.textContent.includes('Settings')))
       t.classList.add('active');
   });
   if(name==='transition') loadTransitionSettings();
   if(name==='tax') renderTaxTab();
   if(name==='biz') renderBizTab();
+  if(name==='balance') renderBalanceSheet();
 }
 function jumpToHoldings(cat){
   activeCategory=cat; activeSectorFilter=null; activeRegionFilter=null;
@@ -2690,7 +2823,7 @@ function refreshAll(){
 
 // ── TAX HELPERS ──
 function calcBox1Income(year){
-  const t=DB.transition; let total=0;
+  const t=DB.transition; let salaryIncome=0;
   for(let mo=1;mo<=12;mo++){
     const ms=`${year}-${String(mo).padStart(2,'0')}`; let inc=0;
     if(t.enddate&&ms<=t.enddate) inc=t.salary||0;
@@ -2699,13 +2832,23 @@ function calcBox1Income(year){
       if(t.wwDuration>0){const wwEnd=addM(t.wstart,t.wwDuration-1);if(ms<=wwEnd)inc=t.ww||0;}
       else inc=t.ww||0;
     }
-    total+=inc;
+    salaryIncome+=inc;
   }
-  // Add self-employment net profit from all businesses
-  if(DB.businesses) DB.businesses.forEach(biz=>{
-    const pl=getBizPL(biz.id,year); total+=pl.profit;
-  });
-  return total;
+  // Box 1 businesses only — biz3 (Self Trading) is Box 3, not Box 1
+  const bizProfit=(DB.businesses||[]).filter(b=>b.id!=='biz3').reduce((s,biz)=>{
+    return s+getBizPL(biz.id,year).profit;
+  },0);
+  // Apply entrepreneur deductions if enabled and there's business profit
+  let taxableBizIncome=bizProfit;
+  if(DB.taxSettings?.entrepreneurDeductionsEnabled&&bizProfit>0){
+    const ts=DB.taxSettings;
+    const zzpDed=ts.zelfstandigenaftrek||2470;
+    const startDed=ts.startersaftrekEnabled?(ts.startersaftrek||2123):0;
+    const afterZZP=Math.max(0,bizProfit-(zzpDed+startDed));
+    const mkbExemption=afterZZP*((ts.mkbVrijstelling||12.7)/100);
+    taxableBizIncome=afterZZP-mkbExemption;
+  }
+  return Math.max(0,salaryIncome+taxableBizIncome);
 }
 function calcBox1Tax(income){
   if(income<=0) return 0;
@@ -2732,7 +2875,13 @@ function saveTaxSettings(){
   const al=parseFloat(document.getElementById('tax_allowance').value)||57000;
   const b1=parseFloat(document.getElementById('tax_box1Rate')?.value)||0;
   const b2=parseFloat(document.getElementById('tax_box2Rate')?.value)||26.9;
-  DB.taxSettings={dividendWithholdingRate:dr,capitalGainsRate:cr,fictitiousReturnRate:fr,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2};
+  const zzpEnabled=document.getElementById('tax_zzpEnabled')?.checked||false;
+  const zzpDed=parseFloat(document.getElementById('tax_zzpDed')?.value)||2470;
+  const starterEnabled=document.getElementById('tax_starterEnabled')?.checked||false;
+  const starterDed=parseFloat(document.getElementById('tax_starterDed')?.value)||2123;
+  const mkbPct=parseFloat(document.getElementById('tax_mkbPct')?.value)||12.7;
+  const korThr=parseFloat(document.getElementById('tax_korThreshold')?.value)||20000;
+  DB.taxSettings={dividendWithholdingRate:dr,capitalGainsRate:cr,fictitiousReturnRate:fr,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2,entrepreneurDeductionsEnabled:zzpEnabled,zelfstandigenaftrek:zzpDed,startersaftrekEnabled:starterEnabled,startersaftrek:starterDed,mkbVrijstelling:mkbPct,korThreshold:korThr};
   saveDB(); renderTaxTab(); refreshAll();
 }
 function renderTaxTab(){
@@ -2756,6 +2905,18 @@ function renderTaxTab(){
   const b2El=document.getElementById('tax_box2Rate');
   if(b1El) b1El.value=DB.taxSettings?.box1EffectiveRate??0;
   if(b2El) b2El.value=DB.taxSettings?.box2Rate??26.9;
+  const zzpEnabledEl=document.getElementById('tax_zzpEnabled');
+  const zzpDedEl=document.getElementById('tax_zzpDed');
+  const starterEnabledEl=document.getElementById('tax_starterEnabled');
+  const starterDedEl=document.getElementById('tax_starterDed');
+  const mkbPctEl=document.getElementById('tax_mkbPct');
+  const korThrEl=document.getElementById('tax_korThreshold');
+  if(zzpEnabledEl) zzpEnabledEl.checked=DB.taxSettings?.entrepreneurDeductionsEnabled||false;
+  if(zzpDedEl) zzpDedEl.value=DB.taxSettings?.zelfstandigenaftrek??2470;
+  if(starterEnabledEl) starterEnabledEl.checked=DB.taxSettings?.startersaftrekEnabled||false;
+  if(starterDedEl) starterDedEl.value=DB.taxSettings?.startersaftrek??2123;
+  if(mkbPctEl) mkbPctEl.value=DB.taxSettings?.mkbVrijstelling??12.7;
+  if(korThrEl) korThrEl.value=DB.taxSettings?.korThreshold??20000;
 
   // ── BOX 1 ──
   const box1Income=calcBox1Income(currentYear);
@@ -2789,17 +2950,51 @@ function renderTaxTab(){
       <span class="num">${feur(ph.monthly)}/mo</span>
       <span class="num fw7">${feur(ph.months*ph.monthly)}</span>
     </div>`).join('');
-  // Business self-employment rows
-  const bizRows=(DB.businesses||[]).map(biz=>{
+  // Business self-employment rows — Box 1 only (biz3 = Self Trading = Box 3, excluded)
+  const box1Bizs=(DB.businesses||[]).filter(b=>b.id!=='biz3');
+  const bizRows=box1Bizs.map(biz=>{
     const pl=getBizPL(biz.id,currentYear);
     if(pl.revenue===0&&pl.expenses===0) return '';
     return`<div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
       <span style="font-weight:600;color:${biz.color}">${biz.icon} ${biz.name} <span style="font-size:10px;font-weight:400;color:var(--txt2)">self-employment</span></span>
-      <span class="num" style="font-size:11px;color:var(--txt2)">Revenue ${feur(pl.revenue)}</span>
+      <span class="num" style="font-size:11px;color:var(--txt2)">Rev ${feur(pl.revenue)}</span>
       <span class="num" style="font-size:11px;color:var(--txt2)">Costs −${feur(pl.expenses)}</span>
       <span class="num fw7 ${pl.profit>=0?'tg':'tr'}">${pl.profit>=0?'+':''}${feur(pl.profit)}</span>
     </div>`;
   }).join('');
+  // Entrepreneur deductions breakdown rows
+  const bizProfit=box1Bizs.reduce((s,biz)=>s+getBizPL(biz.id,currentYear).profit,0);
+  const ts=DB.taxSettings||{};
+  const zzpEnabled=ts.entrepreneurDeductionsEnabled&&bizProfit>0;
+  let deductionRows='', grossBizIncome=bizProfit, taxableBizIncome=bizProfit;
+  if(zzpEnabled){
+    const zzpDed=ts.zelfstandigenaftrek||2470;
+    const startDed=ts.startersaftrekEnabled?(ts.startersaftrek||2123):0;
+    const appliedZZP=Math.min(bizProfit,zzpDed+startDed);
+    const afterZZP=Math.max(0,bizProfit-appliedZZP);
+    const mkbExemption=afterZZP*((ts.mkbVrijstelling||12.7)/100);
+    taxableBizIncome=afterZZP-mkbExemption;
+    const totalDed=bizProfit-taxableBizIncome;
+    deductionRows=`
+      <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:#ECFDF5">
+        <span style="color:#065F46">↳ Zelfstandigenaftrek</span><span></span><span></span>
+        <span class="num tg">−${feur(Math.min(zzpDed,bizProfit))}</span>
+      </div>
+      ${startDed>0?`<div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:#ECFDF5">
+        <span style="color:#065F46">↳ Startersaftrek</span><span></span><span></span>
+        <span class="num tg">−${feur(Math.min(startDed,Math.max(0,bizProfit-zzpDed)))}</span>
+      </div>`:''}
+      <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:#ECFDF5">
+        <span style="color:#065F46">↳ MKB-winstvrijstelling (${ts.mkbVrijstelling||12.7}%)</span><span></span><span></span>
+        <span class="num tg">−${feur(mkbExemption)}</span>
+      </div>
+      <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:#D1FAE5">
+        <span style="color:#065F46;font-weight:700">Total ZZP Tax Savings</span><span></span><span></span>
+        <span class="num fw7 tg">−${feur(totalDed)}</span>
+      </div>`;
+  }
+  // Gross income before deductions (for display)
+  const salaryIncome=box1Income-(zzpEnabled?taxableBizIncome:bizProfit);
   document.getElementById('taxBox1').innerHTML=`
     <div class="tax-card">
       <div class="tax-hdr" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px">
@@ -2808,8 +3003,9 @@ function renderTaxTab(){
       </div>
       ${phaseRows.length?phaseRows:`<div style="padding:12px;text-align:center;color:var(--txt2);font-size:13px">Set up your income phases in the Cash Flow tab.</div>`}
       ${bizRows}
+      ${deductionRows}
       ${(phaseRows.length||bizRows)?`<div class="tax-row fw7" style="grid-template-columns:2fr 1fr 1fr 1fr;background:var(--neu-l)">
-        <span>Total Box 1 Income</span><span></span><span></span><span class="num">${feur(box1Income)}</span>
+        <span>Taxable Box 1 Income</span><span></span><span></span><span class="num">${feur(box1Income)}</span>
       </div>
       <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:var(--err-l)">
         <span class="fw6" style="color:var(--err)">Estimated Box 1 Tax</span>
@@ -2818,8 +3014,8 @@ function renderTaxTab(){
       </div>`:''}
       <div style="margin-top:10px;padding:10px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:11px;color:#92400E">
         ${(DB.taxSettings?.box1EffectiveRate||0)>0
-          ? `⚠️ Using your custom effective rate of <strong>${DB.taxSettings.box1EffectiveRate}%</strong>. Excludes personal tax credits and deductions. Consult a tax advisor for your specific situation.`
-          : `⚠️ Using NL 2025 progressive brackets (35.82% · 37.48% · 49.50%). Set a custom effective rate in Tax Settings to override. Excludes credits and deductions.`
+          ? `⚠️ Using your custom effective rate of <strong>${DB.taxSettings.box1EffectiveRate}%</strong>. Excludes personal tax credits. Consult a tax advisor for your specific situation.`
+          : `⚠️ Using NL 2025 progressive brackets (35.82% · 37.48% · 49.50%). Set a custom effective rate in Tax Settings to override. Excludes heffingskortingen (tax credits).`
         }
       </div>
     </div>`;
@@ -2961,9 +3157,12 @@ function getBizPLForRange(bizId,start,end){
   return{revenue,expenses,profit:revenue-expenses};
 }
 function getTradingPLForRange(start,end){
+  const tradingCats=new Set(['ETF','Stock','Crypto']);
+  const instCat={}; DB.instruments.forEach(i=>{ instCat[i.id]=i.category; });
   const txs=[...DB.transactions].sort((a,b)=>a.date.localeCompare(b.date));
   const pos={};let dividends=0,realizedNet=0,fees=0;
   txs.forEach(tx=>{
+    if(!tradingCats.has(instCat[tx.iid])) return;
     if(!pos[tx.iid]) pos[tx.iid]={qty:0,cost:0};
     const p=pos[tx.iid];
     const inRange=tx.date>=start&&tx.date<=end;
@@ -2971,7 +3170,9 @@ function getTradingPLForRange(start,end){
     else if(tx.type==='sell'){const avg=p.qty>0?p.cost/p.qty:0;const gain=tx.qty*tx.price-tx.qty*avg-(tx.fees||0);p.cost-=avg*tx.qty;p.qty-=tx.qty;if(inRange)realizedNet+=gain;}
     else if(tx.type==='dividend'&&inRange){dividends+=(tx.qty||1)*(tx.price||0);}
   });
-  return{revenue:dividends+Math.max(0,realizedNet),expenses:fees+Math.max(0,-realizedNet),profit:dividends+realizedNet-fees,dividends,realizedNet,fees};
+  // Fold in manual biz3 entries for the same date range
+  const biz3manual=getBizPLForRange('biz3',start,end);
+  return{revenue:dividends+Math.max(0,realizedNet)+biz3manual.revenue,expenses:fees+Math.max(0,-realizedNet)+biz3manual.expenses,profit:dividends+realizedNet-fees+biz3manual.profit,dividends,realizedNet,fees};
 }
 function renderBizIncomeOverview(){
   const cardsEl=document.getElementById('bizIncomeCards');
@@ -2979,7 +3180,7 @@ function renderBizIncomeOverview(){
   const{start,end}=getBizDateRange(bizIncomePeriod);
   let totalRev=0,totalCost=0,totalNet=0;
   const bizData=[];
-  (DB.businesses||[]).forEach(biz=>{
+  (DB.businesses||[]).filter(b=>b.id!=='biz3').forEach(biz=>{
     const p=getBizPLForRange(biz.id,start,end);
     totalRev+=p.revenue;totalCost+=p.expenses;totalNet+=p.profit;
     bizData.push({name:biz.name,icon:biz.icon,color:biz.color,pl:p});
@@ -3023,14 +3224,18 @@ function renderBizIncomeOverview(){
 }
 
 function getTradingPL(year){
-  // Revenue = dividends YTD + realized gains from sells YTD
+  // Revenue = dividends YTD + realized gains from sells YTD (ETF/Stock/Crypto only)
   // Expenses = trading fees YTD + realized losses YTD
   // Net    = dividends + realized gains/losses - fees
+  // Manual biz3 entries (e.g. platform fees) are folded into the totals
   const yr=String(year);
+  const tradingCats=new Set(['ETF','Stock','Crypto']);
+  const instCat={}; DB.instruments.forEach(i=>{ instCat[i.id]=i.category; });
   const txs=[...DB.transactions].sort((a,b)=>a.date.localeCompare(b.date));
   const pos={};
   let dividends=0, realizedNet=0, fees=0;
   txs.forEach(tx=>{
+    if(!tradingCats.has(instCat[tx.iid])) return;
     if(!pos[tx.iid]) pos[tx.iid]={qty:0,cost:0};
     const p=pos[tx.iid];
     const inYear=tx.date.startsWith(yr);
@@ -3047,9 +3252,11 @@ function getTradingPL(year){
       dividends+=(tx.qty||1)*(tx.price||0);
     }
   });
-  const revenue=dividends+Math.max(0,realizedNet);
-  const expenses=fees+Math.max(0,-realizedNet);
-  const profit=dividends+realizedNet-fees;
+  // Fold in manual biz3 entries (e.g. platform subscriptions, account fees)
+  const biz3manual=getBizPL('biz3',year);
+  const revenue=dividends+Math.max(0,realizedNet)+biz3manual.revenue;
+  const expenses=fees+Math.max(0,-realizedNet)+biz3manual.expenses;
+  const profit=dividends+realizedNet-fees+biz3manual.profit;
   return{revenue,expenses,profit,dividends,realizedNet,fees};
 }
 function getBizPL(bizId, year){
@@ -3062,16 +3269,115 @@ function getBizPL(bizId, year){
   return {revenue,expenses,profit:revenue-expenses};
 }
 function getTotalBizPL(year){
-  return (DB.businesses||[]).reduce((acc,biz)=>{
+  return (DB.businesses||[]).filter(b=>b.id!=='biz3').reduce((acc,biz)=>{
     const pl=getBizPL(biz.id,year);
     return {revenue:acc.revenue+pl.revenue,expenses:acc.expenses+pl.expenses,profit:acc.profit+pl.profit};
   },{revenue:0,expenses:0,profit:0});
 }
+// ── BALANCE SHEET ──
+function getTotalLiabilities(){
+  return (DB.liabilities||[]).reduce((s,l)=>s+(l.balance||0),0);
+}
+function renderBalanceSheet(){
+  const cats=computeCategories();
+  const totalAssets=cats.reduce((s,c)=>s+c.current,0);
+  const totalLiab=getTotalLiabilities();
+  const trueNW=totalAssets-totalLiab;
+  // KPI cards
+  const kpiEl=document.getElementById('balanceKPIs');
+  if(kpiEl) kpiEl.innerHTML=`
+    <div class="kpi ok"><div class="kpi-lbl">Total Assets</div><div class="kpi-val tg">${feur(totalAssets)}</div><div class="kpi-sub"><span class="badge bg">portfolio</span><span class="t2">${cats.length} categories</span></div></div>
+    <div class="kpi ${totalLiab>0?'err':''}"><div class="kpi-lbl">Total Liabilities</div><div class="kpi-val ${totalLiab>0?'tr':''}">${totalLiab>0?'−':''}${feur(totalLiab)}</div><div class="kpi-sub"><span class="t2">${(DB.liabilities||[]).length} item${(DB.liabilities||[]).length!==1?'s':''}</span></div></div>
+    <div class="kpi ${trueNW>=0?'ok':'err'}"><div class="kpi-lbl">True Net Worth</div><div class="kpi-val ${trueNW>=0?'tg':'tr'}">${feur(trueNW)}</div><div class="kpi-sub"><span class="badge ${trueNW>=0?'bg':'br'}">assets − liabilities</span></div></div>
+  `;
+  // Assets breakdown
+  const CAT_ICONS={ETF:'📊',Stock:'📈',Crypto:'₿',Commodity:'🪙',Cash:'💵'};
+  const assetsEl=document.getElementById('balanceAssets');
+  if(assetsEl) assetsEl.innerHTML=`
+    ${cats.map(c=>`<div style="display:grid;grid-template-columns:1fr auto;padding:11px 16px;border-bottom:1px solid var(--bdr);align-items:center">
+      <span style="font-size:13px;font-weight:500">${CAT_ICONS[c.label]||'📌'} ${c.label}</span>
+      <span class="num fw7">${feur(c.current)}</span>
+    </div>`).join('')}
+    <div style="display:grid;grid-template-columns:1fr auto;padding:12px 16px;background:var(--neu-l);align-items:center">
+      <span class="fw7">Total Assets</span><span class="num fw7 tg">${feur(totalAssets)}</span>
+    </div>
+  `;
+  // Liabilities
+  const liabs=DB.liabilities||[];
+  const liabEl=document.getElementById('balanceLiabilities');
+  if(!liabEl) return;
+  const TYPE_LABELS={credit_card:'💳 Credit Card',mortgage:'🏠 Mortgage',loan:'💼 Personal Loan',car_loan:'🚗 Car Loan',other:'📋 Other'};
+  if(!liabs.length){
+    liabEl.innerHTML=`<div class="card" style="text-align:center;padding:30px;color:var(--txt2);font-size:13px">No liabilities recorded. Click <strong>＋ Add Liability</strong> to track what you owe.</div>`;
+    return;
+  }
+  liabEl.innerHTML=`<div class="card" style="padding:0;overflow:hidden">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 80px;padding:10px 16px;background:var(--neu-l);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--txt2)">
+      <span>Name</span><span>Type</span><span class="num">Balance</span><span></span>
+    </div>
+    ${liabs.map(l=>`<div style="display:grid;grid-template-columns:2fr 1fr 1fr 80px;padding:12px 16px;border-top:1px solid var(--bdr);align-items:center">
+      <div><div style="font-weight:600;font-size:13px">${l.name}</div>${l.notes?`<div style="font-size:11px;color:var(--txt2)">${l.notes}</div>`:''}</div>
+      <span style="font-size:12px;color:var(--txt2)">${TYPE_LABELS[l.type]||l.type}</span>
+      <span class="num fw7 tr">−${feur(l.balance||0)}</span>
+      <span style="display:flex;gap:4px;justify-content:flex-end">
+        <button style="background:none;border:none;cursor:pointer;color:var(--txt2);font-size:13px;padding:3px 7px;border-radius:4px" onclick="openLiabilityModal('${l.id}')" title="Edit">✎</button>
+        <button style="background:none;border:none;cursor:pointer;color:var(--err);font-size:13px;padding:3px 7px;border-radius:4px" onclick="deleteLiability('${l.id}')" title="Delete">✕</button>
+      </span>
+    </div>`).join('')}
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 80px;padding:12px 16px;border-top:2px solid var(--bdr);background:var(--err-l);align-items:center">
+      <span class="fw7">Total Liabilities</span><span></span>
+      <span class="num fw7 tr">−${feur(totalLiab)}</span><span></span>
+    </div>
+  </div>`;
+}
+function openLiabilityModal(id=null){
+  const l=id?(DB.liabilities||[]).find(x=>x.id===id):null;
+  document.getElementById('liabilityModalTitle').textContent=l?'Edit Liability':'＋ Add Liability';
+  document.getElementById('liab_id').value=id||'';
+  document.getElementById('liab_name').value=l?.name||'';
+  document.getElementById('liab_type').value=l?.type||'credit_card';
+  document.getElementById('liab_balance').value=l?.balance!==undefined?l.balance:'';
+  document.getElementById('liab_notes').value=l?.notes||'';
+  openModal('liabilityModal');
+}
+function saveLiability(){
+  const id=document.getElementById('liab_id').value;
+  const name=(document.getElementById('liab_name').value||'').trim();
+  const type=document.getElementById('liab_type').value;
+  const balance=parseFloat(document.getElementById('liab_balance').value)||0;
+  const notes=(document.getElementById('liab_notes').value||'').trim();
+  if(!name){alert('Please enter a name.');return;}
+  if(!DB.liabilities) DB.liabilities=[];
+  if(id){
+    const idx=DB.liabilities.findIndex(l=>l.id===id);
+    if(idx>=0) DB.liabilities[idx]={id,name,type,balance,notes};
+  } else {
+    DB.liabilities.push({id:'l'+Date.now(),name,type,balance,notes});
+  }
+  saveDB(); closeModal('liabilityModal'); renderBalanceSheet(); renderKPIs(computeCategories());
+}
+function deleteLiability(id){
+  if(!confirm('Delete this liability?')) return;
+  DB.liabilities=(DB.liabilities||[]).filter(l=>l.id!==id);
+  saveDB(); renderBalanceSheet(); renderKPIs(computeCategories());
+}
+
 function renderBizTab(){
   const year=new Date().getFullYear();
   document.getElementById('bizYearLabel').textContent=year+' YTD';
+  // KOR warning — check total Box 1 business revenue against threshold
+  const korThr=DB.taxSettings?.korThreshold||20000;
+  const totalBizRev=(DB.businesses||[]).filter(b=>b.id!=='biz3').reduce((s,biz)=>s+getBizPL(biz.id,year).revenue,0);
+  const korPct=korThr>0?totalBizRev/korThr:0;
+  const korEl=document.getElementById('bizYearLabel');
+  if(korEl){
+    let korBadge='';
+    if(korPct>=1) korBadge=`<span style="margin-left:10px;background:#FEE2E2;color:#991B1B;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">⚠️ KOR exceeded — you must register for BTW</span>`;
+    else if(korPct>=0.75) korBadge=`<span style="margin-left:10px;background:#FEF3C7;color:#92400E;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">⚠️ Approaching KOR (${Math.round(korPct*100)}% of €${fmt(korThr)} threshold)</span>`;
+    korEl.innerHTML=year+' YTD'+(korBadge||'');
+  }
   // ── Summary cards ──
-  const bizCards=(DB.businesses||[]).map(biz=>{
+  const bizCards=(DB.businesses||[]).filter(b=>b.id!=='biz3').map(biz=>{
     const pl=getBizPL(biz.id,year);
     return`<div class="card" style="border-top:3px solid ${biz.color};cursor:pointer" onclick="setActiveBiz('${biz.id}')">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
@@ -3090,7 +3396,7 @@ function renderBizTab(){
   }).join('');
   // Self Trading card — Revenue/Costs/Net Profit from real transactions (Box 3)
   const tpl=getTradingPL(year);
-  const tradingCard=`<div class="card" style="border-top:3px solid #F59E0B;cursor:pointer" onclick="switchTabByName('holdings')">
+  const tradingCard=`<div class="card" style="border-top:3px solid #F59E0B;cursor:pointer" onclick="setActiveBiz('biz3')">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
       <span style="font-size:24px">📈</span>
       <div>
@@ -3199,7 +3505,7 @@ function deleteBizEntry(bizId, entryId){
 function snapshotNetWorth(cats){
   if(!DB.netWorthHistory) DB.netWorthHistory=[];
   const today=new Date().toISOString().slice(0,10);
-  const nw=cats.reduce((s,c)=>s+c.current,0);
+  const nw=cats.reduce((s,c)=>s+c.current,0)-getTotalLiabilities();
   if(nw<=0) return; // don't snapshot empty portfolio
   const last=DB.netWorthHistory[DB.netWorthHistory.length-1];
   if(last&&last.date===today){ last.value=+nw.toFixed(2); return; } // update today's entry
@@ -3335,10 +3641,18 @@ async function gistFetch(){
     if(DB.taxSettings.box3Allowance===undefined) DB.taxSettings.box3Allowance=57000;
     if(DB.taxSettings.box1EffectiveRate===undefined) DB.taxSettings.box1EffectiveRate=0;
     if(DB.taxSettings.box2Rate===undefined) DB.taxSettings.box2Rate=26.9;
+    if(DB.taxSettings.entrepreneurDeductionsEnabled===undefined) DB.taxSettings.entrepreneurDeductionsEnabled=false;
+    if(DB.taxSettings.zelfstandigenaftrek===undefined) DB.taxSettings.zelfstandigenaftrek=2470;
+    if(DB.taxSettings.startersaftrekEnabled===undefined) DB.taxSettings.startersaftrekEnabled=false;
+    if(DB.taxSettings.startersaftrek===undefined) DB.taxSettings.startersaftrek=2123;
+    if(DB.taxSettings.mkbVrijstelling===undefined) DB.taxSettings.mkbVrijstelling=12.7;
+    if(DB.taxSettings.korThreshold===undefined) DB.taxSettings.korThreshold=20000;
     if(!DB.settings) DB.settings={currency:'€',country:''};
     if(!DB.netWorthHistory) DB.netWorthHistory=[];
+    if(!DB.liabilities) DB.liabilities=[];
     if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
     if(!DB.sectionOrder) DB.sectionOrder=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
+    if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
     if(!DB.transition) DB.transition=JSON.parse(JSON.stringify(DEFAULT_TRANSITION));
     if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
     if(!DB.priceHistory) DB.priceHistory={};
