@@ -1101,6 +1101,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <div style="display:grid;gap:8px;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--txt2)" id="bizEntriesHdr"></div>
         <div id="bizEntriesList"></div>
       </div>
+      <div id="strategyHealthWrap" style="display:none"></div>
     </div>
   </div>
 </div>
@@ -1347,6 +1348,10 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <div class="fg"><label class="flbl">Div Withholding Rate %</label><input class="finp" type="number" id="inst_wht" step="any" placeholder="e.g. 15"></div>
           <div class="fg"><label class="flbl">Unit <span style="font-size:10px;color:var(--txt2)">(commodities: g / troy oz)</span></label><input class="finp" type="text" id="inst_unit" placeholder="leave blank for shares"></div>
           <div class="fg"><label class="flbl">Interest Rate % <span style="font-size:10px;color:var(--txt2)">(savings)</span></label><input class="finp" type="number" id="inst_interest" step="any" placeholder="e.g. 3.42"></div>
+          <div class="fg ffull" style="display:flex;align-items:center;gap:10px;padding:6px 0">
+            <input type="checkbox" id="inst_isTrading" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pri)">
+            <label for="inst_isTrading" style="margin:0;cursor:pointer;font-size:13px;font-weight:500">📈 Active Trading Instrument <span style="font-size:11px;color:var(--txt2);font-weight:400">— include in Strategy Health metrics</span></label>
+          </div>
         </div>
       </div>
     </div>
@@ -1507,7 +1512,8 @@ function getDefaults(){
     liabilities:[],
     businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES)),
     sectionOrder:['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'],
-    ledger:{months:{}}
+    ledger:{months:{}},
+    tradingExperiment:{startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20}
   };
 }
 function loadDB(){
@@ -1547,6 +1553,7 @@ function loadDB(){
         // Ensure biz3 (Self Trading) always exists — for manual entry support alongside auto-calc
         if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
         if(!DB.ledger) DB.ledger={months:{}};
+        if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
         if(!DB.lastPriceUpdateDate){
           // First-time migration: initialise tracking dates to today so no immediate stale warnings
           DB.lastPriceUpdateDate={};
@@ -1900,6 +1907,7 @@ function importDB(event){
       if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
       if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
       if(!DB.ledger) DB.ledger={months:{}};
+      if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
       saveDB();
       const cats=computeCategories();
       if(cats.length) activeCategory=cats[0].label;
@@ -2820,6 +2828,7 @@ function showInstForm(editId){
   setVal('inst_wht', inst?.withholdingRate??'');
   setVal('inst_unit', inst?.unit||'');
   setVal('inst_interest', inst?.interestRate??'');
+  const cbEl=document.getElementById('inst_isTrading'); if(cbEl) cbEl.checked=!!(inst?.isTrading);
 }
 function saveInstForm(){
   const name=document.getElementById('inst_name').value.trim();
@@ -2836,7 +2845,8 @@ function saveInstForm(){
     exchange:getV('inst_broker'),
     distType:getV('inst_distType')||undefined,
     ter:getN('inst_ter'), withholdingRate:getN('inst_wht'),
-    unit:getV('inst_unit')||undefined, interestRate:getN('inst_interest')
+    unit:getV('inst_unit')||undefined, interestRate:getN('inst_interest'),
+    isTrading:!!(document.getElementById('inst_isTrading')?.checked)
   };
   if(editId){
     const idx=DB.instruments.findIndex(i=>i.id===editId);
@@ -3484,6 +3494,173 @@ function getTradingPL(year){
   const profit=dividends+realizedNet-fees+biz3manual.profit;
   return{revenue,expenses,profit,dividends,realizedNet,fees};
 }
+
+// ── STRATEGY HEALTH ──
+function getStrategyHealth(){
+  const exp=DB.tradingExperiment||{};
+  const tradingInsts=(DB.instruments||[]).filter(i=>i.isTrading);
+  const tradingIds=new Set(tradingInsts.map(i=>i.id));
+  const pos=getPositions();
+  // Current exposure + cost basis
+  let currentValue=0, costBasis=0;
+  tradingInsts.forEach(i=>{
+    const p=pos[i.id];
+    if(p&&p.qty>0){ currentValue+=(DB.prices[i.id]||0)*p.qty; costBasis+=p.cost; }
+  });
+  // Max drawdown from price history — aggregate all trading instruments
+  const dateMap={};
+  tradingInsts.forEach(i=>{
+    const hist=DB.priceHistory[i.id]||[];
+    const p=pos[i.id];
+    if(!p||p.qty<=0) return;
+    hist.forEach(h=>{
+      if(!dateMap[h.date]) dateMap[h.date]=0;
+      dateMap[h.date]+=(h.price*p.qty);
+    });
+  });
+  const dates=Object.keys(dateMap).sort();
+  let peak=Math.max(currentValue,1); let maxDrawdown=0;
+  dates.forEach(d=>{ const v=dateMap[d]; if(v>peak) peak=v; const dd=(peak-v)/peak*100; if(dd>maxDrawdown) maxDrawdown=dd; });
+  const ddCurrent=peak>0?(peak-currentValue)/peak*100:0;
+  if(ddCurrent>maxDrawdown) maxDrawdown=ddCurrent;
+  // Trade stats — avg cost method per instrument
+  const stateByInst={};
+  const tradeResults=[];
+  [...(DB.transactions||[])].filter(tx=>tradingIds.has(tx.iid)&&tx.type!=='dividend').sort((a,b)=>a.date.localeCompare(b.date)).forEach(tx=>{
+    if(!stateByInst[tx.iid]) stateByInst[tx.iid]={qty:0,totalCost:0};
+    const st=stateByInst[tx.iid];
+    if(tx.type==='buy'){ st.totalCost+=(tx.qty*tx.price)+(tx.fees||0); st.qty+=tx.qty; }
+    else if(tx.type==='sell'&&st.qty>0){
+      const avgCost=st.totalCost/st.qty;
+      const proceeds=tx.qty*tx.price-(tx.fees||0);
+      const pnl=proceeds-(avgCost*tx.qty);
+      tradeResults.push(pnl);
+      st.totalCost-=avgCost*tx.qty; st.qty-=tx.qty;
+    }
+  });
+  const wins=tradeResults.filter(p=>p>0), losses=tradeResults.filter(p=>p<=0);
+  const hitRate=tradeResults.length>0?wins.length/tradeResults.length*100:null;
+  const avgWin=wins.length>0?wins.reduce((s,v)=>s+v,0)/wins.length:null;
+  const avgLoss=losses.length>0?Math.abs(losses.reduce((s,v)=>s+v,0)/losses.length):null;
+  const grossWin=wins.reduce((s,v)=>s+v,0), grossLoss=Math.abs(losses.reduce((s,v)=>s+v,0));
+  const profitFactor=grossLoss>0?grossWin/grossLoss:null;
+  // Timeline
+  const startDate=exp.startDate||'', endDate=exp.endDate||'';
+  const today=new Date().toISOString().slice(0,10);
+  let timelinePct=null, daysElapsed=null, totalDays=null;
+  if(startDate&&endDate){
+    totalDays=Math.max(1,Math.round((new Date(endDate)-new Date(startDate))/(1000*86400)));
+    daysElapsed=Math.max(0,Math.round((new Date(today)-new Date(startDate))/(1000*86400)));
+    timelinePct=Math.min(100,daysElapsed/totalDays*100);
+  }
+  return{tradingInstCount:tradingInsts.length,currentValue,costBasis,unrealizedPnL:currentValue-costBasis,
+    maxRiskCapital:exp.maxRiskCapital||0,drawdownAlertPct:exp.drawdownAlertPct||20,
+    maxDrawdown,peak,tradeCount:tradeResults.length,hitRate,avgWin,avgLoss,profitFactor,
+    wins:wins.length,losses:losses.length,startDate,endDate,timelinePct,daysElapsed,totalDays};
+}
+function renderStrategyHealthHTML(){
+  const h=getStrategyHealth();
+  if(h.tradingInstCount===0){
+    return`<div style="border-top:2px dashed var(--bdr);padding:20px;margin-top:4px;text-align:center;color:var(--txt2);font-size:13px">
+      <strong style="font-size:15px">📊 Strategy Health</strong><br><br>
+      No instruments tagged as trading yet.<br>Go to <strong>⚙ Instruments</strong> (header button) → ✏️ Edit an instrument → check <strong>Active Trading Instrument</strong> to include positions here.
+    </div>`;
+  }
+  const capPct=h.maxRiskCapital>0?Math.min(100,h.currentValue/h.maxRiskCapital*100):null;
+  const capColor=capPct===null?'var(--neu)':capPct>80?'var(--err)':capPct>50?'var(--wrn)':'var(--ok)';
+  const ddPct=h.maxDrawdown, ddAlert=h.drawdownAlertPct;
+  const ddColor=ddPct>=ddAlert?'var(--err)':ddPct>=(ddAlert*0.6)?'var(--wrn)':'var(--ok)';
+  return`<div style="border-top:2px dashed var(--bdr);padding-top:20px;margin-top:8px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-weight:700;font-size:15px">📊 Strategy Health</div>
+      <button onclick="toggleStrategySettings()" style="background:none;border:1px solid var(--bdr);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--txt2)">⚙️ Settings</button>
+    </div>
+    <div id="strategySettingsPanel" style="display:none;background:var(--neu-l);border-radius:var(--rs);padding:14px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:10px">
+        <div><label class="flbl">Experiment Start</label><input class="finp" type="date" id="sh_startDate" value="${h.startDate}" oninput="saveStrategySettings()"></div>
+        <div><label class="flbl">Target End Date</label><input class="finp" type="date" id="sh_endDate" value="${h.endDate}" oninput="saveStrategySettings()"></div>
+        <div><label class="flbl">Max Risk Capital (€)</label><input class="finp" type="number" id="sh_maxCap" value="${h.maxRiskCapital||''}" placeholder="e.g. 5000" step="100" oninput="saveStrategySettings()"></div>
+        <div><label class="flbl">Drawdown Alert (%)</label><input class="finp" type="number" id="sh_ddAlert" value="${h.drawdownAlertPct||20}" placeholder="e.g. 20" step="1" oninput="saveStrategySettings()"></div>
+      </div>
+      <div style="font-size:11px;color:var(--txt2)">Tag instruments via <strong>⚙ Instruments</strong> (header button) → ✏️ Edit → <strong>Active Trading Instrument ✓</strong></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div style="background:var(--neu-l);border-radius:var(--rs);padding:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2);margin-bottom:10px">💰 Ring-fenced Capital</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <div><div style="font-size:20px;font-weight:700">${feur(h.currentValue)}</div><div style="font-size:11px;color:var(--txt2)">current exposure · ${h.tradingInstCount} instrument${h.tradingInstCount!==1?'s':''}</div></div>
+          ${h.maxRiskCapital>0?`<div style="text-align:right"><div style="font-size:13px;font-weight:600">of ${feur(h.maxRiskCapital)}</div><div style="font-size:11px;color:${capColor}">${capPct.toFixed(0)}% utilized</div></div>`:`<div style="font-size:11px;color:var(--txt2)">set max →</div>`}
+        </div>
+        ${h.maxRiskCapital>0?`<div style="background:var(--bdr);border-radius:4px;height:6px;overflow:hidden"><div style="height:100%;width:${capPct}%;background:${capColor};border-radius:4px;transition:.3s"></div></div>`:''}
+        <div style="margin-top:8px;display:flex;justify-content:space-between;font-size:11px;color:var(--txt2)">
+          <span>Cost basis: <strong>${feur(h.costBasis)}</strong></span>
+          <span>Unrealized: <strong class="${h.unrealizedPnL>=0?'tg':'tr'}">${h.unrealizedPnL>=0?'+':''}${feur(h.unrealizedPnL)}</strong></span>
+        </div>
+      </div>
+      <div style="background:var(--neu-l);border-radius:var(--rs);padding:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2);margin-bottom:10px">📉 Max Drawdown</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <div><div style="font-size:20px;font-weight:700;color:${ddColor}">${ddPct.toFixed(1)}%</div><div style="font-size:11px;color:var(--txt2)">from peak ${feur(h.peak)}</div></div>
+          <div style="text-align:right"><div style="font-size:13px;font-weight:600;color:${ddColor}">${ddPct>=ddAlert?'⚠️ Alert':'✓ OK'}</div><div style="font-size:11px;color:var(--txt2)">alert at ${ddAlert}%</div></div>
+        </div>
+        <div style="background:var(--bdr);border-radius:4px;height:6px;overflow:hidden"><div style="height:100%;width:${Math.min(100,ddPct/ddAlert*100)}%;background:${ddColor};border-radius:4px;transition:.3s"></div></div>
+        <div style="margin-top:8px;font-size:11px;color:var(--txt2)">Based on price history of tagged instruments</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="background:var(--neu-l);border-radius:var(--rs);padding:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2);margin-bottom:10px">🎯 Trade Statistics</div>
+        ${h.tradeCount===0?`<div style="font-size:12px;color:var(--txt2)">No closed trades yet for tagged instruments.<br>Record sell transactions to see stats.</div>`:`
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="text-align:center;padding:8px;background:var(--card);border-radius:6px">
+            <div style="font-size:18px;font-weight:700;color:${h.hitRate>=50?'var(--ok)':'var(--err)'}">${h.hitRate!==null?h.hitRate.toFixed(0)+'%':'—'}</div>
+            <div style="font-size:10px;color:var(--txt2)">Hit Rate</div>
+            <div style="font-size:10px;color:var(--txt2)">${h.wins}W / ${h.losses}L</div>
+          </div>
+          <div style="text-align:center;padding:8px;background:var(--card);border-radius:6px">
+            <div style="font-size:18px;font-weight:700;color:${h.profitFactor!==null&&h.profitFactor>=1?'var(--ok)':'var(--err)'}">${h.profitFactor!==null?h.profitFactor.toFixed(2):'—'}</div>
+            <div style="font-size:10px;color:var(--txt2)">Profit Factor</div>
+            <div style="font-size:10px;color:var(--txt2)">${h.profitFactor!==null?(h.profitFactor>=1?'✓ Edge':'✗ No edge'):'—'}</div>
+          </div>
+          <div style="text-align:center;padding:8px;background:var(--card);border-radius:6px">
+            <div style="font-size:15px;font-weight:700;color:var(--ok)">${h.avgWin!==null?'+'+feur(h.avgWin):'—'}</div>
+            <div style="font-size:10px;color:var(--txt2)">Avg Win</div>
+          </div>
+          <div style="text-align:center;padding:8px;background:var(--card);border-radius:6px">
+            <div style="font-size:15px;font-weight:700;color:var(--err)">${h.avgLoss!==null?'−'+feur(h.avgLoss):'—'}</div>
+            <div style="font-size:10px;color:var(--txt2)">Avg Loss</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--txt2)">${h.tradeCount} closed trade${h.tradeCount!==1?'s':''} · avg cost method</div>`}
+      </div>
+      <div style="background:var(--neu-l);border-radius:var(--rs);padding:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2);margin-bottom:10px">🗓 Experiment Timeline</div>
+        ${!h.startDate?`<div style="font-size:12px;color:var(--txt2)">Set start and end dates in ⚙️ Settings above to track your 12–24 month experiment period.</div>`:h.timelinePct!==null?`
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+          <div><div style="font-size:20px;font-weight:700">${h.daysElapsed}d</div><div style="font-size:11px;color:var(--txt2)">elapsed of ${h.totalDays} days</div></div>
+          <div style="text-align:right"><div style="font-size:13px;font-weight:600">${h.timelinePct.toFixed(0)}%</div><div style="font-size:11px;color:var(--txt2)">${h.totalDays-h.daysElapsed>0?(h.totalDays-h.daysElapsed)+'d remaining':'Experiment complete'}</div></div>
+        </div>
+        <div style="background:var(--bdr);border-radius:4px;height:8px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:${h.timelinePct}%;background:${h.timelinePct>=100?'var(--err)':'var(--pri)'};border-radius:4px;transition:.3s"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt2)"><span>${h.startDate}</span><span>${h.endDate}</span></div>`:`<div style="font-size:12px;color:var(--txt2)">End date not set. Add it in ⚙️ Settings.</div>`}
+      </div>
+    </div>
+  </div>`;
+}
+function toggleStrategySettings(){
+  const p=document.getElementById('strategySettingsPanel');
+  if(p) p.style.display=p.style.display==='none'?'block':'none';
+}
+function saveStrategySettings(){
+  if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
+  DB.tradingExperiment.startDate=document.getElementById('sh_startDate')?.value||'';
+  DB.tradingExperiment.endDate=document.getElementById('sh_endDate')?.value||'';
+  DB.tradingExperiment.maxRiskCapital=parseFloat(document.getElementById('sh_maxCap')?.value)||0;
+  DB.tradingExperiment.drawdownAlertPct=parseFloat(document.getElementById('sh_ddAlert')?.value)||20;
+  saveDB();
+  const wrap=document.getElementById('strategyHealthWrap');
+  if(wrap&&wrap.style.display!=='none'){ const wasOpen=document.getElementById('strategySettingsPanel')?.style.display; wrap.innerHTML=renderStrategyHealthHTML(); const p=document.getElementById('strategySettingsPanel'); if(p&&wasOpen==='block') p.style.display='block'; }
+}
+
 function getBizPL(bizId, year){
   const biz=(DB.businesses||[]).find(b=>b.id===bizId);
   if(!biz) return {revenue:0,expenses:0,profit:0};
@@ -3938,22 +4115,28 @@ function renderBizTab(){
   document.getElementById('bizEntriesHdr').innerHTML='<span>Date</span><span>Type</span><span>Category</span><span>Description</span><span class="num">Amount</span><span>Status</span><span></span>';
   if(!entries.length){
     document.getElementById('bizEntriesList').innerHTML=`<div style="padding:30px;text-align:center;color:var(--txt2);font-size:13px">No entries yet for ${year}. Click <strong>＋ Add Entry</strong> to start tracking.</div>`;
-    return;
+  } else {
+    document.getElementById('bizEntriesList').innerHTML=entries.map(e=>{
+      const isRev=e.type==='revenue';
+      const stClass=isRev?(e.status==='paid'?'st-paid':e.status==='overdue'?'st-overdue':'st-pending'):'st-expense';
+      const stLabel=isRev?(e.status==='paid'?'Paid':e.status==='overdue'?'Overdue':'Pending'):'—';
+      return`<div class="biz-entry-row" style="grid-template-columns:${cols}">
+        <span style="font-size:12px;color:var(--txt2)">${e.date}</span>
+        <span><span class="badge ${isRev?'bg':'br'}" style="font-size:11px">${isRev?'💰 Rev':'💸 Exp'}</span></span>
+        <span style="font-size:12px">${e.category||'—'}</span>
+        <span style="font-size:12px">${e.description||'—'}</span>
+        <span class="num fw7 ${isRev?'tg':'tr'}">${isRev?'+':'-'}${feur(e.amount)}</span>
+        <span><span class="${stClass}">${stLabel}</span></span>
+        <span><button style="background:none;border:none;cursor:pointer;color:var(--txt2);font-size:13px;padding:2px 6px" onclick="deleteBizEntry('${biz.id}','${e.id}')" title="Delete">✕</button></span>
+      </div>`;
+    }).join('');
   }
-  document.getElementById('bizEntriesList').innerHTML=entries.map(e=>{
-    const isRev=e.type==='revenue';
-    const stClass=isRev?(e.status==='paid'?'st-paid':e.status==='overdue'?'st-overdue':'st-pending'):'st-expense';
-    const stLabel=isRev?(e.status==='paid'?'Paid':e.status==='overdue'?'Overdue':'Pending'):'—';
-    return`<div class="biz-entry-row" style="grid-template-columns:${cols}">
-      <span style="font-size:12px;color:var(--txt2)">${e.date}</span>
-      <span><span class="badge ${isRev?'bg':'br'}" style="font-size:11px">${isRev?'💰 Rev':'💸 Exp'}</span></span>
-      <span style="font-size:12px">${e.category||'—'}</span>
-      <span style="font-size:12px">${e.description||'—'}</span>
-      <span class="num fw7 ${isRev?'tg':'tr'}">${isRev?'+':'-'}${feur(e.amount)}</span>
-      <span><span class="${stClass}">${stLabel}</span></span>
-      <span><button style="background:none;border:none;cursor:pointer;color:var(--txt2);font-size:13px;padding:2px 6px" onclick="deleteBizEntry('${biz.id}','${e.id}')" title="Delete">✕</button></span>
-    </div>`;
-  }).join('');
+  // Strategy Health section — shown only when Self Trading (biz3) is active
+  const shWrap=document.getElementById('strategyHealthWrap');
+  if(shWrap){
+    if(activeBiz==='biz3'){ shWrap.style.display='block'; shWrap.innerHTML=renderStrategyHealthHTML(); }
+    else { shWrap.style.display='none'; }
+  }
 }
 function setActiveBiz(bizId){
   activeBiz=bizId;
@@ -4162,6 +4345,7 @@ async function gistFetch(){
     if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
     if(!DB.priceHistory) DB.priceHistory={};
     if(!DB.ledger) DB.ledger={months:{}};
+    if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
     try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
     const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     setSyncStatus('ok','Synced '+now);
