@@ -1253,7 +1253,7 @@ const DISTINCT_COLORS = [
   '#818CF8','#FCA5A5','#6EE7B7','#FDE68A','#93C5FD'
 ];
 const CAT_COLOR = {ETF:'#3B82F6',Stock:'#8B5CF6',Crypto:'#EF4444',Commodity:'#F59E0B',Cash:'#10B981'};
-const CAT_ICON  = {ETF:'📊',Stock:'📈',Crypto:'₿',Commodity:'🥇',Cash:'💰'};
+const CAT_ICON  = {ETF:'📊',Stock:'💹',Crypto:'₿',Commodity:'🔶',Cash:'💰'};
 
 // ── CALLOUT LABEL PLUGIN (shared by both doughnut charts) ──
 const calloutLabelPlugin = {
@@ -1908,7 +1908,7 @@ function computeCategories(){
 
 // ── FORMATTING ──
 const fmt=(n,d=0)=>new Intl.NumberFormat('en-EU',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
-const feur=(n,d=0)=>(DB.settings?.currency||'€')+fmt(n,d);
+const feur=(n,d=1)=>(DB.settings?.currency||'€')+fmt(n,d);
 const fpct=(n,d=1)=>(n>=0?'+':'')+fmt(n*100,d)+'%';
 const fdate=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
 const pc=n=>n>=0?'tg':'tr';
@@ -2193,10 +2193,10 @@ function renderHoldingsTable(cats){
         <div style="font-weight:700;font-size:13px">${h.inst.ticker}${staleIcon}</div>
         <div style="font-size:11px;color:var(--txt2);margin-top:1px">${h.inst.name}</div>
       </td>
-      <td class="num" style="font-size:13px">${feur(h.pos.cost,0)}</td>
-      <td class="num fw7" style="font-size:13px">${feur(h.curVal,0)}</td>
+      <td class="num" style="font-size:13px">${feur(h.pos.cost,1)}</td>
+      <td class="num fw7" style="font-size:13px">${feur(h.curVal,1)}</td>
       <td class="num">
-        <div class="fw7 ${pc(h.pnl)}">${h.pnl>=0?'+':''}${feur(h.pnl,0)}</div>
+        <div class="fw7 ${pc(h.pnl)}">${h.pnl>=0?'+':''}${feur(h.pnl,1)}</div>
         <div style="font-size:11px;color:var(--txt2)">${pnlPct>=0?'+':''}${(pnlPct*100).toFixed(1)}%</div>
       </td>
       <td class="num"><input class="price-inp" type="number" value="${h.price%1===0?h.price:h.price.toFixed(4)}" step="any" min="0"
@@ -2221,9 +2221,11 @@ function renderHoldingsTable(cats){
       plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,pointStyleWidth:8}},
         tooltip:{callbacks:{label:ctx=>{
           if(ctx.dataset.label==='Current Value'){
+            const totalCur=ctx.dataset.data.reduce((s,v)=>s+(+v||0),0);
+            const allocPct=totalCur>0?(ctx.raw/totalCur*100).toFixed(1):'0.0';
             const inv=ctx.chart.data.datasets[0].data[ctx.dataIndex]||0;
             const ret=inv>0?(((ctx.raw-inv)/inv)*100).toFixed(1):null;
-            return [` Current: ${feur(ctx.raw)}`+(ret!==null?` · ${+ret>=0?'+':''}${ret}%`:'')];
+            return [` Current Value: ${feur(ctx.raw)}`,` Alloc: ${allocPct}% of category total`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
           }
           return ` Invested: ${feur(ctx.raw)}`;
         }}}},
@@ -2291,7 +2293,18 @@ function renderHoldDonut(holdings, cats){
         legend:{display:false},
         tooltip:{callbacks:{label:ctx=>{
           const p=(ctx.raw/total*100).toFixed(1);
-          return [` ${ctx.label}: ${feur(ctx.raw)} (${p}%)`];
+          if(holdDonutMode==='allocation'){
+            // Find matching holding for return info
+            const h=holdings.find(h=>h.inst.ticker===ctx.label);
+            const ret=h&&h.pos.cost>0?(((h.curVal-h.pos.cost)/h.pos.cost)*100).toFixed(1):null;
+            return [` ${ctx.label}: ${feur(ctx.raw)}`,` Alloc: ${p}%`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
+          }
+          if(holdDonutMode==='pnl'){
+            const h=holdings.find(h=>h.inst.ticker===ctx.label);
+            const sign=h&&h.pnl>=0?'+':'-';
+            return [` ${ctx.label}: ${sign}${feur(Math.abs(ctx.raw))}`,` Share of P&L: ${p}%`];
+          }
+          return [` ${ctx.label}: ${feur(ctx.raw)}`,` Share: ${p}%`];
         }}}
       }
     },
@@ -2621,11 +2634,13 @@ function updatePeriodMenuLocks(){
   const periodP={7:'7d',30:'30d',90:'90d',180:'180d',365:'365d'};
   const ovwMap={7:'ovw-weekly',30:'ovw-monthly',90:'ovw-quarterly',180:'ovw-6m',365:'ovw-annual'};
   const holdMap={7:'hold-weekly',30:'hold-monthly',90:'hold-quarterly',180:'hold-6m',365:'hold-annual'};
+  // Lower thresholds: weekly needs 2 days, monthly 14, quarterly 60, 6m 120, annual 270
+  const lockThresh={7:2,30:14,90:60,180:120,365:270};
   [7,30,90,180,365].forEach(days=>{
     [ovwMap[days],holdMap[days]].forEach(id=>{
       const el=document.getElementById(id);
       if(!el) return;
-      if(spanDays>=days){
+      if(spanDays>=lockThresh[days]){
         el.classList.remove('locked');
         el.setAttribute('data-p',periodP[days]);
         el.setAttribute('onclick',`setPeriod('${periodP[days]}',this)`);
@@ -2760,7 +2775,7 @@ function renderHistory(){
       <td class="num" style="font-size:12px">${isDiv?'<span class="t2">—</span>':fmt(tx.qty,tx.qty<10?4:2)}</td>
       <td class="num" style="font-size:12px">${isDiv?'<span class="t2">—</span>':feur(tx.price,tx.price<10?4:2)}</td>
       <td class="num" style="font-size:12px">${(tx.fees&&!isDiv)?feur(tx.fees,2):'—'}</td>
-      <td class="num fw7" style="${isDiv?'color:#059669':''}">${isDiv?'+':''} ${feur(tot,0)}</td>
+      <td class="num fw7" style="${isDiv?'color:#059669':''}">${isDiv?'+':''} ${feur(tot,1)}</td>
       <td class="t2" style="font-size:12px">${tx.notes||'—'}</td>
       <td><button class="btn btn-d btn-xs" onclick="deleteTx('${tx.id}')">✕</button></td>
     </tr>`;
@@ -2873,7 +2888,7 @@ function deleteInst(id){
 function openUpdatePricesModal(){
   const pos=getPositions();
   const GROUP_ORDER=['ETF','Stock','Crypto','Commodity'];
-  const GROUP_LABEL={ETF:'📊 ETFs',Stock:'📈 Stocks',Crypto:'₿ Crypto',Commodity:'🥇 Gold'};
+  const GROUP_LABEL={ETF:'📊 ETFs',Stock:'💹 Stocks',Crypto:'₿ Crypto',Commodity:'🔶 Gold'};
   const grouped={};
   GROUP_ORDER.forEach(g=>grouped[g]=[]);
   DB.instruments.filter(i=>pos[i.id]&&i.category!=='Cash').forEach(inst=>{
@@ -3372,9 +3387,9 @@ function renderTaxTab(){
     return`<div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
       <span><span class="fw7">${i.name}</span> <span class="itag it-etf">${i.ticker}</span></span>
       <span class="num">${i.ter}%</span>
-      <span class="num">${feur(curVal,0)}</span>
+      <span class="num">${feur(curVal,1)}</span>
       <span><span class="badge-acc${i.distType==='Dist'?' style="background:#F0FDF4;color:#16A34A"':''}">${i.distType||'—'}</span></span>
-      <span class="num tr fw7">&minus;${feur(annualCost,0)}/yr</span>
+      <span class="num tr fw7">&minus;${feur(annualCost,1)}/yr</span>
     </div>`;
   });
   const totalTerCost=etfs.reduce((s,i)=>{const p=pos[i.id],curVal=p.qty*(DB.prices[i.id]||0);return s+curVal*i.ter/100;},0);
@@ -3386,7 +3401,7 @@ function renderTaxTab(){
       ${terRows.join('')}
       <div class="tax-row fw7" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;background:var(--neu-l)">
         <span>Total Annual TER Cost</span><span></span><span></span><span></span>
-        <span class="num tr">&minus;${feur(totalTerCost,0)}/yr</span>
+        <span class="num tr">&minus;${feur(totalTerCost,1)}/yr</span>
       </div>
     </div>`;
 
@@ -3793,7 +3808,7 @@ function renderBalanceSheet(){
     <div class="kpi ${trueNW>=0?'ok':'err'}"><div class="kpi-lbl">True Net Worth</div><div class="kpi-val ${trueNW>=0?'tg':'tr'}">${feur(trueNW)}</div><div class="kpi-sub"><span class="badge ${trueNW>=0?'bg':'br'}">assets − liabilities</span></div></div>
   `;
   // Assets breakdown
-  const CAT_ICONS={ETF:'📊',Stock:'📈',Crypto:'₿',Commodity:'🪙',Cash:'💵'};
+  const CAT_ICONS={ETF:'📊',Stock:'💹',Crypto:'₿',Commodity:'🔶',Cash:'💰'};
   const assetsEl=document.getElementById('balanceAssets');
   if(assetsEl) assetsEl.innerHTML=`
     ${cats.map(c=>`<div style="display:grid;grid-template-columns:1fr auto;padding:11px 16px;border-bottom:1px solid var(--bdr);align-items:center">
