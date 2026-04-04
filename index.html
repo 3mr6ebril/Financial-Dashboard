@@ -369,18 +369,26 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <span class="drag-handle" title="Drag to reorder">⠿</span>
         <div class="sec-ttl"><span class="sec-n">1</span>Asset Allocation</div>
       </div>
-      <a class="lnk" onclick="switchTabByName('holdings')">View all →</a>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="display:flex;gap:4px" id="ovwAllocToggle">
+          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px;background:var(--pri);color:#fff;border:none" onclick="setOvwAllocMode('allocation')">Allocation</button>
+          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('sector')">Sector</button>
+          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('region')">Region</button>
+          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('pnl')">P&amp;L</button>
+        </div>
+        <a class="lnk" onclick="switchTabByName('holdings')">View all →</a>
+      </div>
     </div>
     <div class="g g2">
       <div class="card">
-        <div class="chart-ttl">Portfolio Composition</div>
+        <div class="chart-ttl" id="ovwDonutTitle">Portfolio Composition</div>
         <div style="position:relative;height:260px"><canvas id="donutChart"></canvas></div>
-        <div class="chart-hint">👆 Click a slice to drill into that category</div>
+        <div class="chart-hint" id="ovwDonutHint">👆 Click a slice to drill into that category</div>
       </div>
       <div class="card">
-        <div class="chart-ttl">Invested vs Current Value (€)</div>
+        <div class="chart-ttl" id="ovwBarTitle">Invested vs Current Value (€)</div>
         <div style="position:relative;height:260px"><canvas id="allocBar"></canvas></div>
-        <div class="chart-hint">👆 Click a bar to drill into that category</div>
+        <div class="chart-hint" id="ovwBarHint">👆 Click a bar to drill into that category</div>
       </div>
     </div>
   </div>
@@ -393,28 +401,6 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       <span class="t2" style="font-size:12px">Click a card to open Investments →</span>
     </div>
     <div class="g g5" id="catGrid"></div>
-  </div>
-  <div class="section" id="s-sectors">
-    <div class="sec-hdr">
-      <div style="display:flex;align-items:center">
-        <span class="drag-handle" title="Drag to reorder">⠿</span>
-        <div class="sec-ttl"><span class="sec-n">3</span>Sector &amp; Region Breakdown</div>
-      </div>
-      <span class="t2" style="font-size:12px">👆 Click to filter Holdings</span>
-    </div>
-    <div class="g g3">
-      <div class="card">
-        <div class="chart-ttl">By Sector (Current Value)</div>
-        <div style="position:relative;height:280px"><canvas id="sectorDonut"></canvas></div>
-        <div class="chart-hint">👆 Click a sector slice to see those holdings</div>
-      </div>
-      <div class="card" style="grid-column:span 2">
-        <div class="chart-ttl">By Region (Invested vs Current)</div>
-        <div style="position:relative;height:280px"><canvas id="regionBar"></canvas></div>
-        <div class="chart-hint">👆 Click a region bar to see those holdings</div>
-      </div>
-    </div>
-    <div id="sectorBreakdown" style="margin-top:16px"></div>
   </div>
   <div class="section" id="s-nwhistory">
     <div class="sec-hdr">
@@ -442,6 +428,13 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <div class="kpi-lbl">Total Growth</div>
           <div style="font-size:20px;font-weight:800" id="nwStatGrowth">—</div>
         </div>
+      </div>
+      <div style="display:flex;gap:4px;margin-bottom:8px" id="nwZoomStrip">
+        <button class="btn btn-sm" id="nwz-1m" onclick="setNWZoom('1m')">1M</button>
+        <button class="btn btn-sm" id="nwz-3m" onclick="setNWZoom('3m')">3M</button>
+        <button class="btn btn-sm" id="nwz-6m" onclick="setNWZoom('6m')">6M</button>
+        <button class="btn btn-sm" id="nwz-1y" onclick="setNWZoom('1y')">1Y</button>
+        <button class="btn btn-sm" id="nwz-all" onclick="setNWZoom('all')" style="background:var(--pri);color:#fff;border:none">All</button>
       </div>
       <div style="position:relative;height:220px"><canvas id="nwChart"></canvas></div>
       <div id="nwEmptyMsg" style="display:none;text-align:center;padding:40px;color:var(--txt2);font-size:13px">
@@ -483,10 +476,11 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <div class="chart-ttl" style="margin:0">Allocation</div>
             <div style="display:flex;gap:4px" id="holdDonutToggle">
-              <button class="btn btn-sm" style="font-size:11px;padding:3px 9px;background:var(--pri);color:#fff;border:none" onclick="setHoldDonutMode('allocation')">Alloc</button>
+              <button class="btn btn-sm" style="font-size:11px;padding:3px 9px;background:var(--pri);color:#fff;border:none" onclick="setHoldDonutMode('allocation')">Allocation</button>
               <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setHoldDonutMode('sector')">Sector</button>
               <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setHoldDonutMode('region')">Region</button>
               <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setHoldDonutMode('pnl')">P&amp;L</button>
+              <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setHoldDonutMode('qty')">Qty</button>
             </div>
           </div>
           <div style="position:relative;height:260px"><canvas id="holdPie"></canvas></div>
@@ -529,7 +523,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <div class="cat-strip" style="background:#3B82F6"></div>
         <div class="cat-top"><div class="cat-name">💰 Liquid Buffer</div></div>
         <div class="cat-val" id="savBuf">—</div>
-        <div class="cat-alloc">Cash available</div>
+        <div class="cat-alloc">Cash + Savings total</div>
       </div>
       <div class="cat-card" style="cursor:default">
         <div class="cat-strip" style="background:var(--err)"></div>
@@ -544,43 +538,93 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <div class="cat-alloc">Income − Expenses</div>
       </div>
     </div>
-    <!-- Cash & Savings cards row 2 -->
-    <div class="g g4" style="margin-bottom:20px">
-      <div class="cat-card" style="cursor:default">
+    <!-- Cash · Savings · Investment Activity — single row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:14px;margin-bottom:20px;align-items:start">
+
+      <!-- Cash card -->
+      <div class="cat-card" style="cursor:pointer" onclick="showCashTransactions()" title="Click to view cash transactions">
         <div class="cat-strip" style="background:#10B981"></div>
-        <div class="cat-top"><div class="cat-name">💵 Cash</div></div>
+        <div class="cat-top"><div class="cat-name">💵 Cash</div><span style="font-size:10px;color:var(--ok)" id="cashTxBadge"></span></div>
         <div class="cat-val tg" id="cfCashVal">—</div>
-        <div class="cat-alloc">Current cash balance</div>
-        <input class="ts-inp" type="number" id="cfg_cashOverride" placeholder="Auto from portfolio" oninput="onTransitionInput('cashOverride',this);rebuildCashFlow()" style="margin-top:8px;font-size:12px;padding:5px 8px">
+        <div class="cat-alloc" style="margin-bottom:10px">Auto-tracked · click to view</div>
       </div>
+
+      <!-- Savings card -->
       <div class="cat-card" style="cursor:default">
         <div class="cat-strip" style="background:#3B82F6"></div>
-        <div class="cat-top"><div class="cat-name">🏦 Savings</div></div>
+        <div class="cat-top"><div class="cat-name">🏦 Savings</div><span style="font-size:10px;color:#3B82F6" id="savTxBadge"></span></div>
         <div class="cat-val tg" id="cfSavVal">—</div>
-        <div class="cat-alloc">Current savings balance</div>
-        <input class="ts-inp" type="number" id="cfg_savingsOverride" placeholder="Auto from portfolio" oninput="onTransitionInput('savingsOverride',this);rebuildCashFlow()" style="margin-top:8px;font-size:12px;padding:5px 8px">
+        <div class="cat-alloc" style="margin-bottom:10px">Savings account balance</div>
+        <button class="btn btn-sm" style="width:100%;margin-top:4px;font-size:12px" onclick="openSavTransferModal()">⇄ Transfer</button>
       </div>
-      <div class="cat-card" style="cursor:default">
-        <div class="cat-strip" style="background:var(--ok)"></div>
-        <div class="cat-top"><div class="cat-name">📈 Investment Income YTD</div></div>
-        <div class="cat-val tg" id="cfInvIncomeYTD">—</div>
-        <div class="cat-alloc">Dividends + realized gains</div>
+
+      <!-- Investment Activity card -->
+      <div class="card" style="margin:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="chart-ttl" style="margin-bottom:0;font-size:13px">💵 Cash &amp; Investment Activity <span style="font-size:11px;font-weight:400;color:var(--txt2)" id="cfInvYear">YTD</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div class="cat-card" style="cursor:pointer;padding:10px 12px" onclick="showInvIncome()" title="Click to view income transactions">
+            <div class="cat-strip" style="background:var(--ok)"></div>
+            <div style="font-size:11px;color:var(--txt2);margin-bottom:4px">📈 Income YTD</div>
+            <div style="font-size:18px;font-weight:800;color:var(--ok)" id="cfInvIncomeYTD">—</div>
+            <div style="font-size:10px;color:var(--txt2)">Dividends + gains · click to view</div>
+          </div>
+          <div class="cat-card" style="cursor:pointer;padding:10px 12px" onclick="showInvOutflow()" title="Click to view outflow transactions">
+            <div class="cat-strip" style="background:var(--err)"></div>
+            <div style="font-size:11px;color:var(--txt2);margin-bottom:4px">📉 Outflows YTD</div>
+            <div style="font-size:18px;font-weight:800;color:var(--err)" id="cfInvOutflowYTD">—</div>
+            <div style="font-size:10px;color:var(--txt2)">Purchases + taxes · click to view</div>
+          </div>
+        </div>
+        <div id="cfInvActivityRows" style="font-size:12px"></div>
       </div>
-      <div class="cat-card" style="cursor:default">
-        <div class="cat-strip" style="background:var(--err)"></div>
-        <div class="cat-top"><div class="cat-name">📉 Investment Outflows YTD</div></div>
-        <div class="cat-val tr" id="cfInvOutflowYTD">—</div>
-        <div class="cat-alloc">Purchases + sell taxes</div>
-      </div>
+
     </div>
 
-    <!-- Investment Activity summary -->
-    <div class="card" style="margin-bottom:20px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div class="sec-ttl" style="margin:0">📈 Investment Activity <span style="font-size:11px;font-weight:400;color:var(--txt2)" id="cfInvYear">YTD</span></div>
-        <span class="t2" style="font-size:11px">Auto from transactions</span>
+    <!-- Savings Transfer Modal -->
+    <div class="overlay" id="savTransferModal">
+      <div class="modal" style="max-width:400px">
+        <div class="mhdr">
+          <span class="mtitle">⇄ Transfer Cash ↔ Savings</span>
+          <button class="xbtn" onclick="closeModal('savTransferModal')">✕</button>
+        </div>
+        <div class="mbody">
+          <div style="font-size:13px;color:var(--txt2);margin-bottom:16px">Transfers move money between your brokerage cash and savings account. Both balances and the projection update immediately.</div>
+          <div class="fg" style="margin-bottom:12px">
+            <label class="flbl">Direction</label>
+            <select class="fsel" id="transfer_dir">
+              <option value="to_sav">💵 Cash → 🏦 Savings (park money)</option>
+              <option value="to_cash">🏦 Savings → 💵 Cash (draw for investing)</option>
+            </select>
+          </div>
+          <div class="fg" style="margin-bottom:12px">
+            <label class="flbl" style="display:flex;justify-content:space-between;align-items:center">
+              Amount (€) *
+              <button type="button" class="btn btn-sm" style="font-size:11px;padding:2px 8px;height:auto" onclick="applyXferMax()">MAX</button>
+            </label>
+            <input class="finp" type="number" id="transfer_amount" min="0" step="any" placeholder="0.00">
+          </div>
+          <div class="fg" style="margin-bottom:4px">
+            <label class="flbl">Note (optional)</label>
+            <input class="finp" type="text" id="transfer_note" placeholder="e.g. Monthly savings deposit">
+          </div>
+          <div style="margin-top:14px;padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="color:var(--txt2)">Current Cash</span>
+              <span style="font-weight:700" id="xfer_cash_before">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:var(--txt2)">Current Savings</span>
+              <span style="font-weight:700" id="xfer_sav_before">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="mfoot">
+          <button class="btn btn-g" onclick="closeModal('savTransferModal')">Cancel</button>
+          <button class="btn btn-p" onclick="saveTransfer()">Confirm Transfer</button>
+        </div>
       </div>
-      <div id="cfInvActivityRows" style="font-size:13px"></div>
     </div>
 
       <!-- Editable Settings -->
@@ -676,20 +720,20 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
               <input class="ts-inp" id="cfg_severance" type="number" value="0" placeholder="0" oninput="onTransitionInput('severance',this)">
             </div>
             <div class="ts-field">
-              <label class="ts-lbl">Severance Month <span class="badge badge-ph" id="est_severanceMonth">placeholder</span></label>
-              <input class="ts-inp" id="cfg_severanceMonth" type="month" oninput="onTransitionInput('severanceMonth',this)">
-            </div>
-            <div class="ts-field">
               <label class="ts-lbl">Leave Hours Count <span class="badge badge-ph" id="est_leaveHours">placeholder</span></label>
-              <input class="ts-inp" id="cfg_leaveHours" type="number" value="0" placeholder="e.g. 89" oninput="onTransitionInput('leaveHours',this)">
+              <input class="ts-inp" id="cfg_leaveHours" type="number" value="0" placeholder="e.g. 89" oninput="onTransitionInput('leaveHours',this);updateLeaveHoursTotal()">
             </div>
             <div class="ts-field">
               <label class="ts-lbl">Leave Hourly Rate (€/hr) <span class="badge badge-ph" id="est_leaveHoursRate">placeholder</span></label>
-              <input class="ts-inp" id="cfg_leaveHoursRate" type="number" value="0" placeholder="€/hr" oninput="onTransitionInput('leaveHoursRate',this);rebuildCashFlow()">
+              <input class="ts-inp" id="cfg_leaveHoursRate" type="number" value="0" placeholder="€/hr" oninput="onTransitionInput('leaveHoursRate',this);updateLeaveHoursTotal();rebuildCashFlow()">
             </div>
             <div class="ts-field">
-              <label class="ts-lbl">Leave Hours Month <span class="badge badge-ph" id="est_leaveHoursMonth">placeholder</span></label>
-              <input class="ts-inp" id="cfg_leaveHoursMonth" type="month" oninput="onTransitionInput('leaveHoursMonth',this)">
+              <label class="ts-lbl">Leave Hours Total (€) <span class="badge" style="background:#D1FAE5;color:#065F46;font-size:9px;padding:1px 5px;border-radius:4px">calculated</span></label>
+              <div class="ts-inp" id="leaveHoursTotalDisplay" style="background:var(--bg);color:var(--ok);font-weight:700;display:flex;align-items:center;min-height:34px;pointer-events:none">—</div>
+            </div>
+            <div class="ts-field">
+              <label class="ts-lbl">Payout Month <span class="badge badge-ph" id="est_severanceMonth">placeholder</span></label>
+              <input class="ts-inp" id="cfg_severanceMonth" type="month" oninput="onTransitionInput('severanceMonth',this)">
             </div>
           </div>
         </div>
@@ -698,8 +742,8 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <div class="divider"></div>
         <div class="g" style="grid-template-columns:1fr 1fr;gap:16px">
           <div class="ts-field">
-            <label class="ts-lbl">Current Savings Buffer (€) <span class="badge badge-est" id="est_buf">estimated</span></label>
-            <input class="ts-inp" id="cfg_buf" type="number" placeholder="0" oninput="onTransitionInput('buf',this)">
+            <label class="ts-lbl">Additional Buffer (€) <span class="badge" style="background:#EDE9FE;color:#6D28D9;font-size:9px;padding:1px 5px;border-radius:4px">optional</span></label>
+            <input class="ts-inp" id="cfg_buf" type="number" placeholder="0 — untracked cash/bank" oninput="onTransitionInput('buf',this);rebuildCashFlow()">
           </div>
           <div class="ts-field">
             <label class="ts-lbl">Projection End Month</label>
@@ -715,9 +759,9 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <div style="position:relative;height:240px"><canvas id="cfChart"></canvas></div>
         <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;flex-wrap:wrap">
           <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#3B82F6;border-radius:2px;display:inline-block"></span><span id="lgd1">Phase 1 income</span></span>
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#EF4444;border-radius:2px;display:inline-block"></span><span id="lgd2">Phase 2 (€0 income)</span></span>
+          <span id="lgd2" style="display:none"></span>
           <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#8B5CF6;border-radius:2px;display:inline-block"></span><span id="lgd3">Phase 3 income</span></span>
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#94A3B8;border-radius:2px;display:inline-block"></span><span id="lgd4">Post-phase 3</span></span>
+          <span id="lgd4" style="display:none"></span>
           <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#F59E0B55;border-radius:2px;border:1px solid #F59E0B;display:inline-block"></span>Expenses</span>
         </div>
       </div>
@@ -729,6 +773,16 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <span style="font-size:11px;color:var(--txt2);font-style:italic">🟡 = one-time inflow</span>
         </div>
         <div style="position:relative;height:220px"><canvas id="savChart"></canvas></div>
+      </div>
+    </div>
+    <div class="g g1" style="margin-top:16px">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="chart-ttl" style="margin-bottom:0">📈 Dividend Income — Trailing 12 Months</div>
+          <span style="font-size:11px;color:var(--txt2)" id="divForecastTotal"></span>
+        </div>
+        <div style="position:relative;height:200px"><canvas id="divForecastChart"></canvas></div>
+        <div id="divForecastEmpty" style="display:none;text-align:center;padding:30px;color:var(--txt2);font-size:13px">No dividend transactions recorded yet.</div>
       </div>
     </div>
   </div>
@@ -919,6 +973,17 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     </div>
     <div id="taxSellTable"></div>
   </div>
+  <!-- Realized Gains History -->
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">📊</span>Realized Gains / Losses — Trailing 12 Months</div>
+      <span class="t2" style="font-size:12px" id="realizedGainsTotal"></span>
+    </div>
+    <div class="card">
+      <div style="position:relative;height:200px"><canvas id="realizedGainsChart"></canvas></div>
+      <div id="realizedGainsEmpty" style="display:none;text-align:center;padding:30px;color:var(--txt2);font-size:13px">No realized gains or losses in the last 12 months.</div>
+    </div>
+  </div>
 </div>
 
 
@@ -994,7 +1059,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     <div class="mhdr"><span class="mtitle">＋ Add Transaction</span><button class="xbtn" onclick="closeModal('txModal')">✕</button></div>
     <div class="mbody">
       <div class="fgrid">
-        <div class="fg ffull">
+        <div class="fg ffull" id="inst_row">
           <label class="flbl">Instrument *</label>
           <select class="fsel" id="tx_inst" onchange="onInstChange()">
             <option value="">— select —</option>
@@ -1006,6 +1071,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
             <option value="buy">Buy</option>
             <option value="sell">Sell</option>
             <option value="dividend">Dividend / Distribution</option>
+            <option value="deposit">💵 Deposit (Cash In)</option>
           </select>
         </div>
         <div class="fg"><label class="flbl">Date *</label><input class="finp" type="date" id="tx_date"></div>
@@ -1067,7 +1133,10 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     <div class="mhdr"><span class="mtitle">📋 Transaction History</span><button class="xbtn" onclick="closeModal('historyModal')">✕</button></div>
     <div class="mbody">
       <div style="margin-bottom:14px;display:flex;gap:8px;align-items:center">
-        <select class="fsel" id="histFilter" style="width:240px" onchange="renderHistory()"><option value="all">All instruments</option></select>
+        <select class="fsel" id="histFilter" style="width:240px" onchange="renderHistory()">
+          <option value="all">All instruments</option>
+          <option value="__cash_flow__">💵 Cash impact only</option>
+        </select>
         <span class="t2" id="histCount" style="font-size:12px"></span>
       </div>
       <div class="tbl-wrap"><table><thead><tr>
@@ -1243,6 +1312,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   </div>
 </div>
 
+
 <script>
 const DISTINCT_COLORS = [
   '#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6',
@@ -1363,6 +1433,7 @@ const DEFAULT_TRANSITION = {
   wstart:'',ww:0,wexp:0,sav3:0,
   buf:0,endproj:'',
   cashOverride:0,savingsOverride:0,
+  cashTxDelta:0,savTxDelta:0,_cashV2:false,
   severance:0,severanceMonth:'',
   leaveHours:0,leaveHoursRate:0,leaveHoursMonth:'',
   wwDuration:0,
@@ -1394,7 +1465,7 @@ function getDefaults(){
     netWorthHistory:[],
     liabilities:[],
     businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES)),
-    sectionOrder:['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'],
+    sectionOrder:['s-alloc','s-cats','s-nwhistory'],
     ledger:{months:{}},
     tradingExperiment:{startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20}
   };
@@ -1429,12 +1500,19 @@ function loadDB(){
         if(DB.transition.bizPlanIncome===undefined) DB.transition.bizPlanIncome=0;
         if(DB.transition.cashOverride===undefined) DB.transition.cashOverride=0;
         if(DB.transition.savingsOverride===undefined) DB.transition.savingsOverride=0;
+        if(DB.transition.cashTxDelta===undefined) DB.transition.cashTxDelta=0;
+        if(DB.transition.savTxDelta===undefined) DB.transition.savTxDelta=0;
+        // V2: cashTxDelta is now transfers-only; reset any forward-only buy/sell/div accumulation
+        if(!DB.transition._cashV2){ DB.transition.cashTxDelta=0; DB.transition._cashV2=true; }
         // Migrate settings
         if(!DB.settings) DB.settings={currency:'€',country:''};
         if(!DB.netWorthHistory) DB.netWorthHistory=[];
         if(!DB.liabilities) DB.liabilities=[];
         if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
-        if(!DB.sectionOrder) DB.sectionOrder=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
+        if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory'];
+        // Remove obsolete section IDs from saved order
+        DB.sectionOrder=DB.sectionOrder.filter(id=>!['s-biz-income','s-sectors','s-kpis'].includes(id));
+        if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory'];
         // Ensure biz3 (Self Trading) always exists — for manual entry support alongside auto-calc
         if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
         if(!DB.ledger) DB.ledger={months:{}};
@@ -1789,11 +1867,16 @@ function importDB(event){
       if(DB.transition.bizPlanIncome===undefined) DB.transition.bizPlanIncome=0;
       if(DB.transition.cashOverride===undefined) DB.transition.cashOverride=0;
       if(DB.transition.savingsOverride===undefined) DB.transition.savingsOverride=0;
+      if(DB.transition.cashTxDelta===undefined) DB.transition.cashTxDelta=0;
+      if(DB.transition.savTxDelta===undefined) DB.transition.savTxDelta=0;
+      if(!DB.transition._cashV2){ DB.transition.cashTxDelta=0; DB.transition._cashV2=true; }
       if(!DB.settings) DB.settings={currency:'€',country:''};
       if(!DB.netWorthHistory) DB.netWorthHistory=[];
       if(!DB.liabilities) DB.liabilities=[];
       if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
-      if(!DB.sectionOrder) DB.sectionOrder=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
+      if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory'];
+      DB.sectionOrder=DB.sectionOrder.filter(id=>!['s-biz-income','s-sectors','s-kpis'].includes(id));
+      if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory'];
       if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
       if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
       if(!DB.ledger) DB.ledger={months:{}};
@@ -1823,7 +1906,7 @@ function fmtM(m){ const[y,mo]=m.split('-').map(Number); return new Date(y,mo-1,1
 function getPositions(){
   const pos={};
   [...DB.transactions].sort((a,b)=>a.date.localeCompare(b.date)).forEach(tx=>{
-    if(tx.type==='dividend') return; // dividends don't change share position
+    if(tx.type==='dividend'||tx.type==='deposit') return; // don't change share position
     if(!pos[tx.iid]) pos[tx.iid]={qty:0,cost:0};
     const p=pos[tx.iid];
     if(tx.type==='buy'){ p.cost+=tx.qty*tx.price+(tx.fees||0); p.qty+=tx.qty; }
@@ -1931,7 +2014,7 @@ function renderKPIs(cats){
   const totalBizCost=bizPL.cost+tpl.expenses;
   const totalBizNet=bizPL.net+tpl.profit;
   document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi ${nw<0?'err':''}"><div class="kpi-lbl">Portfolio Value</div><div class="kpi-val ${nw<0?'tr':''}">${feur(nw)}</div><div class="kpi-sub"><span class="badge bn">current market value</span></div></div>
+    <div class="kpi ${nw<0?'err':''}"><div class="kpi-lbl">Net Worth</div><div class="kpi-val ${nw<0?'tr':''}">${feur(nw)}</div><div class="kpi-sub"><span class="badge bn">current market value</span></div></div>
     <div class="kpi ${ret>=0?'ok':'err'}"><div class="kpi-lbl">Portfolio P&amp;L</div><div class="kpi-val ${pc(pnl)}">${pnl>=0?'+':''}${feur(pnl)}</div><div class="kpi-sub"><span class="badge ${pnl>=0?'bg':'br'}">${fpct(ret)}</span><span class="t2">vs cost basis</span></div></div>
     <div class="kpi">
       <div class="kpi-lbl">Investment Activity ${yr}</div>
@@ -1949,51 +2032,152 @@ function renderKPIs(cats){
 
 // ── RENDER ALLOCATION CHARTS ──
 function renderAlloc(cats){
-  const labels=cats.map(c=>c.label), colors=cats.map(c=>CAT_COLOR[c.label]||'#6B7280');
-  const nw=cats.reduce((s,c)=>s+c.current,0);
-  safeDestroy('donutChart');
-  charts.donut=new Chart(document.getElementById('donutChart'),{
-    type:'doughnut',
-    data:{labels,datasets:[{data:cats.map(c=>+c.current.toFixed(0)),backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverBorderWidth:3}]},
-    options:{
-      cutout:'65%',responsive:true,maintainAspectRatio:false,
-      layout:{padding:{top:36,right:80,bottom:36,left:80}},
-      plugins:{
-        legend:{display:false}, // callout labels replace legend
-        tooltip:{callbacks:{label:ctx=>{
+  const pal=DISTINCT_COLORS;
+  const allH=cats.flatMap(c=>c.holdings);
+  const dtEl=document.getElementById('ovwDonutTitle');
+  const btEl=document.getElementById('ovwBarTitle');
+  const dhEl=document.getElementById('ovwDonutHint');
+  const bhEl=document.getElementById('ovwBarHint');
+
+  if(ovwAllocMode==='sector'||ovwAllocMode==='region'){
+    const isS=ovwAllocMode==='sector';
+    const map={};
+    allH.forEach(h=>{
+      const key=isS?(h.inst.sector||'Other'):(h.inst.region||'Global');
+      if(!map[key]) map[key]={cur:0,inv:0};
+      map[key].cur+=h.curVal; map[key].inv+=h.pos.cost;
+    });
+    const keys=Object.keys(map).sort((a,b)=>map[b].cur-map[a].cur);
+    const colors=keys.map((_,i)=>pal[i%pal.length]);
+    const nw=allH.reduce((s,h)=>s+h.curVal,0);
+    if(dtEl) dtEl.textContent=isS?'By Sector (Current Value)':'By Region (Current Value)';
+    if(btEl) btEl.textContent=isS?'Sector: Invested vs Current':'Region: Invested vs Current';
+    if(dhEl) dhEl.textContent='👆 Click a slice to filter Holdings';
+    if(bhEl) bhEl.textContent='👆 Click a bar to filter Holdings';
+    safeDestroy('donutChart');
+    charts.donut=new Chart(document.getElementById('donutChart'),{
+      type:'doughnut',
+      data:{labels:keys,datasets:[{data:keys.map(k=>+map[k].cur.toFixed(0)),backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverBorderWidth:3}]},
+      options:{cutout:'65%',responsive:true,maintainAspectRatio:false,
+        layout:{padding:{top:36,right:80,bottom:36,left:80}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
+          const p=(ctx.raw/nw*100).toFixed(1);
+          const inv=map[ctx.label]?.inv||0;
+          const ret=inv>0?(((ctx.raw-inv)/inv)*100).toFixed(1):null;
+          return [` ${ctx.label}: ${feur(ctx.raw)}`,` Alloc: ${p}% of portfolio`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
+        }}}},
+        onClick:(e,els)=>{if(els.length){isS?filterBySector(keys[els[0].index]):filterByRegion(keys[els[0].index]);switchTabByName('holdings');}}
+      },plugins:[calloutLabelPlugin]
+    });
+    safeDestroy('allocBar');
+    charts.allocBar=new Chart(document.getElementById('allocBar'),{
+      type:'bar',
+      data:{labels:keys,datasets:[
+        {label:'Invested',data:keys.map(k=>+map[k].inv.toFixed(0)),backgroundColor:colors.map(c=>c+'44'),borderColor:colors,borderWidth:1.5,borderRadius:4},
+        {label:'Current Value',data:keys.map(k=>+map[k].cur.toFixed(0)),backgroundColor:colors,borderRadius:4}
+      ]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,pointStyleWidth:8}},
+          tooltip:{callbacks:{label:ctx=>{
+            if(ctx.dataset.label==='Current Value'){
+              const tot=ctx.dataset.data.reduce((s,v)=>s+(+v||0),0);
+              const pct=tot>0?(ctx.raw/tot*100).toFixed(1):'0.0';
+              const inv=map[keys[ctx.dataIndex]]?.inv||0;
+              const ret=inv>0?(((ctx.raw-inv)/inv)*100).toFixed(1):null;
+              return [` Current Value: ${feur(ctx.raw)}`,` Alloc: ${pct}%`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
+            }
+            return ` ${ctx.dataset.label}: ${feur(ctx.raw)}`;
+          }}}},
+        scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
+        onClick:(e,els)=>{if(els.length){isS?filterBySector(keys[els[0].index]):filterByRegion(keys[els[0].index]);switchTabByName('holdings');}}
+      }
+    });
+
+  } else if(ovwAllocMode==='pnl'){
+    const labels=cats.map(c=>c.label);
+    const colors=cats.map(c=>c.pnl>=0?'rgba(16,185,129,.75)':'rgba(239,68,68,.75)');
+    if(dtEl) dtEl.textContent='P&L by Category';
+    if(btEl) btEl.textContent='Profit & Loss per Category (€)';
+    if(dhEl) dhEl.textContent='👆 Click a slice to drill into that category';
+    if(bhEl) bhEl.textContent='👆 Click a bar to drill into that category';
+    safeDestroy('donutChart');
+    charts.donut=new Chart(document.getElementById('donutChart'),{
+      type:'doughnut',
+      data:{labels,datasets:[{data:cats.map(c=>+Math.abs(c.pnl).toFixed(0)),backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverBorderWidth:3}]},
+      options:{cutout:'65%',responsive:true,maintainAspectRatio:false,
+        layout:{padding:{top:36,right:80,bottom:36,left:80}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
+          const cat=cats[ctx.dataIndex];
+          const sign=cat.pnl>=0?'+':'-';
+          const retPct=cat.invested>0?(cat.pnl/cat.invested*100).toFixed(1):null;
+          return [` ${ctx.label}: ${sign}${feur(Math.abs(cat.pnl))}`,retPct!==null?` Return: ${+retPct>=0?'+':''}${retPct}%`:''];
+        }}}},
+        onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
+      },plugins:[calloutLabelPlugin]
+    });
+    safeDestroy('allocBar');
+    charts.allocBar=new Chart(document.getElementById('allocBar'),{
+      type:'bar',
+      data:{labels,datasets:[{label:'P&L',data:cats.map(c=>+c.pnl.toFixed(0)),backgroundColor:colors,borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,pointStyleWidth:8}},
+          tooltip:{callbacks:{label:ctx=>{
+            const cat=cats[ctx.dataIndex];
+            const ret=cat.invested>0?(cat.pnl/cat.invested*100).toFixed(1):null;
+            return [` P&L: ${cat.pnl>=0?'+':''}${feur(cat.pnl)}`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
+          }}}},
+        scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
+        onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
+      }
+    });
+
+  } else {
+    // allocation (default) — by category
+    const labels=cats.map(c=>c.label), colors=cats.map(c=>CAT_COLOR[c.label]||'#6B7280');
+    const nw=cats.reduce((s,c)=>s+c.current,0);
+    if(dtEl) dtEl.textContent='Portfolio Composition';
+    if(btEl) btEl.textContent='Invested vs Current Value (€)';
+    if(dhEl) dhEl.textContent='👆 Click a slice to drill into that category';
+    if(bhEl) bhEl.textContent='👆 Click a bar to drill into that category';
+    safeDestroy('donutChart');
+    charts.donut=new Chart(document.getElementById('donutChart'),{
+      type:'doughnut',
+      data:{labels,datasets:[{data:cats.map(c=>+c.current.toFixed(0)),backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverBorderWidth:3}]},
+      options:{cutout:'65%',responsive:true,maintainAspectRatio:false,
+        layout:{padding:{top:36,right:80,bottom:36,left:80}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
           const p=(ctx.raw/nw*100).toFixed(1);
           const cat=cats[ctx.dataIndex];
           const ret=cat&&cat.invested>0?((cat.pnl/cat.invested)*100).toFixed(1):null;
           return [` ${ctx.label}: ${feur(ctx.raw)}`,` Alloc: ${p}% of portfolio`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
-        }}}
-      },
-      onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
-    },
-    plugins:[calloutLabelPlugin]
-  });
-  safeDestroy('allocBar');
-  charts.allocBar=new Chart(document.getElementById('allocBar'),{
-    type:'bar',
-    data:{labels,datasets:[
-      {label:'Invested',data:cats.map(c=>+c.invested.toFixed(0)),backgroundColor:colors.map(c=>c+'44'),borderColor:colors,borderWidth:1.5,borderRadius:4},
-      {label:'Current Value',data:cats.map(c=>+c.current.toFixed(0)),backgroundColor:colors,borderRadius:4}
-    ]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,pointStyleWidth:8}},
-        tooltip:{callbacks:{label:ctx=>{
-          if(ctx.dataset.label==='Current Value'){
-            const totalCur=ctx.dataset.data.reduce((s,v)=>s+(+v||0),0);
-            const allocPct=totalCur>0?(ctx.raw/totalCur*100).toFixed(1):'0.0';
-            const invested=ctx.chart.data.datasets[0].data[ctx.dataIndex]||0;
-            const ret=invested>0?(((ctx.raw-invested)/invested)*100).toFixed(1):null;
-            return [` Current Value: ${feur(ctx.raw)}`,` Alloc: ${allocPct}% of category total`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
-          }
-          return ` ${ctx.dataset.label}: ${feur(ctx.raw)}`;
         }}}},
-      scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
-      onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
-    }
-  });
+        onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
+      },plugins:[calloutLabelPlugin]
+    });
+    safeDestroy('allocBar');
+    charts.allocBar=new Chart(document.getElementById('allocBar'),{
+      type:'bar',
+      data:{labels,datasets:[
+        {label:'Invested',data:cats.map(c=>+c.invested.toFixed(0)),backgroundColor:colors.map(c=>c+'44'),borderColor:colors,borderWidth:1.5,borderRadius:4},
+        {label:'Current Value',data:cats.map(c=>+c.current.toFixed(0)),backgroundColor:colors,borderRadius:4}
+      ]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,pointStyleWidth:8}},
+          tooltip:{callbacks:{label:ctx=>{
+            if(ctx.dataset.label==='Current Value'){
+              const totalCur=ctx.dataset.data.reduce((s,v)=>s+(+v||0),0);
+              const allocPct=totalCur>0?(ctx.raw/totalCur*100).toFixed(1):'0.0';
+              const invested=ctx.chart.data.datasets[0].data[ctx.dataIndex]||0;
+              const ret=invested>0?(((ctx.raw-invested)/invested)*100).toFixed(1):null;
+              return [` Current Value: ${feur(ctx.raw)}`,` Alloc: ${allocPct}% of category total`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
+            }
+            return ` ${ctx.dataset.label}: ${feur(ctx.raw)}`;
+          }}}},
+        scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
+        onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
+      }
+    });
+  }
 }
 
 // ── RENDER CATEGORY CARDS ──
@@ -2002,6 +2186,8 @@ function renderCatCards(cats){
   document.getElementById('catGrid').innerHTML=cats.map(c=>{
     const color=CAT_COLOR[c.label]||'#6B7280', allocPct=nw>0?c.current/nw*100:0, sig=healthSig(c.retPct);
     const comment=catHealthComment(c.label,c.retPct);
+    const periodPnl=computeCatPeriodPnl(c);
+    const periodLine=periodPnl?`<div style="font-size:11px;margin-top:2px;color:${periodPnl.pct>=0?'var(--ok)':'var(--err)'}">🕐 ${currentPeriod.toUpperCase()}: ${periodPnl.pct>=0?'+':''}${periodPnl.pct.toFixed(1)}% (${periodPnl.pnl>=0?'+':''}${feur(periodPnl.pnl)})</div>`:'';
     return`<div class="cat-card" onclick="jumpToHoldings('${c.label}')" id="cat-${c.label}">
       <div class="cat-strip" style="background:${color}"></div>
       <div class="cat-top">
@@ -2012,6 +2198,7 @@ function renderCatCards(cats){
       </div>
       <div class="cat-val" style="color:${color}">${feur(c.current)}</div>
       <div class="cat-pnl ${pc(c.pnl)}">${c.pnl>=0?'+':''}${feur(c.pnl)} (${fpct(c.retPct)})</div>
+      ${periodLine}
       <div class="cat-alloc">${c.holdings.length} holdings · ${allocPct.toFixed(1)}% of portfolio</div>
       <div class="mini-bar"><div class="mini-fill" style="width:${allocPct}%;background:${color}"></div></div>
     </div>`;
@@ -2184,20 +2371,24 @@ function renderHoldingsTable(cats){
       const lastUpd=DB.lastPriceUpdateDate[h.inst.id];
       if(lastUpd){
         const daysSince=Math.round((new Date()-new Date(lastUpd))/(1000*60*60*24));
-        if(daysSince>7) staleIcon=`<span title="Price not updated in ${daysSince} day${daysSince!==1?'s':''}" style="margin-left:4px;font-size:12px;cursor:help">⚠️</span>`;
+        const freshIco=daysSince<2?'🟢':daysSince<=7?'🟡':'🔴';
+        staleIcon=`<span title="Updated ${daysSince===0?'today':`${daysSince}d ago`}" style="margin-left:4px;font-size:11px;cursor:help">${freshIco}</span>`;
       }
     }
     const pnlPct=h.pos.cost>0?h.pnl/h.pos.cost:0;
+    const periodRet=computeInstPeriodReturn(h.inst.id);
+    const periodBadge=periodRet!==null?`<div style="font-size:10px;margin-top:2px;color:${periodRet>=0?'var(--ok)':'var(--err)'}">🕐${currentPeriod.toUpperCase()} ${periodRet>=0?'+':''}${periodRet.toFixed(1)}%</div>`:'';
     return`<tr>
       <td>
         <div style="font-weight:700;font-size:13px">${h.inst.ticker}${staleIcon}</div>
-        <div style="font-size:11px;color:var(--txt2);margin-top:1px">${h.inst.name}</div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:1px">${h.inst.name} <span style="opacity:.6;font-size:10px">· ${fmt(h.pos.qty,h.pos.qty<10?4:2)} units</span></div>
       </td>
       <td class="num" style="font-size:13px">${feur(h.pos.cost,1)}</td>
       <td class="num fw7" style="font-size:13px">${feur(h.curVal,1)}</td>
       <td class="num">
         <div class="fw7 ${pc(h.pnl)}">${h.pnl>=0?'+':''}${feur(h.pnl,1)}</div>
         <div style="font-size:11px;color:var(--txt2)">${pnlPct>=0?'+':''}${(pnlPct*100).toFixed(1)}%</div>
+        ${periodBadge}
       </td>
       <td class="num"><input class="price-inp" type="number" value="${h.price%1===0?h.price:h.price.toFixed(4)}" step="any" min="0"
         onkeydown="if(event.key==='Enter')this.blur()"
@@ -2206,45 +2397,99 @@ function renderHoldingsTable(cats){
     </tr>`;
   }).join('')||`<tr><td colspan="5" class="empty">No holdings match this filter</td></tr>`;
 
-  // ── Bar chart: Invested vs Current (matching allocBar style) ──
-  const names=holdings.map(h=>h.inst.ticker);
+  // ── Bar chart: mode-aware ──
   const catOffset={ETF:0,Stock:5,Crypto:10,Commodity:13,Cash:16}[activeCategory]||0;
-  const barColors=holdings.map((_,i)=>DISTINCT_COLORS[(catOffset+i)%DISTINCT_COLORS.length]);
   safeDestroy('holdBar');
-  charts.hBar=new Chart(document.getElementById('holdBar'),{
-    type:'bar',
-    data:{labels:names,datasets:[
-      {label:'Invested',data:holdings.map(h=>+h.pos.cost.toFixed(0)),backgroundColor:barColors.map(c=>c+'44'),borderColor:barColors,borderWidth:1.5,borderRadius:4},
-      {label:'Current Value',data:holdings.map(h=>+h.curVal.toFixed(0)),backgroundColor:barColors,borderRadius:4}
-    ]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,pointStyleWidth:8}},
-        tooltip:{callbacks:{label:ctx=>{
-          if(ctx.dataset.label==='Current Value'){
-            const totalCur=ctx.dataset.data.reduce((s,v)=>s+(+v||0),0);
-            const allocPct=totalCur>0?(ctx.raw/totalCur*100).toFixed(1):'0.0';
-            const inv=ctx.chart.data.datasets[0].data[ctx.dataIndex]||0;
-            const ret=inv>0?(((ctx.raw-inv)/inv)*100).toFixed(1):null;
-            return [` Current Value: ${feur(ctx.raw)}`,` Alloc: ${allocPct}% of category total`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
-          }
-          return ` Invested: ${feur(ctx.raw)}`;
-        }}}},
-      scales:{
-        x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},
-        y:{grid:{display:false},ticks:{font:{size:11},padding:4}}
+  const holdBarCanvas=document.getElementById('holdBar');
+  if(holdDonutMode==='allocation'){
+    const names=holdings.map(h=>h.inst.ticker);
+    const barColors=holdings.map((_,i)=>DISTINCT_COLORS[(catOffset+i)%DISTINCT_COLORS.length]);
+    charts.hBar=new Chart(holdBarCanvas,{
+      type:'bar',
+      data:{labels:names,datasets:[
+        {label:'Invested',data:holdings.map(h=>+h.pos.cost.toFixed(0)),backgroundColor:barColors.map(c=>c+'44'),borderColor:barColors,borderWidth:1.5,borderRadius:4},
+        {label:'Current Value',data:holdings.map(h=>+h.curVal.toFixed(0)),backgroundColor:barColors,borderRadius:4}
+      ]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,pointStyleWidth:8}},
+          tooltip:{callbacks:{label:ctx=>{
+            if(ctx.dataset.label==='Current Value'){
+              const totalCur=ctx.dataset.data.reduce((s,v)=>s+(+v||0),0);
+              const allocPct=totalCur>0?(ctx.raw/totalCur*100).toFixed(1):'0.0';
+              const inv=ctx.chart.data.datasets[0].data[ctx.dataIndex]||0;
+              const ret=inv>0?(((ctx.raw-inv)/inv)*100).toFixed(1):null;
+              return [` Current Value: ${feur(ctx.raw)}`,` Alloc: ${allocPct}% of category total`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
+            }
+            return ` Invested: ${feur(ctx.raw)}`;
+          }}}},
+        scales:{
+          x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},
+          y:{grid:{display:false},ticks:{font:{size:11},padding:4}}
+        }
       }
-    }
-  });
+    });
+  } else if(holdDonutMode==='sector'||holdDonutMode==='region'){
+    const isS=holdDonutMode==='sector';
+    const gMap={};
+    holdings.forEach(h=>{ const k=(isS?h.inst.sector:h.inst.region)||'Other'; gMap[k]=(gMap[k]||0)+h.curVal; });
+    const gKeys=Object.keys(gMap).sort((a,b)=>gMap[b]-gMap[a]);
+    const gVals=gKeys.map(k=>+gMap[k].toFixed(0));
+    const gColors=gKeys.map((_,i)=>DISTINCT_COLORS[i%DISTINCT_COLORS.length]);
+    const gTotal=gVals.reduce((s,v)=>s+v,0);
+    charts.hBar=new Chart(holdBarCanvas,{
+      type:'bar',
+      data:{labels:gKeys,datasets:[{label:'Current Value',data:gVals,backgroundColor:gColors,borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:ctx=>[` ${feur(ctx.raw)}`,` Share: ${gTotal>0?(ctx.raw/gTotal*100).toFixed(1):0}%`]}}},
+        scales:{
+          x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},
+          y:{grid:{display:false},ticks:{font:{size:11},padding:4}}
+        }
+      }
+    });
+  } else if(holdDonutMode==='pnl'){
+    const pnlLabels=holdings.map(h=>h.inst.ticker);
+    const pnlVals=holdings.map(h=>+h.pnl.toFixed(0));
+    const pnlColors=pnlVals.map(v=>v>=0?'rgba(16,185,129,.75)':'rgba(239,68,68,.75)');
+    charts.hBar=new Chart(holdBarCanvas,{
+      type:'bar',
+      data:{labels:pnlLabels,datasets:[{label:'P&L',data:pnlVals,backgroundColor:pnlColors,borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:ctx=>` P&L: ${ctx.raw>=0?'+':''}${feur(ctx.raw)}`}}},
+        scales:{
+          x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>(+v>=0?'+':'')+feur(v),font:{size:10}}},
+          y:{grid:{display:false},ticks:{font:{size:11},padding:4}}
+        }
+      }
+    });
+  } else if(holdDonutMode==='qty'){
+    const qtyLabels=holdings.map(h=>h.inst.ticker);
+    const qtyVals=holdings.map(h=>+(h.pos.qty||0));
+    const qtyColors=holdings.map((_,i)=>DISTINCT_COLORS[(catOffset+i)%DISTINCT_COLORS.length]);
+    charts.hBar=new Chart(holdBarCanvas,{
+      type:'bar',
+      data:{labels:qtyLabels,datasets:[{label:'Units Held',data:qtyVals,backgroundColor:qtyColors,borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.raw,ctx.raw<10?4:2)} units`}}},
+        scales:{
+          x:{grid:{color:'#F3F4F6'},ticks:{font:{size:10}}},
+          y:{grid:{display:false},ticks:{font:{size:11},padding:4}}
+        }
+      }
+    });
+  }
 
   // ── Donut: allocation by mode ──
   renderHoldDonut(holdings, cats);
 }
 
-let holdDonutMode='allocation';
-function setHoldDonutMode(mode){
-  holdDonutMode=mode;
-  // Update toggle button styles
-  document.querySelectorAll('#holdDonutToggle .btn').forEach((b,i)=>{
+let ovwAllocMode='allocation';
+function setOvwAllocMode(mode){
+  ovwAllocMode=mode;
+  document.querySelectorAll('#ovwAllocToggle .btn').forEach((b,i)=>{
     const modes=['allocation','sector','region','pnl'];
     const active=modes[i]===mode;
     b.style.background=active?'var(--pri)':'';
@@ -2252,12 +2497,19 @@ function setHoldDonutMode(mode){
     b.style.border=active?'none':'';
   });
   const cats=computeCategories();
-  const cat=cats.find(c=>c.label===activeCategory);
-  if(!cat) return;
-  let holdings=[...cat.holdings];
-  if(activeSectorFilter) holdings=holdings.filter(h=>h.inst.sector===activeSectorFilter);
-  if(activeRegionFilter) holdings=holdings.filter(h=>h.inst.region===activeRegionFilter);
-  renderHoldDonut(holdings, cats);
+  renderAlloc(cats);
+}
+let holdDonutMode='allocation';
+function setHoldDonutMode(mode){
+  holdDonutMode=mode;
+  document.querySelectorAll('#holdDonutToggle .btn').forEach((b,i)=>{
+    const modes=['allocation','sector','region','pnl','qty'];
+    const active=modes[i]===mode;
+    b.style.background=active?'var(--pri)':'';
+    b.style.color=active?'#fff':'';
+    b.style.border=active?'none':'';
+  });
+  renderHoldingsTable(computeCategories());
 }
 function renderHoldDonut(holdings, cats){
   const catOffset={ETF:0,Stock:5,Crypto:10,Commodity:13,Cash:16}[activeCategory]||0;
@@ -2276,6 +2528,10 @@ function renderHoldDonut(holdings, cats){
     labels=holdings.map(h=>h.inst.ticker);
     data=holdings.map(h=>+Math.abs(h.pnl).toFixed(0));
     colors=holdings.map(h=>h.pnl>=0?'rgba(16,185,129,.75)':'rgba(239,68,68,.75)');
+  } else if(holdDonutMode==='qty'){
+    labels=holdings.map(h=>h.inst.ticker);
+    data=holdings.map(h=>+(h.pos.qty||0));
+    colors=holdings.map((_,i)=>DISTINCT_COLORS[(catOffset+i)%DISTINCT_COLORS.length]);
   } else {
     // allocation — current value per holding
     labels=holdings.map(h=>h.inst.ticker);
@@ -2294,7 +2550,6 @@ function renderHoldDonut(holdings, cats){
         tooltip:{callbacks:{label:ctx=>{
           const p=(ctx.raw/total*100).toFixed(1);
           if(holdDonutMode==='allocation'){
-            // Find matching holding for return info
             const h=holdings.find(h=>h.inst.ticker===ctx.label);
             const ret=h&&h.pos.cost>0?(((h.curVal-h.pos.cost)/h.pos.cost)*100).toFixed(1):null;
             return [` ${ctx.label}: ${feur(ctx.raw)}`,` Alloc: ${p}%`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
@@ -2303,6 +2558,11 @@ function renderHoldDonut(holdings, cats){
             const h=holdings.find(h=>h.inst.ticker===ctx.label);
             const sign=h&&h.pnl>=0?'+':'-';
             return [` ${ctx.label}: ${sign}${feur(Math.abs(ctx.raw))}`,` Share of P&L: ${p}%`];
+          }
+          if(holdDonutMode==='qty'){
+            const h=holdings.find(hh=>hh.inst.ticker===ctx.label);
+            const val=h?feur(h.curVal):'—';
+            return [` ${ctx.label}: ${fmt(ctx.raw,ctx.raw<10?4:2)} units`,` Value: ${val} · Share of Qty: ${p}%`];
           }
           return [` ${ctx.label}: ${feur(ctx.raw)}`,` Share: ${p}%`];
         }}}
@@ -2313,12 +2573,6 @@ function renderHoldDonut(holdings, cats){
 }
 
 // ── TRANSITION TAB ──
-function updateLeaveHoursTotal(){
-  const h=parseFloat(document.getElementById('cfg_leaveHours')?.value)||0;
-  const r=parseFloat(document.getElementById('cfg_leaveHoursRate')?.value)||0;
-  const el=document.getElementById('leaveHoursTotalCalc');
-  if(el) el.textContent=feur(h*r);
-}
 function refreshPhaseLabels(){
   const t=DB.transition;
   const ph1=t.phaseName1||'Phase 1', ph2=t.phaseName2||'Phase 2', ph3=t.phaseName3||'Phase 3';
@@ -2326,14 +2580,23 @@ function refreshPhaseLabels(){
   const h2=document.getElementById('phaseHdr2'); if(h2) h2.innerHTML='⚠️ '+ph2+' <span style="font-weight:400;font-style:italic;text-transform:none">(leave blank if none)</span>';
   const h3=document.getElementById('phaseHdr3'); if(h3) h3.textContent='🎯 '+ph3;
 }
+function updateLeaveHoursTotal(){
+  const t=DB.transition||{};
+  const total=(t.leaveHours||0)*(t.leaveHoursRate||0);
+  const el=document.getElementById('leaveHoursTotalDisplay');
+  if(!el) return;
+  el.textContent=total>0?feur(total):'—';
+  el.style.color=total>0?'var(--ok)':'var(--txt2)';
+}
 function loadTransitionSettings(){
   const t=DB.transition;
-  ['salary','exp1','sav1','gexp','ww','wexp','sav3','buf','cashOverride','savingsOverride','severance','leaveHours','leaveHoursRate','wwDuration','bizPlanIncome'].forEach(k=>{
+  ['salary','exp1','sav1','gexp','ww','wexp','sav3','buf','severance','leaveHours','leaveHoursRate','wwDuration','bizPlanIncome'].forEach(k=>{
     const el=document.getElementById('cfg_'+k); if(el) el.value=t[k]||0;
   });
-  ['enddate','gstart','gend','wstart','endproj','severanceMonth','leaveHoursMonth'].forEach(k=>{
+  ['enddate','gstart','gend','wstart','endproj','severanceMonth'].forEach(k=>{
     const el=document.getElementById('cfg_'+k); if(el) el.value=t[k]||'';
   });
+  updateLeaveHoursTotal();
   ['phaseName1','phaseName2','phaseName3'].forEach(k=>{
     const el=document.getElementById('cfg_'+k); if(el) el.value=t[k]||'';
   });
@@ -2364,6 +2627,42 @@ function resetTransitionDefaults(){
   notify('↺ Cash Flow settings reset to defaults.');
 }
 
+function openSavTransferModal(){
+  // Populate current balances preview in modal
+  const cashEl=document.getElementById('xfer_cash_before');
+  const savEl=document.getElementById('xfer_sav_before');
+  if(cashEl) cashEl.textContent=document.getElementById('cfCashVal')?.textContent||'—';
+  if(savEl) savEl.textContent=document.getElementById('cfSavVal')?.textContent||'—';
+  const amtEl=document.getElementById('transfer_amount');
+  if(amtEl){ amtEl.value=''; setTimeout(()=>amtEl.focus(),100); }
+  openModal('savTransferModal');
+}
+function applyXferMax(){
+  const dir=document.getElementById('transfer_dir')?.value||'to_sav';
+  const max=dir==='to_sav'?(window._xferMaxCash||0):(window._xferMaxSav||0);
+  if(max<=0){ notify('⚠️ No available balance to transfer.','warn'); return; }
+  document.getElementById('transfer_amount').value=max.toFixed(2);
+}
+function saveTransfer(){
+  const amount=parseFloat(document.getElementById('transfer_amount')?.value)||0;
+  if(amount<=0){ notify('⚠️ Enter a positive amount.','warn'); return; }
+  const dir=document.getElementById('transfer_dir')?.value||'to_sav';
+  if(!DB.transition) DB.transition={};
+  if(DB.transition.cashTxDelta===undefined) DB.transition.cashTxDelta=0;
+  if(DB.transition.savTxDelta===undefined) DB.transition.savTxDelta=0;
+  if(dir==='to_sav'){
+    DB.transition.cashTxDelta -= amount; // cash goes down
+    DB.transition.savTxDelta  += amount; // savings goes up
+  } else {
+    DB.transition.savTxDelta  -= amount; // savings goes down
+    DB.transition.cashTxDelta += amount; // cash goes up
+  }
+  saveDB();
+  closeModal('savTransferModal');
+  requestAnimationFrame(rebuildCashFlow);
+  const label=dir==='to_sav'?'Cash → Savings':'Savings → Cash';
+  notify(`✅ Transfer recorded: ${label} ${feur(amount)}`);
+}
 function buildCFData(){
   const t=DB.transition;
   const parseMonth=m=>{ const[y,mo]=m.split('-').map(Number); return{y,mo}; };
@@ -2396,7 +2695,7 @@ function buildSavingsProjection(cfData, opts={}){
     let oneTime=0;
     if(t.severance>0&&t.severanceMonth&&row.mRaw===t.severanceMonth) oneTime+=t.severance;
     const leaveHoursPayout=(t.leaveHours||0)*(t.leaveHoursRate||0);
-    if(leaveHoursPayout>0&&t.leaveHoursMonth&&row.mRaw===t.leaveHoursMonth) oneTime+=leaveHoursPayout;
+    if(leaveHoursPayout>0&&t.severanceMonth&&row.mRaw===t.severanceMonth) oneTime+=leaveHoursPayout;
     // Investment activity: inject YTD net flow as one-time inflow in the matching month
     if(invYTDNet!==0&&invYTDMonth&&row.mRaw===invYTDMonth){ oneTime+=invYTDNet; }
     bal+=oneTime;
@@ -2409,18 +2708,16 @@ function buildSavingsProjection(cfData, opts={}){
 function rebuildCashFlow(){
   saveDB();
   const t=DB.transition;
-  const runwayMonths=t.exp1>0?Math.floor((t.buf||0)/t.exp1):0;
-  document.getElementById('runwayVal').textContent=runwayMonths;
-  document.getElementById('runwayFill').style.width=Math.min(100,runwayMonths/36*100)+'%';
-  document.getElementById('savBuf').textContent=feur(t.buf||0);
+  // runway + buffer displayed AFTER cashVal/savVal are computed (see below)
   document.getElementById('monBurn').textContent='−'+feur(t.exp1||0)+'/mo';
-  document.getElementById('wwBen').textContent='+'+feur(t.ww||0)+'/mo';
+  const _wwBen=document.getElementById('wwBen'); if(_wwBen) _wwBen.textContent='+'+feur(t.ww||0)+'/mo';
   const net=(t.ww||0)-(t.wexp||0);
-  document.getElementById('netMon').innerHTML=`<span class="${net>=0?'tg':'tr'}">${net>=0?'+':''}${feur(net)}/mo</span>`;
-  document.getElementById('sevVal').innerHTML=t.severance>0?`<span class="tg">${feur(t.severance)} <span style="font-size:10px;color:var(--txt2)">${t.severanceMonth?'('+fmtM(t.severanceMonth)+')':''}</span></span>`:`<span class="t2" style="font-style:italic">placeholder</span>`;
+  const _netMon=document.getElementById('netMon'); if(_netMon) _netMon.innerHTML=`<span class="${net>=0?'tg':'tr'}">${net>=0?'+':''}${feur(net)}/mo</span>`;
+  const _sevVal=document.getElementById('sevVal'); if(_sevVal) _sevVal.innerHTML=t.severance>0?`<span class="tg">${feur(t.severance)} <span style="font-size:10px;color:var(--txt2)">${t.severanceMonth?'('+fmtM(t.severanceMonth)+')':''}</span></span>`:`<span class="t2" style="font-style:italic">placeholder</span>`;
   const _lhp=(t.leaveHours||0)*(t.leaveHoursRate||0);
-  document.getElementById('leaveHoursVal').innerHTML=_lhp>0?`<span class="tg">${feur(_lhp)} <span style="font-size:10px;color:var(--txt2)">${t.leaveHoursMonth?'('+fmtM(t.leaveHoursMonth)+')':''}</span></span>`:`<span class="t2" style="font-style:italic">placeholder</span>`;
-  document.getElementById('wwDurVal').innerHTML=t.wwDuration>0?`${t.wwDuration} months`:`<span class="t2" style="font-style:italic">placeholder</span>`;
+  const _lhpVal=document.getElementById('leaveHoursVal'); if(_lhpVal) _lhpVal.innerHTML=_lhp>0?`<span class="tg">${feur(_lhp)} <span style="font-size:10px;color:var(--txt2)">${t.severanceMonth?'('+fmtM(t.severanceMonth)+')':''}</span></span>`:`<span class="t2" style="font-style:italic">placeholder</span>`;
+  updateLeaveHoursTotal();
+  const _wwDurVal=document.getElementById('wwDurVal'); if(_wwDurVal) _wwDurVal.innerHTML=t.wwDuration>0?`${t.wwDuration} months`:`<span class="t2" style="font-style:italic">placeholder</span>`;
 
   // Phase tags
   let wwEndTag='';
@@ -2448,18 +2745,24 @@ function rebuildCashFlow(){
     let ot=0;
     if(t.severance>0&&t.severanceMonth&&row.mRaw===t.severanceMonth) ot+=t.severance;
     const _lp=(t.leaveHours||0)*(t.leaveHoursRate||0);
-    if(_lp>0&&t.leaveHoursMonth&&row.mRaw===t.leaveHoursMonth) ot+=_lp;
+    if(_lp>0&&t.severanceMonth&&row.mRaw===t.severanceMonth) ot+=_lp;
     return ot;
   });
+  // cashInst/savInst declared early — used in cashInstVal + cashTradeDelta blocks below
+  const cashInst=DB.instruments.find(i=>i.ticker==='CASH');
+  const savInst=DB.instruments.find(i=>i.ticker==='SAV');
   safeDestroy('cfChart');
   charts.cf=new Chart(document.getElementById('cfChart'),{
     type:'bar',
     data:{labels:cfData.map(d=>d.m),datasets:[
-      {label:'Income',data:cfData.map(d=>d.income),backgroundColor:incColors,borderRadius:3,order:1},
-      {label:'Expenses',data:cfData.map(d=>Math.abs(d.exp)),backgroundColor:'#F59E0B44',borderColor:'#F59E0B',borderWidth:1,borderRadius:3,order:2}
+      {label:'Income',data:cfData.map(d=>d.income),backgroundColor:incColors.map(c=>c+'88'),borderColor:incColors,borderWidth:1,borderRadius:3},
+      {label:'Expenses',data:cfData.map(d=>Math.abs(d.exp)),backgroundColor:'#F59E0B33',borderColor:'#F59E0B',borderWidth:1,borderRadius:3}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${feur(ctx.raw)}`}}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${feur(ctx.raw)}`}}
+      },
       scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v),font:{size:9}}}}
     }
   });
@@ -2472,16 +2775,57 @@ function rebuildCashFlow(){
   const ytdDivs=getYTDDividends(invYr);
   const ytdBuys=getYTDBuys(invYr);
   const ytdSellTax=getYTDSellTax(invYr);
+  const ytdDeposits=getYTDDeposits(invYr);
   const invIncome=ytdDivs+Math.max(0,tpl.realizedNet);
   const invOutflow=ytdBuys+ytdSellTax;
-  const cashInst=DB.instruments.find(i=>i.ticker==='CASH');
-  const savInst=DB.instruments.find(i=>i.ticker==='SAV');
-  const cashAuto=cashInst?(DB.prices[cashInst.id]||0):0;
-  const savAuto=savInst?(DB.prices[savInst.id]||0):0;
-  const cashOverride=parseFloat(document.getElementById('cfg_cashOverride')?.value)||0;
-  const savOverride=parseFloat(document.getElementById('cfg_savingsOverride')?.value)||0;
-  const cashVal=cashOverride>0?cashOverride:cashAuto;
-  const savVal=savOverride>0?savOverride:savAuto;
+  // cashInst + savInst already declared above for _actualByMonth
+  // Cash = CASH instrument position (anchor) + net trade impacts (all non-CASH/SAV tx) + cash↔savings transfers
+  const cashInstVal=(()=>{
+    if(!cashInst) return 0;
+    let val=0;
+    // Use transaction value (qty×price), not DB.prices — avoids stale-price mismatch
+    (DB.transactions||[]).forEach(tx=>{
+      if(tx.iid!==cashInst.id||tx.type==='dividend'||tx.type==='deposit') return;
+      if(tx.type==='buy') val+=(tx.qty||0)*(tx.price||0);
+      else if(tx.type==='sell') val-=(tx.qty||0)*(tx.price||0);
+    });
+    return val;
+  })();
+  let cashTradeDelta=0;
+  (DB.transactions||[]).forEach(tx=>{
+    // Only skip buy/sell of the CASH/SAV instrument itself (position changes already counted in cashInstVal/savInstVal)
+    // Deposits and dividends always count as cash inflows regardless of which instrument they belong to
+    const isPositionChange=tx.type==='buy'||tx.type==='sell';
+    const skip=isPositionChange&&((cashInst&&tx.iid===cashInst.id)||(savInst&&tx.iid===savInst.id));
+    if(skip) return;
+    if(tx.type==='buy')           cashTradeDelta -= (tx.qty||0)*(tx.price||0)+(tx.fees||0);
+    else if(tx.type==='sell')     cashTradeDelta += (tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0);
+    else if(tx.type==='dividend') cashTradeDelta += tx.price||0;
+    else if(tx.type==='deposit')  cashTradeDelta += tx.price||0;
+  });
+  const cashTransferDelta=DB.transition.cashTxDelta||0; // cash↔savings transfers only
+  const savTxDelta=DB.transition.savTxDelta||0;         // savings transfers
+  // Savings = SAV instrument position (anchor) + savings transfers
+  const savInstVal=(()=>{
+    if(!savInst) return 0;
+    let val=0;
+    (DB.transactions||[]).forEach(tx=>{
+      if(tx.iid!==savInst.id||tx.type==='dividend'||tx.type==='deposit') return;
+      if(tx.type==='buy') val+=(tx.qty||0)*(tx.price||0);
+      else if(tx.type==='sell') val-=(tx.qty||0)*(tx.price||0);
+    });
+    return val;
+  })();
+  const cashVal=cashInstVal+cashTradeDelta+cashTransferDelta;
+  const savVal=Math.max(0,savInstVal+savTxDelta);
+  // Store for MAX button in transfer modal
+  window._xferMaxCash=cashVal; window._xferMaxSav=savVal;
+  // Liquid Buffer = Cash + Savings + any extra manual buffer
+  const totalLiquid=cashVal+savVal+(t.buf||0);
+  const runwayMonths=t.exp1>0?Math.floor(totalLiquid/t.exp1):0;
+  document.getElementById('runwayVal').textContent=runwayMonths;
+  document.getElementById('runwayFill').style.width=Math.min(100,runwayMonths/36*100)+'%';
+  document.getElementById('savBuf').textContent=feur(totalLiquid);
   const cfCashEl=document.getElementById('cfCashVal');
   const cfSavEl=document.getElementById('cfSavVal');
   const cfInvIncEl=document.getElementById('cfInvIncomeYTD');
@@ -2490,9 +2834,23 @@ function rebuildCashFlow(){
   if(cfSavEl) cfSavEl.textContent=feur(savVal);
   if(cfInvIncEl) cfInvIncEl.textContent='+'+feur(invIncome);
   if(cfInvOutEl) cfInvOutEl.textContent='-'+feur(invOutflow);
+  // Transfer badges: show transfer delta on each card (non-zero means transfers have moved money)
+  const cashBadge=document.getElementById('cashTxBadge');
+  if(cashBadge) cashBadge.textContent=cashTransferDelta!==0?(cashTransferDelta>0?`+${feur(cashTransferDelta,0)}`:`${feur(cashTransferDelta,0)}`):'';
+  const savBadge=document.getElementById('savTxBadge');
+  if(savBadge) savBadge.textContent=savTxDelta!==0?(savTxDelta>0?`+${feur(savTxDelta,0)}`:`${feur(savTxDelta,0)}`):'';
+  // Cash card: show red if negative balance (overspent)
+  const cfCashValEl=document.getElementById('cfCashVal');
+  if(cfCashValEl) cfCashValEl.style.color=cashVal<0?'var(--err)':'var(--ok)';
+  // Update transfer modal preview if open
+  const xferCash=document.getElementById('xfer_cash_before');
+  const xferSav=document.getElementById('xfer_sav_before');
+  if(xferCash) xferCash.textContent=feur(cashVal);
+  if(xferSav) xferSav.textContent=feur(savVal);
   const actEl=document.getElementById('cfInvActivityRows');
   if(actEl){
     const rows=[
+      {label:'💵 Cash deposits',val:ytdDeposits,color:'var(--ok)',sign:'+'},
       {label:'Dividend / Distribution income',val:ytdDivs,color:'var(--ok)',sign:'+'},
       {label:'Realized gains (sells)',val:Math.max(0,tpl.realizedNet),color:'var(--ok)',sign:'+'},
       {label:'Realized losses (sells)',val:Math.min(0,tpl.realizedNet)<0?-tpl.realizedNet:0,color:'var(--err)',sign:'-'},
@@ -2509,16 +2867,13 @@ function rebuildCashFlow(){
 
   const curMonth=new Date().toISOString().slice(0,7);
   const savData=buildSavingsProjection(cfData,{cashStart:cashVal,savStart:savVal,invYTDNet:invIncome-invOutflow,invYTDMonth:curMonth});
-  const ctx2=document.getElementById('savChart').getContext('2d');
-  const grad=ctx2.createLinearGradient(0,0,0,200);
-  grad.addColorStop(0,'rgba(16,185,129,.25)');grad.addColorStop(1,'rgba(16,185,129,0)');
   safeDestroy('savChart');
   charts.sav=new Chart(document.getElementById('savChart'),{
     type:'line',
     data:{labels:savData.map(d=>d.m),datasets:[{
       label:'Projected Savings (€)',
       data:savData.map(d=>d.v),
-      borderColor:'#10B981',borderWidth:2,backgroundColor:grad,fill:true,tension:0.35,
+      borderColor:'#10B981',borderWidth:2,backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,200);g.addColorStop(0,'rgba(16,185,129,.25)');g.addColorStop(1,'rgba(16,185,129,0)');return g;},fill:true,tension:0.35,
       pointRadius:savData.map(d=>d.spike?7:3),
       pointHoverRadius:savData.map(d=>d.spike?9:5),
       pointBackgroundColor:savData.map(d=>d.spike?'#F59E0B':'#10B981'),
@@ -2528,6 +2883,49 @@ function rebuildCashFlow(){
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const d=savData[ctx.dataIndex];return d.spike?` Savings: ${feur(ctx.raw)} ⬆ one-time inflow`:` Savings: ${feur(ctx.raw)}`;} }}},
       scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:9}}}}
+    }
+  });
+  renderDivForecast();
+}
+function renderDivForecast(){
+  const canvas=document.getElementById('divForecastChart');
+  const emptyEl=document.getElementById('divForecastEmpty');
+  const totalEl=document.getElementById('divForecastTotal');
+  if(!canvas) return;
+  // Build trailing 12 months labels
+  const months=[];
+  const now=new Date();
+  for(let i=11;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push(d.toISOString().slice(0,7)); // YYYY-MM
+  }
+  // Sum dividends per month
+  const monthTotals={};
+  months.forEach(m=>monthTotals[m]=0);
+  (DB.transactions||[]).filter(t=>t.type==='dividend').forEach(t=>{
+    const ym=t.date.slice(0,7);
+    if(monthTotals[ym]!==undefined) monthTotals[ym]+=(t.qty||1)*(t.price||0);
+  });
+  const values=months.map(m=>+monthTotals[m].toFixed(2));
+  const total=values.reduce((s,v)=>s+v,0);
+  const hasData=values.some(v=>v>0);
+  if(!hasData){
+    canvas.style.display='none';
+    if(emptyEl) emptyEl.style.display='block';
+    if(totalEl) totalEl.textContent='';
+    return;
+  }
+  canvas.style.display='block';
+  if(emptyEl) emptyEl.style.display='none';
+  if(totalEl) totalEl.textContent=`Total: +${feur(total)}`;
+  const labels=months.map(m=>{ const[y,mo]=m.split('-'); return new Date(+y,+mo-1,1).toLocaleString('default',{month:'short'})+' '+y.slice(2); });
+  safeDestroy('divForecastChart');
+  charts.divForecast=new Chart(canvas,{
+    type:'bar',
+    data:{labels,datasets:[{label:'Dividends',data:values,backgroundColor:'rgba(16,185,129,0.7)',borderColor:'#10B981',borderWidth:1,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${feur(ctx.raw,2)}`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>feur(v),font:{size:9}},beginAtZero:true}}
     }
   });
 }
@@ -2540,8 +2938,9 @@ function switchTab(name, btn){
   el.classList.add('active');
   if(btn) btn.classList.add('active');
   else document.querySelectorAll('.mtab').forEach(t=>{if(t.textContent.toLowerCase().includes(name.slice(0,4)))t.classList.add('active');});
-  if(name==='transition') loadTransitionSettings();
-  if(name==='tax') renderTaxTab();
+  if(name==='transition'){ loadTransitionSettings(); requestAnimationFrame(rebuildCashFlow); }
+  if(name==='tax') requestAnimationFrame(renderTaxTab);
+  if(name==='overview') setOvwAllocMode('allocation');
 }
 function switchTabByName(name){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
@@ -2552,8 +2951,9 @@ function switchTabByName(name){
     if((name==='overview'&&t.textContent.includes('Overview'))||(name==='holdings'&&t.textContent.includes('Investments'))||(name==='transition'&&t.textContent.includes('Cash Flow'))||(name==='tax'&&t.textContent.includes('Tax'))||(name==='settings'&&t.textContent.includes('Settings')))
       t.classList.add('active');
   });
-  if(name==='transition') loadTransitionSettings();
-  if(name==='tax') renderTaxTab();
+  if(name==='transition'){ loadTransitionSettings(); requestAnimationFrame(rebuildCashFlow); }
+  if(name==='tax') requestAnimationFrame(renderTaxTab);
+  if(name==='overview') setOvwAllocMode('allocation');
 }
 function toggleSettingsMenu(){
   const btn=document.getElementById('settingsMenuBtn');
@@ -2578,7 +2978,7 @@ function jumpToHoldings(cat){
   const cats=computeCategories(); renderHoldingsTabs(cats); renderHoldingsTable(cats);
   document.querySelectorAll('.cat-card').forEach(el=>el.classList.toggle('active',el.id==='cat-'+cat));
 }
-function setActiveCat(cat){ activeCategory=cat; holdDonutMode='allocation'; const cats=computeCategories(); renderHoldingsTabs(cats); renderHoldingsTable(cats); }
+function setActiveCat(cat){ activeCategory=cat; const cats=computeCategories(); renderHoldingsTabs(cats); renderHoldingsTable(cats); }
 function toggleHoldTable(hdr){
   const wrap=document.getElementById('holdTableWrap');
   const chev=document.getElementById('holdTableChevron');
@@ -2596,7 +2996,10 @@ function togglePeriodMenu(ctx){
   document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('open'));
   if(!isOpen){ menu.classList.add('open'); btn.classList.add('open'); }
 }
+const PERIOD_DAYS={'7d':7,'30d':30,'90d':90,'180d':180,'365d':365};
+let currentPeriod='all';
 function setPeriod(p,el){
+  currentPeriod=p;
   document.querySelectorAll('.pm-item[data-p]').forEach(i=>{ const sp=i.querySelector('span:not(.pm-lock)'); if(sp) sp.textContent=''; i.classList.remove('active'); });
   document.querySelectorAll('.ovw-ptab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
@@ -2615,6 +3018,31 @@ function setPeriod(p,el){
   }
   // Sync all ovw-ptab strips (Overview + Holdings share the same class)
   document.querySelectorAll(`.ovw-ptab[data-p="${p}"]`).forEach(t=>t.classList.add('active'));
+  // Refresh data-driven sections with period-aware returns
+  const cats=computeCategories();
+  renderCatCards(cats);
+  renderHoldingsTable(cats);
+}
+// Returns period % return for an instrument, null if not enough price history
+function computeInstPeriodReturn(instId){
+  if(currentPeriod==='all') return null;
+  const days=PERIOD_DAYS[currentPeriod]; if(!days) return null;
+  const startPrice=getPriceAt(instId,days);
+  const curPrice=DB.prices[instId];
+  if(!startPrice||!curPrice) return null;
+  return (curPrice-startPrice)/startPrice*100;
+}
+// Returns period P&L for a category (aggregated across holdings), null if insufficient data
+function computeCatPeriodPnl(cat){
+  if(currentPeriod==='all') return null;
+  const days=PERIOD_DAYS[currentPeriod]; if(!days) return null;
+  let startVal=0, curVal=0, anyData=false;
+  cat.holdings.forEach(h=>{
+    const sp=getPriceAt(h.inst.id,days); if(!sp) return;
+    startVal+=h.pos.qty*sp; curVal+=h.curVal; anyData=true;
+  });
+  if(!anyData||startVal===0) return null;
+  return {pnl:curVal-startVal, pct:(curVal-startVal)/startVal*100};
 }
 function updatePeriodMenuLocks(){
   // Compute date span from priceHistory of non-Cash instruments only
@@ -2680,11 +3108,13 @@ function onTxTypeChange(){
   const type=document.getElementById('tx_type').value;
   const isDiv=type==='dividend';
   const isSell=type==='sell';
-  document.getElementById('qty_row').style.display=isDiv?'none':'';
-  document.getElementById('fees_row').style.display=isDiv?'none':'';
+  const isDeposit=type==='deposit';
+  document.getElementById('qty_row').style.display=(isDiv||isDeposit)?'none':'';
+  document.getElementById('fees_row').style.display=(isDiv||isDeposit)?'none':'';
   document.getElementById('tax_row').style.display=isSell?'':'none';
-  document.getElementById('price_lbl').textContent=isDiv?'Total Amount Received (€) *':'Price per Unit (€) *';
-  if(isDiv) document.getElementById('tx_qty').value='1';
+  document.getElementById('inst_row').style.display=isDeposit?'none':'';
+  document.getElementById('price_lbl').textContent=isDiv?'Total Amount Received (€) *':isDeposit?'Deposit Amount (€) *':'Price per Unit (€) *';
+  if(isDiv||isDeposit) document.getElementById('tx_qty').value='1';
   calcTotal();
 }
 function updatePriceInline(instId, rawVal){
@@ -2700,14 +3130,16 @@ function updatePriceInline(instId, rawVal){
   notify('✅ Price updated.');
 }
 function calcTotal(){
-  const isDiv=document.getElementById('tx_type').value==='dividend';
+  const txType=document.getElementById('tx_type').value;
+  const isDiv=txType==='dividend';
+  const isDeposit=txType==='deposit';
   const q=parseFloat(document.getElementById('tx_qty').value)||0;
   const p=parseFloat(document.getElementById('tx_price').value)||0;
   const f=parseFloat(document.getElementById('tx_fees').value)||0;
-  const tot=isDiv?p:(q*p+f);
+  const tot=(isDiv||isDeposit)?p:(q*p+f);
   const el=document.getElementById('tx_total');
   el.textContent=tot>0?feur(tot,2):'€ —';
-  el.style.color=isDiv?'#059669':'';
+  el.style.color=(isDiv||isDeposit)?'#059669':'';
 }
 function quickAdd(iid){
   openModal('txModal');
@@ -2716,7 +3148,14 @@ function quickAdd(iid){
 
 // ── CRUD ──
 function saveTx(){
+  const type=document.getElementById('tx_type').value;
+  // Deposit: auto-assign to CASH instrument, skip instrument selector
   let iid=document.getElementById('tx_inst').value;
+  if(type==='deposit'){
+    const cashInst=DB.instruments.find(i=>i.ticker==='CASH');
+    if(!cashInst){ notify('⚠️ No CASH instrument found. Add one first.','warn'); return; }
+    iid=cashInst.id;
+  }
   if(!iid){ notify('⚠️ Select an instrument.','warn'); return; }
   if(iid==='__new__'){
     const name=document.getElementById('ni_name').value.trim();
@@ -2733,14 +3172,15 @@ function saveTx(){
     DB.prices[ni.id]=parseFloat(document.getElementById('tx_price').value)||0;
     iid=ni.id;
   }
-  const type=document.getElementById('tx_type').value;
-  const qty=type==='dividend'?1:parseFloat(document.getElementById('tx_qty').value);
+  const qty=(type==='dividend'||type==='deposit')?1:parseFloat(document.getElementById('tx_qty').value);
   const price=parseFloat(document.getElementById('tx_price').value);
   const date=document.getElementById('tx_date').value;
   if(!price||!date){ notify('⚠️ Amount and date required.','warn'); return; }
-  if(type!=='dividend'&&!qty){ notify('⚠️ Quantity required.','warn'); return; }
+  if(type!=='dividend'&&type!=='deposit'&&!qty){ notify('⚠️ Quantity required.','warn'); return; }
   const taxPaid=type==='sell'?parseFloat(document.getElementById('tx_taxPaid').value)||0:0;
-  DB.transactions.push({id:'tx'+Date.now(),iid,type,date,qty,price,fees:type==='dividend'?0:parseFloat(document.getElementById('tx_fees').value)||0,taxPaid,notes:document.getElementById('tx_notes').value.trim()});
+  const fees=(type==='dividend'||type==='deposit')?0:parseFloat(document.getElementById('tx_fees').value)||0;
+  DB.transactions.push({id:'tx'+Date.now(),iid,type,date,qty,price,fees,taxPaid,notes:document.getElementById('tx_notes').value.trim()});
+  // Cash balance is now computed from full transaction history in rebuildCashFlow — no delta update needed here
   saveDB(); closeModal('txModal'); refreshAll(); notify('✅ Transaction saved.');
 }
 function deleteTx(id){
@@ -2749,9 +3189,12 @@ function deleteTx(id){
   saveDB(); renderHistory(); refreshAll(); notify('🗑 Transaction deleted.');
 }
 function showInstHistory(iid){ openModal('historyModal'); setTimeout(()=>{ populateHistFilter(); document.getElementById('histFilter').value=iid; renderHistory(); },50); }
+function showCashTransactions(){ openModal('historyModal'); setTimeout(()=>{ populateHistFilter(); document.getElementById('histFilter').value='__cash_flow__'; renderHistory(); },50); }
+function showInvIncome(){ openModal('historyModal'); setTimeout(()=>{ populateHistFilter(); document.getElementById('histFilter').value='__inv_income__'; renderHistory(); },50); }
+function showInvOutflow(){ openModal('historyModal'); setTimeout(()=>{ populateHistFilter(); document.getElementById('histFilter').value='__inv_outflow__'; renderHistory(); },50); }
 function populateHistFilter(){
   const sel=document.getElementById('histFilter');
-  sel.innerHTML=`<option value="all">All instruments</option>`;
+  sel.innerHTML=`<option value="all">All instruments</option><option value="__cash_flow__">💵 Cash impact only</option><option value="__inv_income__">📈 Income only (dividends + gains)</option><option value="__inv_outflow__">📉 Outflows only (buys)</option>`;
   [...DB.instruments].sort((a,b)=>a.name.localeCompare(b.name)).forEach(inst=>{
     const n=DB.transactions.filter(t=>t.iid===inst.id).length; if(!n) return;
     const o=document.createElement('option'); o.value=inst.id; o.textContent=`${inst.name} (${n} tx)`; sel.appendChild(o);
@@ -2759,23 +3202,68 @@ function populateHistFilter(){
 }
 function renderHistory(){
   const f=document.getElementById('histFilter').value;
-  const txs=[...DB.transactions].filter(t=>f==='all'||t.iid===f).sort((a,b)=>b.date.localeCompare(a.date));
+  const isCashFlow=f==='__cash_flow__';
+  const isInvIncome=f==='__inv_income__';
+  const isInvOutflow=f==='__inv_outflow__';
+  const isSpecial=isCashFlow||isInvIncome||isInvOutflow;
+  const cashFlowTypes=new Set(['buy','sell','dividend','deposit']);
+  const cashInst=DB.instruments.find(i=>i.ticker==='CASH');
+  const txs=[...DB.transactions].filter(t=>{
+    if(isCashFlow) return cashFlowTypes.has(t.type);
+    if(isInvIncome) return t.type==='dividend'||t.type==='sell';
+    if(isInvOutflow) return t.type==='buy';
+    return f==='all'||t.iid===f;
+  }).sort((a,b)=>b.date.localeCompare(a.date));
   document.getElementById('histCount').textContent=`${txs.length} transaction${txs.length!==1?'s':''}`;
+  const priceHdr=document.getElementById('histPriceHdr');
+  if(priceHdr) priceHdr.textContent=isSpecial?'Cash Impact':'Price';
   document.getElementById('histBody').innerHTML=txs.length?txs.map(tx=>{
     const inst=instById(tx.iid);
     const isDiv=tx.type==='dividend';
+    const isDeposit=tx.type==='deposit';
     const tot=isDiv?(tx.price||0):(tx.qty*tx.price+(tx.fees||0));
-    const typeBadge=isDiv
-      ?`<span class="badge badge-div-tx" style="background:#ECFDF5;color:#059669;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700">DIV</span>`
-      :`<span class="badge ${tx.type==='buy'?'bg':'br'}">${tx.type.toUpperCase()}</span>`;
+    // Cash impact for __cash_flow__ view
+    const isCashInstTx=cashInst&&tx.iid===cashInst.id;
+    let cashImpact=0;
+    if(isDeposit){
+      cashImpact=tx.price||0; // deposit always = positive cash inflow
+    } else if(isCashInstTx){
+      // Buying/selling the CASH instrument is the opposite of buying a stock:
+      // buy CASH = cash comes IN; sell CASH = cash goes OUT
+      if(tx.type==='buy') cashImpact=(tx.qty||0)*(tx.price||0);
+      else if(tx.type==='sell') cashImpact=-((tx.qty||0)*(tx.price||0));
+    } else {
+      if(tx.type==='buy') cashImpact=-(tx.qty*tx.price+(tx.fees||0));
+      else if(tx.type==='sell') cashImpact=tx.qty*tx.price-(tx.fees||0)-(tx.taxPaid||0);
+      else if(tx.type==='dividend') cashImpact=tx.price||0;
+    }
+    const typeBadge=isDeposit
+      ?`<span class="badge" style="background:#DBEAFE;color:#1D4ED8;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700">DEP</span>`
+      :isDiv
+        ?`<span class="badge" style="background:#ECFDF5;color:#059669;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700">DIV</span>`
+        :`<span class="badge ${tx.type==='buy'?'bg':'br'}">${tx.type.toUpperCase()}</span>`;
+    if(isSpecial){
+      const impactColor=cashImpact>=0?'color:#059669':'color:#EF4444';
+      return`<tr>
+        <td>${fdate(tx.date)}</td>
+        <td><span class="fw7">${inst?inst.name:(isDeposit?'Cash Deposit':tx.iid)}</span>${inst&&!isDeposit?`<span class="itag it-${inst.category.toLowerCase()}">${inst.ticker}</span>`:''}</td>
+        <td>${typeBadge}</td>
+        <td class="num" style="font-size:12px">${(isDiv||isDeposit)?'<span class="t2">—</span>':fmt(tx.qty,tx.qty<10?4:2)}</td>
+        <td class="num fw7" style="${impactColor}">${cashImpact>=0?'+':''}${feur(cashImpact,1)}</td>
+        <td class="num" style="font-size:12px">${(tx.fees&&!isDiv&&!isDeposit)?feur(tx.fees,2):'—'}</td>
+        <td class="num fw7" style="${isDiv||isDeposit?'color:#059669':''}">${isDiv||isDeposit?'+':''} ${feur(tot,1)}</td>
+        <td class="t2" style="font-size:12px">${tx.notes||'—'}</td>
+        <td><button class="btn btn-d btn-xs" onclick="deleteTx('${tx.id}')">✕</button></td>
+      </tr>`;
+    }
     return`<tr>
       <td>${fdate(tx.date)}</td>
       <td><span class="fw7">${inst?inst.name:tx.iid}</span>${inst?`<span class="itag it-${inst.category.toLowerCase()}">${inst.ticker}</span>`:''}</td>
       <td>${typeBadge}</td>
-      <td class="num" style="font-size:12px">${isDiv?'<span class="t2">—</span>':fmt(tx.qty,tx.qty<10?4:2)}</td>
-      <td class="num" style="font-size:12px">${isDiv?'<span class="t2">—</span>':feur(tx.price,tx.price<10?4:2)}</td>
-      <td class="num" style="font-size:12px">${(tx.fees&&!isDiv)?feur(tx.fees,2):'—'}</td>
-      <td class="num fw7" style="${isDiv?'color:#059669':''}">${isDiv?'+':''} ${feur(tot,1)}</td>
+      <td class="num" style="font-size:12px">${(isDiv||isDeposit)?'<span class="t2">—</span>':fmt(tx.qty,tx.qty<10?4:2)}</td>
+      <td class="num" style="font-size:12px">${(isDiv||isDeposit)?'<span class="t2">—</span>':feur(tx.price,tx.price<10?4:2)}</td>
+      <td class="num" style="font-size:12px">${(tx.fees&&!isDiv&&!isDeposit)?feur(tx.fees,2):'—'}</td>
+      <td class="num fw7" style="${isDiv||isDeposit?'color:#059669':''}">${isDiv||isDeposit?'+':''} ${feur(tot,1)}</td>
       <td class="t2" style="font-size:12px">${tx.notes||'—'}</td>
       <td><button class="btn btn-d btn-xs" onclick="deleteTx('${tx.id}')">✕</button></td>
     </tr>`;
@@ -2900,8 +3388,8 @@ function openUpdatePricesModal(){
     const rows=grouped[g].map(inst=>{
       const lastUpd=DB.lastPriceUpdateDate?.[inst.id];
       const daysSince=lastUpd?Math.round((new Date()-new Date(lastUpd))/(86400000)):null;
-      const stale=daysSince!==null&&daysSince>7;
-      const staleHint=stale?`<span title="${daysSince}d since last update" style="color:var(--wrn);font-size:11px;margin-left:4px">⚠️</span>`:'';
+      const freshIco2=daysSince===null?'⬜':daysSince<2?'🟢':daysSince<=7?'🟡':'🔴';
+      const staleHint=`<span title="${daysSince===null?'Never updated':daysSince===0?'Updated today':`Updated ${daysSince}d ago`}" style="font-size:11px;margin-left:4px;cursor:help">${freshIco2}</span>`;
       return`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bdr)">
         <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
           <div style="min-width:52px">
@@ -2943,11 +3431,12 @@ function savePrices(){
 
 // ── MODAL HELPERS ──
 function openModal(id){
-  document.getElementById(id).classList.add('open');
+  const el=document.getElementById(id); if(!el) return;
+  el.classList.add('open');
   if(id==='txModal'){ populateInstSel(); document.getElementById('tx_date').value=new Date().toISOString().slice(0,10); }
   if(id==='historyModal'){ populateHistFilter(); renderHistory(); }
 }
-function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function closeModal(id){ const el=document.getElementById(id); if(el) el.classList.remove('open'); }
 document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el&&el.id!=='wizOverlay')el.classList.remove('open');}));
 
 // ── NOTIFICATION & DEBOUNCE ──
@@ -2961,7 +3450,7 @@ function debounce(fn,ms){ return(...args)=>{ clearTimeout(_debounceTimer); _debo
 
 // ── FULL REFRESH ──
 // ── SECTION REORDER ──
-const DEFAULT_SECTION_ORDER=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
+const DEFAULT_SECTION_ORDER=['s-alloc','s-cats','s-nwhistory'];
 function applySectionOrder(){
   const container=document.getElementById('ovwSections');
   if(!container) return;
@@ -2981,7 +3470,7 @@ function renumberSections(){
 function refreshAll(){
   const cats=computeCategories();
   renderKPIs(cats); renderAlloc(cats); renderCatCards(cats);
-  renderSectorRegion(); renderSectorBreakdown(); renderHoldingsTabs(cats); renderHoldingsTable(cats);
+  renderHoldingsTabs(cats); renderHoldingsTable(cats);
   rebuildCashFlow();
   renderNWChart(cats);
   updatePeriodMenuLocks();
@@ -3439,6 +3928,70 @@ function renderTaxTab(){
         <span class="num tg">${feur(ytdSellTaxTotal,2)}</span><span></span>
       </div>`:''}
     </div>`;
+  renderRealizedGainsChart();
+}
+function renderRealizedGainsChart(){
+  const canvas=document.getElementById('realizedGainsChart');
+  const emptyEl=document.getElementById('realizedGainsEmpty');
+  const totalEl=document.getElementById('realizedGainsTotal');
+  if(!canvas) return;
+  // Build trailing 12 months labels
+  const months=[];
+  const now=new Date();
+  for(let i=11;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push(d.toISOString().slice(0,7));
+  }
+  // FIFO realized gains per month
+  const tradingCats=new Set(['ETF','Stock','Crypto','Commodity']);
+  const instCat={}; DB.instruments.forEach(i=>{ instCat[i.id]=i.category; });
+  const pos={};
+  const monthGains={};
+  months.forEach(m=>monthGains[m]=0);
+  [...(DB.transactions||[])].sort((a,b)=>a.date.localeCompare(b.date)).forEach(tx=>{
+    if(!tradingCats.has(instCat[tx.iid])) return;
+    if(!pos[tx.iid]) pos[tx.iid]={qty:0,cost:0};
+    const p=pos[tx.iid];
+    if(tx.type==='buy'){
+      p.cost+=tx.qty*tx.price+(tx.fees||0); p.qty+=tx.qty;
+    } else if(tx.type==='sell'){
+      const avg=p.qty>0?p.cost/p.qty:0;
+      const gain=tx.qty*tx.price-tx.qty*avg-(tx.fees||0);
+      p.cost-=avg*tx.qty; p.qty-=tx.qty;
+      const ym=tx.date.slice(0,7);
+      if(monthGains[ym]!==undefined) monthGains[ym]+=gain;
+    }
+  });
+  const values=months.map(m=>+monthGains[m].toFixed(2));
+  const total=values.reduce((s,v)=>s+v,0);
+  const hasData=values.some(v=>v!==0);
+  if(!hasData){
+    canvas.style.display='none';
+    if(emptyEl) emptyEl.style.display='block';
+    if(totalEl) totalEl.textContent='';
+    return;
+  }
+  canvas.style.display='block';
+  if(emptyEl) emptyEl.style.display='none';
+  if(totalEl) totalEl.textContent=`YTD net: ${total>=0?'+':''}${feur(total)}`;
+  const labels=months.map(m=>{ const[y,mo]=m.split('-'); return new Date(+y,+mo-1,1).toLocaleString('default',{month:'short'})+' '+y.slice(2); });
+  safeDestroy('realizedGainsChart');
+  charts.realizedGains=new Chart(canvas,{
+    type:'bar',
+    data:{labels,datasets:[{
+      label:'Realized Gain/Loss',data:values,
+      backgroundColor:values.map(v=>v>=0?'rgba(16,185,129,0.7)':'rgba(239,68,68,0.7)'),
+      borderColor:values.map(v=>v>=0?'#10B981':'#EF4444'),
+      borderWidth:1,borderRadius:4
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw>=0?'+':''}${feur(ctx.raw,2)}`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},
+        y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>(v>=0?'+':'')+feur(v),font:{size:9}}}
+      }
+    }
+  });
 }
 
 // ── BUSINESS MIX ──
@@ -3608,6 +4161,11 @@ function getYTDSellTax(year){
   const yr=String(year);
   return (DB.transactions||[]).filter(t=>t.type==='sell'&&t.date.startsWith(yr)&&t.taxPaid>0)
     .reduce((s,t)=>s+(t.taxPaid||0),0);
+}
+function getYTDDeposits(year){
+  const yr=String(year);
+  return (DB.transactions||[]).filter(t=>t.type==='deposit'&&t.date.startsWith(yr))
+    .reduce((s,t)=>s+(t.price||0),0);
 }
 
 // ── STRATEGY HEALTH ──
@@ -4316,8 +4874,32 @@ function snapshotNetWorth(cats){
   if(DB.netWorthHistory.length>730) DB.netWorthHistory=DB.netWorthHistory.slice(-730);
 }
 
+let nwZoom='all';
+function setNWZoom(z){
+  nwZoom=z;
+  ['1m','3m','6m','1y','all'].forEach(k=>{
+    const el=document.getElementById('nwz-'+k);
+    if(!el) return;
+    el.style.background=k===z?'var(--pri)':'';
+    el.style.color=k===z?'#fff':'';
+    el.style.border=k===z?'none':'';
+  });
+  renderNWChart(computeCategories());
+}
 function renderNWChart(cats){
-  const hist=DB.netWorthHistory||[];
+  const allHist=DB.netWorthHistory||[];
+  // Apply zoom filter
+  let hist=allHist;
+  if(nwZoom!=='all' && allHist.length>1){
+    const daysMap={'1m':30,'3m':90,'6m':180,'1y':365};
+    const days=daysMap[nwZoom];
+    if(days){
+      const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-days);
+      const cutStr=cutoff.toISOString().slice(0,10);
+      const filtered=allHist.filter(h=>h.date>=cutStr);
+      if(filtered.length>=2) hist=filtered;
+    }
+  }
   const canvas=document.getElementById('nwChart');
   const empty=document.getElementById('nwEmptyMsg');
   const meta=document.getElementById('nwHistoryMeta');
@@ -4331,17 +4913,18 @@ function renderNWChart(cats){
   }
   canvas.style.display='block';
   if(empty) empty.style.display='none';
-  // Stats
+  // Stats — start/growth use filtered range; peak uses full history
   const first=hist[0].value, last=hist[hist.length-1].value;
-  const peak=Math.max(...hist.map(h=>h.value));
+  const peak=Math.max(...allHist.map(h=>h.value));
   const growth=first>0?((last-first)/first*100):0;
   const growthColor=growth>=0?'var(--ok)':'var(--err)';
+  const periodLbl=nwZoom==='all'?'all time':{'1m':'last 30d','3m':'last 90d','6m':'last 6m','1y':'last year'}[nwZoom]||nwZoom;
   const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.innerHTML=v; };
   set('nwStatStart',feur(first));
   set('nwStatCurrent',`<span style="color:var(--pri)">${feur(last)}</span>`);
   set('nwStatPeak',`<span style="color:var(--ok)">${feur(peak)}</span>`);
-  set('nwStatGrowth',`<span style="color:${growthColor}">${growth>=0?'+':''}${growth.toFixed(1)}%</span>`);
-  if(meta) meta.textContent=`${hist.length} data point${hist.length!==1?'s':''} · since ${hist[0].date}`;
+  set('nwStatGrowth',`<span style="color:${growthColor}">${growth>=0?'+':''}${growth.toFixed(1)}% <span style="font-size:11px;font-weight:400;opacity:.7">(${periodLbl})</span></span>`);
+  if(meta) meta.textContent=`${hist.length} data point${hist.length!==1?'s':''} · ${nwZoom==='all'?'since '+allHist[0].date:'showing '+periodLbl}`;
   // Chart
   safeDestroy('nwChart');
   const labels=hist.map(h=>h.date);
@@ -4455,12 +5038,15 @@ async function gistFetch(){
     if(!DB.netWorthHistory) DB.netWorthHistory=[];
     if(!DB.liabilities) DB.liabilities=[];
     if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
-    if(!DB.sectionOrder) DB.sectionOrder=['s-biz-income','s-alloc','s-cats','s-sectors','s-nwhistory'];
+    if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory'];
     if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
     if(!DB.transition) DB.transition=JSON.parse(JSON.stringify(DEFAULT_TRANSITION));
     if(DB.transition.bizPlanIncome===undefined) DB.transition.bizPlanIncome=0;
     if(DB.transition.cashOverride===undefined) DB.transition.cashOverride=0;
     if(DB.transition.savingsOverride===undefined) DB.transition.savingsOverride=0;
+    if(DB.transition.cashTxDelta===undefined) DB.transition.cashTxDelta=0;
+    if(DB.transition.savTxDelta===undefined) DB.transition.savTxDelta=0;
+    if(!DB.transition._cashV2){ DB.transition.cashTxDelta=0; DB.transition._cashV2=true; }
     if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
     if(!DB.priceHistory) DB.priceHistory={};
     if(!DB.ledger) DB.ledger={months:{}};
@@ -4568,7 +5154,7 @@ window.addEventListener('DOMContentLoaded',()=>{
       animation:150,
       ghostClass:'sortable-ghost',
       onEnd(){
-        DB.sectionOrder=[...ovwSortEl.children].map(el=>el.id);
+        DB.sectionOrder=[...ovwSortEl.children].map(el=>el.id).filter(id=>!['s-kpis'].includes(id));
         renumberSections();
         saveDB();
       }
