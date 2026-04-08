@@ -373,11 +373,14 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <div class="sec-ttl"><span class="sec-n">1</span>Asset Allocation</div>
       </div>
       <div style="display:flex;align-items:center;gap:12px">
-        <div style="display:flex;gap:4px" id="ovwAllocToggle">
+        <div style="display:flex;gap:4px;flex-wrap:wrap" id="ovwAllocToggle">
           <button class="btn btn-sm" style="font-size:11px;padding:3px 9px;background:var(--pri);color:#fff;border:none" onclick="setOvwAllocMode('allocation')">Allocation</button>
           <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('sector')">Sector</button>
           <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('region')">Region</button>
+          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('industry')">Industry</button>
+          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('country')">Country</button>
           <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('pnl')">P&amp;L</button>
+          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('qty')">Qty</button>
         </div>
         <a class="lnk" onclick="switchTabByName('holdings')">View all →</a>
       </div>
@@ -1212,7 +1215,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     </div>
     <div class="mfoot" id="txModalFoot" style="display:none">
       <button class="btn btn-g" onclick="closeModal('txModal')">Cancel</button>
-      <button class="btn btn-p" onclick="saveTx()">Save Transaction</button>
+      <button class="btn btn-p" id="txSaveBtn" onclick="saveTx()">Save Transaction</button>
     </div>
   </div>
 </div>
@@ -1231,7 +1234,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       </div>
       <div class="tbl-wrap"><table><thead><tr>
         <th>Date</th><th>Instrument</th><th>Type</th><th class="num">Qty</th>
-        <th class="num" id="histPriceHdr">Price</th><th class="num">Fees</th><th class="num">Total</th><th>Notes</th><th></th>
+        <th class="num" id="histPriceHdr">Price</th><th class="num">Fees</th><th class="num">Total</th><th>Notes</th><th style="min-width:72px"></th>
       </tr></thead><tbody id="histBody"></tbody></table></div>
     </div>
     <div class="mfoot" style="justify-content:space-between">
@@ -2093,22 +2096,46 @@ function safeDestroy(canvasId){
 }
 function healthSig(ret){ if(ret>=-0.15)return ret>=0?'green':'amber'; return 'red'; }
 function portfolioHealth(cats){
-  const ti=cats.reduce((s,c)=>s+c.invested,0), tp=cats.reduce((s,c)=>s+c.pnl,0);
+  const invCats=cats.filter(c=>c.label!=='Cash');
+  const ti=invCats.reduce((s,c)=>s+c.invested,0), tp=invCats.reduce((s,c)=>s+c.pnl,0);
   const r=ti>0?tp/ti:0;
-  const heavy=cats.some(c=>c.retPct<-0.25);
-  const major=cats.some(c=>c.retPct<-0.30);
-  if(r>=0&&!heavy) return{color:'green',label:'Healthy',comment:'All major categories are positive. Portfolio is well-diversified across sectors and regions.'};
-  if(r>=0&&heavy&&!major) return{color:'amber',label:'Monitor',comment:'Overall positive, but Crypto is down significantly. Consider reviewing BTC/ETH/SOL exposure vs. your risk tolerance.'};
-  if(r>=0&&major) return{color:'amber',label:'Caution',comment:'Portfolio net positive but one or more categories have losses exceeding 30%. Review overexposed positions.'};
-  return{color:'red',label:'At Risk',comment:'Net portfolio value is below cost basis. Immediate portfolio review recommended.'};
+  // Per-category signals
+  const sorted=[...invCats].sort((a,b)=>a.retPct-b.retPct); // worst first
+  const worst=sorted[0];
+  const losing=invCats.filter(c=>c.retPct<0).sort((a,b)=>a.retPct-b.retPct);
+  const winning=invCats.filter(c=>c.retPct>=0).sort((a,b)=>b.retPct-a.retPct);
+  const topPerf=winning[0];
+  const bigLosers=losing.filter(c=>c.retPct<-0.10);
+  // Build breakdown lines
+  const catLines=invCats.map(c=>{
+    const pct=(c.retPct*100).toFixed(1);
+    const sig=c.retPct>=0?'🟢':'🔴';
+    return `${sig} ${c.label==='Commodity'?'Gold':c.label}: ${c.retPct>=0?'+':''}${pct}%`;
+  }).join(' · ');
+  const totalLine=`Overall: ${r>=0?'+':''}${(r*100).toFixed(1)}% · Total P&L: ${tp>=0?'+':''}${feur(tp)}`;
+  let advice='';
+  if(bigLosers.length>0){
+    const names=bigLosers.map(c=>`${c.label==='Commodity'?'Gold':c.label} (${(c.retPct*100).toFixed(1)}%)`).join(', ');
+    advice=`⚠️ Significant losses in: ${names}.`;
+  } else if(losing.length>0){
+    advice=`${losing.map(c=>`${c.label==='Commodity'?'Gold':c.label}`).join(', ')} below cost — monitor closely.`;
+  } else if(topPerf){
+    advice=`Best performer: ${topPerf.label==='Commodity'?'Gold':topPerf.label} (+${(topPerf.retPct*100).toFixed(1)}%).`;
+  }
+  const comment=`${catLines}<br>${totalLine}${advice?'<br>'+advice:''}`;
+  if(r>=0&&!bigLosers.length&&losing.length===0) return{color:'green',label:'Healthy',comment};
+  if(r>=0&&bigLosers.length===0) return{color:'amber',label:'Monitor',comment};
+  if(r>=0&&bigLosers.length>0) return{color:'amber',label:'Caution',comment};
+  return{color:'red',label:'At Risk',comment};
 }
 function catHealthComment(cat,retPct){
   const p=(retPct*100).toFixed(1);
-  if(cat==='ETF') return retPct>=0?`+${p}% — European sector ETFs performing. Defensive allocation.`:`${p}% — review underperforming ETFs.`;
-  if(cat==='Stock') return retPct>=0?`+${p}% — strong equity gains. ING is a key driver.`:`${p}% — equity review needed.`;
-  if(cat==='Crypto') return retPct<0?`${p}% — BTC, ETH & SOL below cost. Long-term hold or reduce exposure?`:`+${p}% — crypto recovering.`;
-  if(cat==='Commodity') return`+${p}% — Gold (physical + ETF) is your top performer. Excellent inflation hedge.`;
-  if(cat==='Cash') return`€54,950 liquid buffer @ 3.42% p.a. — strong runway for your transition.`;
+  const cashV=window._cashVal||0, savV=window._savVal||0;
+  if(cat==='ETF') return retPct>=0?`+${p}% — ETFs performing well.`:`${p}% — review underperforming ETFs.`;
+  if(cat==='Stock') return retPct>=0?`+${p}% — equities positive.`:`${p}% — equity review needed.`;
+  if(cat==='Crypto') return retPct<0?`${p}% — Crypto below cost. Long-term hold or reduce exposure?`:`+${p}% — Crypto in profit.`;
+  if(cat==='Commodity') return retPct>=0?`+${p}% — Gold positive. Good inflation hedge.`:`${p}% — Gold below cost.`;
+  if(cat==='Cash') return`💵 ${feur(cashV,0)} cash · 💰 ${feur(savV,0)} savings. Click to view Cash Flow tab.`;
   return retPct>=0?`+${p}%`:`${p}%`;
 }
 function computeCategories(){
@@ -2194,21 +2221,25 @@ function renderAlloc(cats){
   const dhEl=document.getElementById('ovwDonutHint');
   const bhEl=document.getElementById('ovwBarHint');
 
-  if(ovwAllocMode==='sector'||ovwAllocMode==='region'){
-    const isS=ovwAllocMode==='sector';
+  if(ovwAllocMode==='sector'||ovwAllocMode==='region'||ovwAllocMode==='industry'||ovwAllocMode==='country'){
+    const fldMap={sector:'sector',region:'region',industry:'industry',country:'country'};
+    const fld=fldMap[ovwAllocMode];
+    const fallback={sector:'Other',region:'Global',industry:'Other',country:'Other'}[ovwAllocMode];
     const map={};
     allH.forEach(h=>{
-      const key=isS?(h.inst.sector||'Other'):(h.inst.region||'Global');
+      const key=(h.inst[fld])||fallback;
       if(!map[key]) map[key]={cur:0,inv:0};
       map[key].cur+=h.curVal; map[key].inv+=h.pos.cost;
     });
     const keys=Object.keys(map).sort((a,b)=>map[b].cur-map[a].cur);
     const colors=keys.map(k=>getEntityColor(k));
     const nw=allH.reduce((s,h)=>s+h.curVal,0);
-    if(dtEl) dtEl.textContent=isS?'By Sector (Current Value)':'By Region (Current Value)';
-    if(btEl) btEl.textContent=isS?'Sector: Invested vs Current':'Region: Invested vs Current';
+    const modeLabel={sector:'Sector',region:'Region',industry:'Industry',country:'Country'}[ovwAllocMode];
+    if(dtEl) dtEl.textContent=`By ${modeLabel} (Current Value)`;
+    if(btEl) btEl.textContent=`${modeLabel}: Invested vs Current`;
     if(dhEl) dhEl.textContent='👆 Click a slice to filter Holdings';
     if(bhEl) bhEl.textContent='👆 Click a bar to filter Holdings';
+    const isS=ovwAllocMode==='sector';
     safeDestroy('donutChart');
     charts.donut=new Chart(document.getElementById('donutChart'),{
       type:'doughnut',
@@ -2221,7 +2252,7 @@ function renderAlloc(cats){
           const ret=inv>0?(((ctx.raw-inv)/inv)*100).toFixed(1):null;
           return [` ${ctx.label}: ${feur(ctx.raw)}`,` Alloc: ${p}% of portfolio`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
         }}}},
-        onClick:(e,els)=>{if(els.length){isS?filterBySector(keys[els[0].index]):filterByRegion(keys[els[0].index]);switchTabByName('holdings');}}
+        onClick:(e,els)=>{if(els.length){const k=keys[els[0].index];if(ovwAllocMode==='sector')filterBySector(k);else if(ovwAllocMode==='region')filterByRegion(k);else switchTabByName('holdings');}}
       },plugins:[calloutLabelPlugin]
     });
     safeDestroy('allocBar');
@@ -2244,10 +2275,45 @@ function renderAlloc(cats){
             return ` ${ctx.dataset.label}: ${feur(ctx.raw)}`;
           }}}},
         scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
-        onClick:(e,els)=>{if(els.length){isS?filterBySector(keys[els[0].index]):filterByRegion(keys[els[0].index]);switchTabByName('holdings');}}
+        onClick:(e,els)=>{if(els.length){const k=keys[els[0].index];if(ovwAllocMode==='sector')filterBySector(k);else if(ovwAllocMode==='region')filterByRegion(k);else switchTabByName('holdings');}}
       }
     });
 
+  } else if(ovwAllocMode==='qty'){
+    const invH=allH.filter(h=>h.inst.category!=='Cash');
+    const labels=invH.map(h=>h.inst.ticker||h.inst.name);
+    const data=invH.map(h=>h.pos.qty);
+    const colors=invH.map(h=>getEntityColor(h.inst.id));
+    if(dtEl) dtEl.textContent='Holdings by Quantity';
+    if(btEl) btEl.textContent='Units Held per Instrument';
+    if(dhEl) dhEl.textContent='Slice size = number of units held';
+    if(bhEl) bhEl.textContent='Bar length = number of units held';
+    safeDestroy('donutChart');
+    charts.donut=new Chart(document.getElementById('donutChart'),{
+      type:'doughnut',
+      data:{labels,datasets:[{data:data.map(v=>+v.toFixed(4)),backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverBorderWidth:3}]},
+      options:{cutout:'65%',responsive:true,maintainAspectRatio:false,
+        layout:{padding:{top:36,right:80,bottom:36,left:80}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
+          const h=invH[ctx.dataIndex];
+          return [` ${h.inst.name}: ${fmt(ctx.raw,ctx.raw<10?4:2)} units`,` Value: ${feur(h.curVal)}`];
+        }}}},
+        onClick:(e,els)=>{if(els.length){const h=invH[els[0].index];jumpToHoldings(h.inst.category);}}
+      },plugins:[calloutLabelPlugin]
+    });
+    safeDestroy('allocBar');
+    charts.allocBar=new Chart(document.getElementById('allocBar'),{
+      type:'bar',
+      data:{labels,datasets:[{label:'Units Held',data:data.map(v=>+v.toFixed(4)),backgroundColor:colors,borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
+          const h=invH[ctx.dataIndex];
+          return [` ${fmt(ctx.raw,ctx.raw<10?4:2)} units · ${feur(h.curVal)}`];
+        }}}},
+        scales:{x:{grid:{color:'#F3F4F6'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
+        onClick:(e,els)=>{if(els.length){jumpToHoldings(invH[els[0].index].inst.category);}}
+      }
+    });
   } else if(ovwAllocMode==='pnl'){
     const labels=cats.map(c=>c.label);
     const colors=cats.map(c=>c.pnl>=0?'rgba(16,185,129,.75)':'rgba(239,68,68,.75)');
@@ -2337,25 +2403,38 @@ function renderAlloc(cats){
 
 // ── RENDER CATEGORY CARDS ──
 function renderCatCards(cats){
-  const nw=cats.reduce((s,c)=>s+c.current,0);
+  // True portfolio value: investments + real cashVal + real savVal
+  const cashV=window._cashVal||0, savV=window._savVal||0;
+  const invValue=cats.filter(c=>c.label!=='Cash').reduce((s,c)=>s+c.current,0);
+  const nw=invValue+cashV+savV;
   document.getElementById('catGrid').innerHTML=cats.map(c=>{
-    const color=CAT_COLOR[c.label]||'#6B7280', allocPct=nw>0?c.current/nw*100:0, sig=healthSig(c.retPct);
+    const color=CAT_COLOR[c.label]||'#6B7280';
+    // For Cash category: show true liquid position (cashVal+savVal) not the stale instrument position
+    const displayVal=c.label==='Cash'?cashV+savV:c.current;
+    const allocPct=nw>0?displayVal/nw*100:0;
+    const sig=c.label==='Cash'?'green':healthSig(c.retPct);
     const comment=catHealthComment(c.label,c.retPct);
-    const periodPnl=computeCatPeriodPnl(c);
+    const periodPnl=c.label==='Cash'?null:computeCatPeriodPnl(c);
     const periodLine=periodPnl?`<div style="font-size:11px;margin-top:2px;color:${periodPnl.pct>=0?'var(--ok)':'var(--err)'}">🕐 ${currentPeriod.toUpperCase()}: ${periodPnl.pct>=0?'+':''}${periodPnl.pct.toFixed(1)}% (${periodPnl.pnl>=0?'+':''}${feur(periodPnl.pnl)})</div>`:'';
     const cardClick=c.label==='Cash'?`switchTabByName('transition')`:`jumpToHoldings('${c.label}')`;
+    // Cash card: show Cash + Savings breakdown in sub-line
+    const subLine=c.label==='Cash'
+      ?`<div class="cat-broker">💵 ${feur(cashV,0)} cash · 💰 ${feur(savV,0)} savings</div>`
+      :`<div class="cat-broker">${[...new Set(c.holdings.map(h=>h.inst.broker))].join(', ')}</div>`;
+    const pnlLine=c.label==='Cash'?''
+      :`<div class="cat-pnl ${pc(c.pnl)}">${c.pnl>=0?'+':''}${feur(c.pnl)} (${fpct(c.retPct)})</div>`;
     return`<div class="cat-card" onclick="${cardClick}" id="cat-${c.label}">
       <div class="cat-strip" style="background:${color}"></div>
       <div class="cat-top">
         <div><div class="cat-name">${CAT_ICON[c.label]||'●'} ${c.label==='Commodity'?'Gold':c.label}</div>
-          <div class="cat-broker">${[...new Set(c.holdings.map(h=>h.inst.broker))].join(', ')}</div></div>
+          ${subLine}</div>
         <div class="tip" style="cursor:help"><div class="hdot ${sig}"></div>
           <span class="tip-box" style="left:auto;right:0;transform:none;min-width:180px">${comment}</span></div>
       </div>
-      <div class="cat-val" style="color:${color}">${feur(c.current)}</div>
-      <div class="cat-pnl ${pc(c.pnl)}">${c.pnl>=0?'+':''}${feur(c.pnl)} (${fpct(c.retPct)})</div>
+      <div class="cat-val" style="color:${color}">${feur(displayVal)}</div>
+      ${pnlLine}
       ${periodLine}
-      <div class="cat-alloc">${c.holdings.length} holdings · ${allocPct.toFixed(1)}% of portfolio</div>
+      <div class="cat-alloc">${c.label==='Cash'?'Cash + Savings':c.holdings.length+' holdings'} · ${allocPct.toFixed(1)}% of portfolio</div>
       <div class="mini-bar"><div class="mini-fill" style="width:${allocPct}%;background:${color}"></div></div>
     </div>`;
   }).join('');
@@ -2651,7 +2730,7 @@ let ovwAllocMode='allocation';
 function setOvwAllocMode(mode){
   ovwAllocMode=mode;
   document.querySelectorAll('#ovwAllocToggle .btn').forEach((b,i)=>{
-    const modes=['allocation','sector','region','pnl'];
+    const modes=['allocation','sector','region','industry','country','pnl','qty'];
     const active=modes[i]===mode;
     b.style.background=active?'var(--pri)':'';
     b.style.color=active?'#fff':'';
@@ -3491,18 +3570,50 @@ document.addEventListener('click',e=>{
 
 // ── TWO-STEP TRANSACTION MODAL ──
 let _txCategory='';
+let _editTxId=null; // set when editing an existing transaction
 function openTxModal(){
-  _txCategory='';
+  _txCategory=''; _editTxId=null;
   document.getElementById('txStep1').style.display='';
   document.getElementById('txStep2').style.display='none';
   document.getElementById('txModalFoot').style.display='none';
   document.getElementById('txModalTitle').textContent='＋ Add Transaction';
-  // Reset form fields
   const ids=['tx_qty','tx_price','tx_fees','tx_taxPaid','tx_notes','ni_name','ni_ticker','ni_divYield'];
   ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('tx_date').value=new Date().toISOString().slice(0,10);
   document.querySelectorAll('.ni-fields').forEach(el=>el.classList.remove('show'));
+  const saveBtn=document.getElementById('txSaveBtn'); if(saveBtn) saveBtn.textContent='Save Transaction';
   openModal('txModal');
+}
+function editTx(id){
+  const tx=DB.transactions.find(t=>t.id===id); if(!tx) return;
+  const inst=DB.instruments.find(i=>i.id===tx.iid);
+  _editTxId=id;
+  // Determine category — special-case deposit/savings types
+  let cat=inst?inst.category:'Cash';
+  if(tx.type==='deposit') cat='deposit';
+  else if(tx.type==='savings_add'||tx.type==='savings_withdraw') cat='savings';
+  // Open modal in Step 2 directly (no step 1 needed for edit)
+  openTxModal();
+  _editTxId=id; // restore after openTxModal clears it
+  setTimeout(()=>{
+    setTxCategory(cat==='deposit'?'deposit':cat==='savings'?'savings':cat);
+    // Pre-populate fields
+    if(inst&&!['deposit','savings_add','savings_withdraw'].includes(tx.type)){
+      document.getElementById('tx_inst').value=tx.iid;
+    }
+    document.getElementById('tx_type').value=tx.type;
+    onTxTypeChange();
+    document.getElementById('tx_date').value=tx.date;
+    if(tx.qty&&tx.type!=='dividend'&&tx.type!=='deposit'&&tx.type!=='savings_add'&&tx.type!=='savings_withdraw')
+      document.getElementById('tx_qty').value=tx.qty;
+    document.getElementById('tx_price').value=tx.price||'';
+    if(tx.fees) document.getElementById('tx_fees').value=tx.fees;
+    if(tx.taxPaid) document.getElementById('tx_taxPaid').value=tx.taxPaid;
+    document.getElementById('tx_notes').value=tx.notes||'';
+    calcTotal();
+    document.getElementById('txModalTitle').textContent='✏️ Edit Transaction';
+    const saveBtn=document.getElementById('txSaveBtn'); if(saveBtn) saveBtn.textContent='Update Transaction';
+  },60);
 }
 function goTxStep1(){
   _txCategory='';
@@ -3693,8 +3804,16 @@ function saveTx(){
   if(type!=='dividend'&&!isNoInst&&!qty){ notify('⚠️ Quantity required.','warn'); return; }
   const taxPaid=(type==='buy'||type==='sell'||type==='dividend')?parseFloat(document.getElementById('tx_taxPaid').value)||0:0;
   const fees=(type==='dividend'||isNoInst)?0:parseFloat(document.getElementById('tx_fees').value)||0;
-  DB.transactions.push({id:'tx'+Date.now(),iid,type,date,qty,price,fees,taxPaid,notes:document.getElementById('tx_notes').value.trim()});
-  saveDB(); closeModal('txModal'); refreshAll(); notify('✅ Transaction saved.');
+  const txObj={iid,type,date,qty,price,fees,taxPaid,notes:document.getElementById('tx_notes').value.trim()};
+  if(_editTxId){
+    const idx=DB.transactions.findIndex(t=>t.id===_editTxId);
+    if(idx>=0){ DB.transactions[idx]={...DB.transactions[idx],...txObj}; }
+    _editTxId=null;
+    saveDB(); closeModal('txModal'); renderHistory(); refreshAll(); notify('✅ Transaction updated.');
+  } else {
+    DB.transactions.push({id:'tx'+Date.now(),...txObj});
+    saveDB(); closeModal('txModal'); refreshAll(); notify('✅ Transaction saved.');
+  }
 }
 function deleteTx(id){
   if(!confirm('Delete this transaction?')) return;
@@ -3766,7 +3885,7 @@ function renderHistory(){
         <td class="num" style="font-size:12px">${(tx.fees&&!isDiv&&!isDeposit)?feur(tx.fees,2):'—'}</td>
         <td class="num fw7" style="${isDiv||isDeposit?'color:#059669':''}">${isDiv||isDeposit?'+':''} ${feur(tot,1)}</td>
         <td class="t2" style="font-size:12px">${tx.notes||'—'}</td>
-        <td><button class="btn btn-d btn-xs" onclick="deleteTx('${tx.id}')">✕</button></td>
+        <td style="white-space:nowrap"><button class="btn btn-xs" style="margin-right:3px;background:var(--neu-l);border:1px solid var(--bdr)" onclick="editTx('${tx.id}')">✏️</button><button class="btn btn-d btn-xs" onclick="deleteTx('${tx.id}')">✕</button></td>
       </tr>`;
     }
     return`<tr>
@@ -3778,7 +3897,7 @@ function renderHistory(){
       <td class="num" style="font-size:12px">${(tx.fees&&!isDiv&&!isDeposit)?feur(tx.fees,2):'—'}</td>
       <td class="num fw7" style="${isDiv||isDeposit?'color:#059669':''}">${isDiv||isDeposit?'+':''} ${feur(tot,1)}</td>
       <td class="t2" style="font-size:12px">${tx.notes||'—'}</td>
-      <td><button class="btn btn-d btn-xs" onclick="deleteTx('${tx.id}')">✕</button></td>
+      <td style="white-space:nowrap"><button class="btn btn-xs" style="margin-right:3px;background:var(--neu-l);border:1px solid var(--bdr)" onclick="editTx('${tx.id}')">✏️</button><button class="btn btn-d btn-xs" onclick="deleteTx('${tx.id}')">✕</button></td>
     </tr>`;
   }).join(''):`<tr><td colspan="9" class="empty">No transactions</td></tr>`;
 }
