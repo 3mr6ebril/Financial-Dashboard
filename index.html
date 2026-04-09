@@ -374,13 +374,8 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       </div>
       <div style="display:flex;align-items:center;gap:12px">
         <div style="display:flex;gap:4px;flex-wrap:wrap" id="ovwAllocToggle">
-          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px;background:var(--pri);color:#fff;border:none" onclick="setOvwAllocMode('allocation')">Allocation</button>
-          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('sector')">Sector</button>
-          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('region')">Region</button>
-          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('industry')">Industry</button>
-          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('country')">Country</button>
-          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('pnl')">P&amp;L</button>
-          <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setOvwAllocMode('qty')">Qty</button>
+          <button class="btn btn-sm alloc-btn" data-m="allocation" onclick="setOvwAllocMode('allocation')">Allocation</button>
+          <button class="btn btn-sm alloc-btn" data-m="pnl" onclick="setOvwAllocMode('pnl')">P&amp;L</button>
         </div>
         <a class="lnk" onclick="switchTabByName('holdings')">View all →</a>
       </div>
@@ -482,13 +477,14 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <div class="chart-ttl" style="margin:0">Allocation</div>
             <div style="display:flex;gap:4px" id="holdDonutToggle">
-              <button class="btn btn-sm" style="font-size:11px;padding:3px 9px;background:var(--pri);color:#fff;border:none" onclick="setHoldDonutMode('allocation')">Allocation</button>
-              <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setHoldDonutMode('sector')">Sector</button>
-              <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setHoldDonutMode('region')">Region</button>
-              <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setHoldDonutMode('industry')">Industry</button>
-              <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setHoldDonutMode('country')">Country</button>
-              <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setHoldDonutMode('pnl')">P&amp;L</button>
-              <button class="btn btn-sm" style="font-size:11px;padding:3px 9px" onclick="setHoldDonutMode('qty')">Qty</button>
+              <button class="btn btn-sm hold-btn" data-m="allocation" onclick="setHoldDonutMode('allocation')">Allocation</button>
+              <button class="btn btn-sm hold-btn" data-m="sector" onclick="setHoldDonutMode('sector')">Sector</button>
+              <button class="btn btn-sm hold-btn" data-m="group" onclick="setHoldDonutMode('group')">Industry Group</button>
+              <button class="btn btn-sm hold-btn" data-m="industry" onclick="setHoldDonutMode('industry')">Industry</button>
+              <button class="btn btn-sm hold-btn" data-m="region" onclick="setHoldDonutMode('region')">Region</button>
+              <button class="btn btn-sm hold-btn" data-m="country" onclick="setHoldDonutMode('country')">Country</button>
+              <button class="btn btn-sm hold-btn" data-m="pnl" onclick="setHoldDonutMode('pnl')">P&amp;L</button>
+              <button class="btn btn-sm hold-btn" data-m="qty" onclick="setHoldDonutMode('qty')">Qty</button>
             </div>
           </div>
           <div style="position:relative;height:260px"><canvas id="holdPie"></canvas></div>
@@ -1178,33 +1174,75 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
             <div style="padding:9px 12px;background:var(--neu-l);border-radius:var(--rs);font-weight:700;font-size:15px" id="tx_total">€ —</div>
           </div>
           <div class="fg ffull"><label class="flbl">Notes</label><input class="finp" type="text" id="tx_notes" placeholder="Optional"></div>
-          <!-- New instrument fields -->
+          <!-- ── EDIT MODE: instrument details (existing instruments only) ── -->
+          <div class="fdiv" id="editInstSection" style="display:none;margin-top:4px">✏️ Instrument Details</div>
+          <!-- Asset-specific fields (ETF: TER + DistType; Stock: DivYield) -->
+          <div class="fg" id="edit_ter_row" style="display:none"><label class="flbl">TER %</label><input class="finp" type="number" id="edit_ter" step="any" placeholder="e.g. 0.46"></div>
+          <div class="fg" id="edit_distType_row" style="display:none"><label class="flbl">Distribution Type</label>
+            <select class="fsel" id="edit_distType"><option value="">— N/A —</option><option value="Acc">Acc — Accumulating</option><option value="Dist">Dist — Distributing</option></select>
+          </div>
+          <div class="fg" id="edit_divYield_row" style="display:none">
+            <label class="flbl">Dividend Yield % <span style="font-size:10px;color:var(--txt2)">(annual est.)</span></label>
+            <input class="finp" type="number" id="edit_divYield" step="any" placeholder="e.g. 3.5">
+          </div>
+          <!-- GICS Classification (3 cascading) -->
+          <div class="fg ffull" id="edit_sector_row" style="display:none">
+            <label class="flbl">Sector (GICS)</label>
+            <select class="fsel" id="edit_sector"></select>
+            <div id="edit_sector_desc" style="font-size:11px;color:var(--txt2);margin-top:3px;min-height:14px"></div>
+          </div>
+          <div class="fg ffull" id="edit_group_row" style="display:none">
+            <label class="flbl">Industry Group</label>
+            <select class="fsel" id="edit_group"></select>
+          </div>
+          <div class="fg ffull" id="edit_gicsInd_row" style="display:none">
+            <label class="flbl">Industry</label>
+            <select class="fsel" id="edit_gicsInd"></select>
+          </div>
+          <!-- Geography -->
+          <div class="fg" id="edit_country_row" style="display:none">
+            <label class="flbl">Country <span style="font-size:10px;color:var(--txt2)">(HQ registration)</span></label>
+            <input class="finp" type="text" id="edit_country" list="countryList" placeholder="e.g. Netherlands, Japan" autocomplete="off">
+          </div>
+          <div class="fg" id="edit_region_row" style="display:none">
+            <label class="flbl">Region <span style="font-size:10px;color:var(--txt2)">(primary operations)</span></label>
+            <select class="fsel" id="edit_region">
+              <option value="">— select —</option>
+              <option>Europe</option><option>Americas</option><option>Asia</option><option>Global</option><option>Middle East</option><option>Africa</option><option>Oceania</option>
+            </select>
+          </div>
+          <!-- ── NEW INSTRUMENT FIELDS ── -->
           <input type="hidden" id="ni_cat">
-          <div class="fdiv ni-fields" id="niSection">New Instrument Details</div>
+          <div class="fdiv ni-fields" id="niSection">＋ New Instrument Details</div>
           <div class="fg ni-fields" id="ni_name_row"><label class="flbl">Name *</label><input class="finp" type="text" id="ni_name" placeholder="e.g. iShares MSCI World"></div>
           <div class="fg ni-fields" id="ni_ticker_row"><label class="flbl">Ticker</label><input class="finp" type="text" id="ni_ticker" placeholder="e.g. IWDA"></div>
           <div class="fg ni-fields" id="ni_broker_row"><label class="flbl">Broker / Exchange</label><input class="finp" type="text" id="ni_broker" placeholder="e.g. Trade Republic"></div>
           <div class="fg ni-fields" id="ni_currency_row"><label class="flbl">Currency</label><input class="finp" type="text" id="ni_currency" value="EUR"></div>
-          <div class="fdiv ni-fields" id="ni_enrich_div">Enrichment — Sector &amp; Geography</div>
-          <div class="fg ni-fields" id="ni_sector_row"><label class="flbl">Sector</label>
+          <div class="fdiv ni-fields" id="ni_enrich_div">Classification &amp; Geography</div>
+          <div class="fg ffull ni-fields" id="ni_sector_row">
+            <label class="flbl">Sector (GICS)</label>
             <select class="fsel" id="ni_sector"></select>
+            <div id="ni_sector_desc" style="font-size:11px;color:var(--txt2);margin-top:3px;min-height:14px"></div>
           </div>
-          <div class="fg ni-fields" id="ni_industry_row"><label class="flbl">Industry</label>
-            <select class="fsel" id="ni_industry"></select>
+          <div class="fg ffull ni-fields" id="ni_group_row">
+            <label class="flbl">Industry Group</label>
+            <select class="fsel" id="ni_group"></select>
           </div>
-          <div class="fg ni-fields" id="ni_country_row"><label class="flbl">Country / Focus</label>
-            <select class="fsel" id="ni_country"></select>
+          <div class="fg ffull ni-fields" id="ni_gicsInd_row">
+            <label class="flbl">Industry</label>
+            <select class="fsel" id="ni_gicsInd"></select>
           </div>
-          <div class="fg ni-fields" id="ni_region_row"><label class="flbl">Region</label>
-            <select class="fsel" id="ni_region"><option>Europe</option><option>Americas</option><option>Asia</option><option>Global</option><option>Middle East</option><option>Africa</option></select>
+          <div class="fg ni-fields" id="ni_country_row">
+            <label class="flbl">Country <span style="font-size:10px;color:var(--txt2)">(HQ registration)</span></label>
+            <input class="finp" type="text" id="ni_country" list="countryList" placeholder="e.g. Netherlands" autocomplete="off">
+          </div>
+          <div class="fg ni-fields" id="ni_region_row">
+            <label class="flbl">Region <span style="font-size:10px;color:var(--txt2)">(primary operations)</span></label>
+            <select class="fsel" id="ni_region"><option value="">— select —</option><option>Europe</option><option>Americas</option><option>Asia</option><option>Global</option><option>Middle East</option><option>Africa</option><option>Oceania</option></select>
           </div>
           <div class="fg ni-fields" id="ni_ter_row"><label class="flbl">TER %</label><input class="finp" type="number" id="ni_ter" step="any" placeholder="e.g. 0.46"></div>
           <div class="fg ni-fields" id="ni_distType_row"><label class="flbl">Distribution Type</label>
-            <select class="fsel" id="ni_distType">
-              <option value="">— N/A —</option>
-              <option value="Acc">Acc — Accumulating (no payout)</option>
-              <option value="Dist">Dist — Distributing (pays dividends)</option>
-            </select>
+            <select class="fsel" id="ni_distType"><option value="">— N/A —</option><option value="Acc">Acc — Accumulating</option><option value="Dist">Dist — Distributing</option></select>
           </div>
           <div class="fg ni-fields" id="ni_divYield_row" style="display:none">
             <label class="flbl">Dividend Yield % <span style="font-size:10px;color:var(--txt2)">(annual est.)</span></label>
@@ -1367,17 +1405,21 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
             </select>
           </div>
           <div class="fg"><label class="flbl">Broker / Exchange</label><input class="finp" type="text" id="inst_broker" placeholder="e.g. Trade Republic"></div>
-          <div class="fg"><label class="flbl">Sector</label>
+          <div class="fg ffull"><label class="flbl">Sector (GICS)</label>
             <select class="fsel" id="inst_sector"></select>
+            <div id="inst_sector_desc" style="font-size:11px;color:var(--txt2);margin-top:3px;min-height:14px"></div>
           </div>
-          <div class="fg"><label class="flbl">Industry</label>
-            <select class="fsel" id="inst_industry"></select>
+          <div class="fg ffull"><label class="flbl">Industry Group</label>
+            <select class="fsel" id="inst_group"></select>
           </div>
-          <div class="fg"><label class="flbl">Country / Focus</label>
-            <select class="fsel" id="inst_country"></select>
+          <div class="fg ffull"><label class="flbl">Industry</label>
+            <select class="fsel" id="inst_gicsInd"></select>
           </div>
-          <div class="fg"><label class="flbl">Region</label>
-            <select class="fsel" id="inst_region"><option>Europe</option><option>Americas</option><option>Asia</option><option>Global</option><option>Middle East</option><option>Africa</option></select>
+          <div class="fg"><label class="flbl">Country <span style="font-size:10px;color:var(--txt2)">(HQ registration)</span></label>
+            <input class="finp" type="text" id="inst_country" list="countryList" placeholder="e.g. Netherlands" autocomplete="off">
+          </div>
+          <div class="fg"><label class="flbl">Region <span style="font-size:10px;color:var(--txt2)">(primary operations)</span></label>
+            <select class="fsel" id="inst_region"><option value="">— select —</option><option>Europe</option><option>Americas</option><option>Asia</option><option>Global</option><option>Middle East</option><option>Africa</option><option>Oceania</option></select>
           </div>
           <div class="fg"><label class="flbl">Currency</label><input class="finp" type="text" id="inst_currency" value="EUR"></div>
           <div class="fg"><label class="flbl">Distribution Type</label>
@@ -1426,25 +1468,147 @@ function getEntityColor(key){
 }
 
 // ── SMART DYNAMIC SELECT — builds from DB values + Add New ──
-function buildDynamicSelect(selId, field){
+
+// ── GICS 3-TIER TAXONOMY (11 Sectors → 25 Industry Groups → 74 Industries) ──
+const GICS_DATA=[
+  {sector:'Energy',desc:'Oil, gas, and consumable fuels.',groups:[
+    {group:'Energy',industries:['Energy Equipment & Services','Oil, Gas & Consumable Fuels']}]},
+  {sector:'Materials',desc:'Raw materials for other industries.',groups:[
+    {group:'Materials',industries:['Chemicals','Construction Materials','Containers & Packaging','Metals & Mining','Paper & Forest Products']}]},
+  {sector:'Industrials',desc:'Manufacturing, defense, and transport.',groups:[
+    {group:'Capital Goods',industries:['Aerospace & Defense','Building Products','Construction & Engineering','Electrical Equipment','Industrial Conglomerates','Machinery','Trading Companies & Distributors']},
+    {group:'Commercial & Professional Services',industries:['Commercial Services & Supplies','Professional Services']},
+    {group:'Transportation',industries:['Air Freight & Logistics','Ground Transportation','Marine Transportation','Passenger Airlines','Transportation Infrastructure']}]},
+  {sector:'Consumer Discretionary',desc:'Non-essential goods and services.',groups:[
+    {group:'Automobiles & Components',industries:['Automobile Components','Automobiles']},
+    {group:'Consumer Durables & Apparel',industries:['Household Durables','Leisure Products','Textiles, Apparel & Luxury Goods']},
+    {group:'Consumer Services',industries:['Hotels, Restaurants & Leisure','Diversified Consumer Services']},
+    {group:'Consumer Discretionary Distribution & Retail',industries:['Distributors','Broadline Retail','Specialty Retail']}]},
+  {sector:'Consumer Staples',desc:'Essential goods (food, hygiene).',groups:[
+    {group:'Consumer Staples Distribution & Retail',industries:['Consumer Staples Distribution & Retail']},
+    {group:'Food, Beverage & Tobacco',industries:['Beverages','Food Products','Tobacco']},
+    {group:'Household & Personal Products',industries:['Household Products','Personal Care Products']}]},
+  {sector:'Health Care',desc:'Medical providers, equipment, and drugs.',groups:[
+    {group:'Health Care Equipment & Services',industries:['Health Care Equipment & Supplies','Health Care Providers & Services','Health Care Technology']},
+    {group:'Pharmaceuticals, Biotechnology & Life Sciences',industries:['Biotechnology','Pharmaceuticals','Life Sciences Tools & Services']}]},
+  {sector:'Financials',desc:'Banks, investment firms, and insurance.',groups:[
+    {group:'Banks',industries:['Diversified Banks','Regional Banks']},
+    {group:'Financial Services',industries:['Diversified Financial Services','Consumer Finance','Capital Markets','Mortgage REITs']},
+    {group:'Insurance',industries:['Insurance']}]},
+  {sector:'Information Technology',desc:'Software, hardware, and semiconductors.',groups:[
+    {group:'Software & Services',industries:['IT Services','Software']},
+    {group:'Technology Hardware & Equipment',industries:['Communications Equipment','Technology Hardware, Storage & Peripherals','Electronic Equipment, Instruments & Components']},
+    {group:'Semiconductors & Semiconductor Equipment',industries:['Semiconductor Materials & Equipment','Semiconductors']}]},
+  {sector:'Communication Services',desc:'Telecom and media companies.',groups:[
+    {group:'Telecommunication Services',industries:['Diversified Telecommunication Services','Wireless Telecommunication Services']},
+    {group:'Media & Entertainment',industries:['Media','Entertainment','Interactive Media & Services']}]},
+  {sector:'Utilities',desc:'Regulated providers of basic services.',groups:[
+    {group:'Utilities',industries:['Electric Utilities','Gas Utilities','Multi-Utilities','Water Utilities','Independent Power & Renewables']}]},
+  {sector:'Real Estate',desc:'Property development and management.',groups:[
+    {group:'Equity REITs',industries:['Diversified REITs','Industrial REITs','Hotel & Resort REITs','Office REITs','Health Care REITs','Residential REITs','Retail REITs','Specialized REITs']},
+    {group:'Real Estate Management & Development',industries:['Real Estate Management & Development']}]},
+];
+// Sector → colour (semantically meaningful, consistent across all charts)
+const SECTOR_COLORS={
+  'Energy':'#F59E0B','Materials':'#78716C','Industrials':'#64748B',
+  'Consumer Discretionary':'#EC4899','Consumer Staples':'#84CC16',
+  'Health Care':'#14B8A6','Financials':'#3B82F6','Information Technology':'#8B5CF6',
+  'Communication Services':'#06B6D4','Utilities':'#F97316','Real Estate':'#10B981',
+  // Non-GICS special categories
+  'Gold':'#D97706','Bitcoin':'#F97316','Ethereum':'#6366F1','Solana':'#7C3AED',
+  'Crypto':'#EF4444','Cash & Equivalents':'#6EE7B7',
+};
+function gicsSectorColor(key){
+  if(SECTOR_COLORS[key]) return SECTOR_COLORS[key];
+  // Fall back to deterministic hash for unknown keys
+  let h=0; for(let i=0;i<(key||'').length;i++) h=(Math.imul(31,h)+key.charCodeAt(i))|0;
+  return DISTINCT_COLORS[Math.abs(h)%DISTINCT_COLORS.length];
+}
+// ── GICS CASCADE HELPERS ──
+function buildGicsSector(selId,descId,curVal,grpSelId){
   const sel=document.getElementById(selId); if(!sel) return;
-  const cur=sel.value;
-  const vals=[...new Set((DB.instruments||[]).map(i=>i[field]).filter(Boolean))].sort();
-  sel.innerHTML='<option value="">— select —</option><option value="__add_new__">＋ Add new…</option>';
-  vals.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
-  if(cur&&cur!=='__add_new__'&&vals.includes(cur)) sel.value=cur;
-  sel.onchange=function(){
-    if(this.value==='__add_new__'){
-      const prev=this.value;
-      const v=(window.prompt('New '+field+' value:')||'').trim();
-      if(v){
-        if(!Array.from(this.options).find(o=>o.value===v)){
-          const o=document.createElement('option'); o.value=v; o.textContent=v; this.appendChild(o);
-        }
-        this.value=v;
-      } else { this.value=''; }
-    }
+  sel.innerHTML='<option value="">— Sector —</option>';
+  GICS_DATA.forEach(s=>{ const o=document.createElement('option'); o.value=s.sector; o.textContent=s.sector; sel.appendChild(o); });
+  if(curVal) sel.value=curVal;
+  const refresh=()=>{
+    const s=GICS_DATA.find(s=>s.sector===sel.value);
+    const d=document.getElementById(descId); if(d) d.textContent=s?s.desc:'';
+    if(grpSelId) buildGicsGroup(grpSelId,sel.value,'');
   };
+  sel.onchange=refresh; refresh();
+}
+function buildGicsGroup(selId,sectorName,curVal,indSelId){
+  const sel=document.getElementById(selId); if(!sel) return;
+  const s=GICS_DATA.find(s=>s.sector===sectorName);
+  const prev=curVal!==undefined?curVal:sel.value;
+  sel.innerHTML='<option value="">— Industry Group —</option>';
+  (s?s.groups:[]).forEach(g=>{ const o=document.createElement('option'); o.value=g.group; o.textContent=g.group; sel.appendChild(o); });
+  if(prev) sel.value=prev;
+  const refresh=()=>{ if(indSelId) buildGicsIndustry(indSelId,sel.value,sectorName,''); };
+  sel.onchange=refresh; refresh();
+}
+function buildGicsIndustry(selId,groupName,sectorName,curVal){
+  const sel=document.getElementById(selId); if(!sel) return;
+  const s=GICS_DATA.find(s=>s.sector===sectorName);
+  const g=s?s.groups.find(g=>g.group===groupName):null;
+  const prev=curVal!==undefined?curVal:sel.value;
+  sel.innerHTML='<option value="">— Industry —</option>';
+  (g?g.industries:[]).forEach(ind=>{ const o=document.createElement('option'); o.value=ind; o.textContent=ind; sel.appendChild(o); });
+  // preserve value even if not in list (custom)
+  if(prev&&!Array.from(sel.options).find(o=>o.value===prev)){
+    const o=document.createElement('option'); o.value=prev; o.textContent=prev; sel.appendChild(o);
+  }
+  if(prev) sel.value=prev;
+}
+// Convenience: populate all 3 GICS levels given known sector/group/industry
+function populateGics(pfx,sector,group,industry){
+  buildGicsSector(pfx+'_sector',pfx+'_sector_desc',sector,pfx+'_group');
+  buildGicsGroup(pfx+'_group',sector,group,pfx+'_industry');
+  buildGicsIndustry(pfx+'_industry',group,sector,industry);
+}
+
+// ── CLASSIFICATION NORMALISATION (run on every DB load) ──
+const _SECTOR_NORM={
+  'Banking':'Financials','Health Technology':'Health Care',
+  'Construction':'Industrials','Airlines':'Industrials',
+  'Defense':'Industrials','Financial Services':'Financials',
+  'Consumer Finance':'Financials',
+};
+const _GROUP_NORM={
+  'Aerospace & Defense':'Capital Goods','Air Freight':'Transportation','Air Freight & Logistics':'Transportation',
+  'Passenger Airlines':'Transportation',
+  'Banks':'Banks','Diversified Banks':'Banks','Regional Banks':'Banks',
+  'Capital Markets':'Financial Services','Asset Management':'Financial Services',
+  'Consumer Finance':'Financial Services','Consumer Lending':'Financial Services',
+  'Machinery':'Capital Goods','Construction & Engineering':'Capital Goods',
+  'Electric':'Utilities','Electric Utilities':'Utilities',
+  'Oil & Gas Exploration':'Energy','Oil, Gas & Consumable Fuels':'Energy',
+  'Construction Mat.':'Materials','Construction Materials':'Materials',
+  'Metals & Mining':'Materials','Equipment & Services':'Energy','Energy Equipment & Services':'Energy',
+  'Medical Devices':'Health Care Equipment & Services',
+  'Health Care Equipment & Supplies':'Health Care Equipment & Services',
+};
+const _INDUSTRY_NORM={
+  'Electric':'Electric Utilities','Construction Mat.':'Construction Materials',
+  'Oil & Gas Exploration':'Oil, Gas & Consumable Fuels',
+  'Equipment & Services':'Energy Equipment & Services',
+  'Air Freight':'Air Freight & Logistics',
+  'Medical Devices':'Health Care Equipment & Supplies',
+  'Consumer Lending':'Consumer Finance',
+  'Asset Management':'Capital Markets',
+  'Banks':'Diversified Banks',
+};
+function normalizeClassifications(){
+  (DB.instruments||[]).forEach(inst=>{
+    if(_SECTOR_NORM[inst.sector]) inst.sector=_SECTOR_NORM[inst.sector];
+    // Migrate old industry → gicsGroup + gicsIndustry
+    if(!inst.gicsGroup&&inst.industry) inst.gicsGroup=_GROUP_NORM[inst.industry]||inst.industry;
+    if(!inst.gicsIndustry&&inst.industry) inst.gicsIndustry=_INDUSTRY_NORM[inst.industry]||inst.industry;
+    // Keep legacy industry field in sync with gicsIndustry for chart lookups
+    if(inst.gicsIndustry) inst.industry=inst.gicsIndustry;
+    // Normalise ETF country to dash
+    if(inst.category==='ETF'&&(inst.country==='Multi-Europe'||inst.country==='Europe (Multi)'||inst.country==='Europe'||inst.country==='Global')) inst.country='—';
+  });
 }
 
 // ── CALLOUT LABEL PLUGIN (shared by both doughnut charts) ──
@@ -1490,30 +1654,30 @@ const calloutLabelPlugin = {
 };
 
 const DEFAULT_INSTRUMENTS = [
-  {id:'i01',name:'iShares STOXX Europe 600 Utilities',ticker:'IUKS',category:'ETF',sector:'Utilities',industry:'Electric Utilities',country:'Multi-Europe',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.46,distType:'Dist',broker:'Trade Republic',withholdingRate:0},
-  {id:'i02',name:'iShares MSCI Europe Energy Sector',ticker:'IESE',category:'ETF',sector:'Energy',industry:'Oil & Gas',country:'Multi-Europe',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.18,distType:'Acc',broker:'Trade Republic'},
-  {id:'i03',name:'iShares STOXX Europe 600 Construction & Materials',ticker:'ICMB',category:'ETF',sector:'Materials',industry:'Construction Materials',country:'Multi-Europe',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.46,distType:'Dist',broker:'Trade Republic',withholdingRate:0},
-  {id:'i04',name:'iShares MSCI Europe Industrials Sector',ticker:'IIND',category:'ETF',sector:'Industrials',industry:'Industrial Conglomerates',country:'Multi-Europe',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.18,distType:'Acc',broker:'Trade Republic'},
-  {id:'i05',name:'VanEck Defense ETF',ticker:'DFNS',category:'ETF',sector:'Defense',industry:'Aerospace & Defense',country:'Global',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.55,distType:'Acc',broker:'Trade Republic'},
-  {id:'i06',name:'VanEck Uranium & Nuclear Technologies',ticker:'NUKL',category:'ETF',sector:'Energy',industry:'Nuclear Energy',country:'Global',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.55,distType:'Acc',broker:'Trade Republic'},
-  {id:'i07',name:'WisdomTree Uranium & Nuclear Energy',ticker:'WTNC',category:'ETF',sector:'Energy',industry:'Nuclear Energy',country:'Global',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.45,distType:'Acc',broker:'Trade Republic'},
-  {id:'i08',name:'WisdomTree Europe Defence ETF',ticker:'WTDE',category:'ETF',sector:'Defense',industry:'Aerospace & Defense',country:'Europe',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.40,distType:'Acc',broker:'Trade Republic'},
-  {id:'i09',name:'Amundi STOXX Europe 600 Basic Resources',ticker:'AMRS',category:'ETF',sector:'Materials',industry:'Metals & Mining',country:'Multi-Europe',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.30,distType:'Acc',broker:'Trade Republic'},
-  {id:'i10',name:'VanEck Rare Earth & Strategic Metals',ticker:'REMX',category:'ETF',sector:'Materials',industry:'Rare Earth & Strategic Metals',country:'Global',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.59,distType:'Acc',broker:'Trade Republic'},
-  {id:'i11',name:'ING Groep N.V.',ticker:'INGA',category:'Stock',sector:'Banking',industry:'Diversified Banks',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'AEX',broker:'ING',withholdingRate:15},
-  {id:'i12',name:'Koninklijke Philips N.V.',ticker:'PHIA',category:'Stock',sector:'Health Technology',industry:'Medical Devices & Equipment',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'AEX',broker:'Trading 212',withholdingRate:15},
-  {id:'i13',name:'ACOM Co. Ltd',ticker:'ACOM',category:'Stock',sector:'Consumer Finance',industry:'Consumer Lending',country:'Japan',region:'Asia',currency:'EUR',exchange:'Trading 212',broker:'Trading 212',withholdingRate:10},
-  {id:'i14',name:'ACS Actividades de Construccion',ticker:'ACS',category:'Stock',sector:'Construction',industry:'Construction & Engineering',country:'Spain',region:'Europe',currency:'EUR',exchange:'BME',broker:'Trading 212',withholdingRate:15},
-  {id:'i15',name:'Hochtief AG',ticker:'HOT',category:'Stock',sector:'Construction',industry:'Construction & Engineering',country:'Germany',region:'Europe',currency:'EUR',exchange:'XETRA',broker:'Trading 212',withholdingRate:15},
-  {id:'i16',name:'AssetMark Financial Holdings',ticker:'ASY',category:'Stock',sector:'Financial Services',industry:'Asset Management',country:'USA',region:'Americas',currency:'EUR',exchange:'NYSE',broker:'Trading 212',withholdingRate:15},
-  {id:'i24',name:'Air France-KLM',ticker:'AF',category:'Stock',sector:'Airlines',industry:'Passenger Airlines',country:'France',region:'Europe',currency:'EUR',exchange:'Euronext Paris',broker:'Trading 212',withholdingRate:15},
-  {id:'i17',name:'Bitcoin',ticker:'BTC',category:'Crypto',sector:'Bitcoin',industry:'Digital Currency — Store of Value',country:'Global',region:'Global',currency:'EUR',exchange:'Coinbase',broker:'Coinbase'},
-  {id:'i18',name:'Ethereum',ticker:'ETH',category:'Crypto',sector:'Ethereum',industry:'Smart Contract Platform',country:'Global',region:'Global',currency:'EUR',exchange:'Coinbase',broker:'Coinbase'},
-  {id:'i19',name:'Solana',ticker:'SOL',category:'Crypto',sector:'Solana',industry:'Smart Contract Platform',country:'Global',region:'Global',currency:'EUR',exchange:'Coinbase',broker:'Coinbase'},
-  {id:'i20',name:'Gold ETF (4GLD)',ticker:'4GLD',category:'Stock',sector:'Gold',industry:'Precious Metals — ETF',country:'Global',region:'Global',currency:'EUR',exchange:'Trading 212',broker:'Trading 212',unit:'g'},
-  {id:'i21',name:'Physical Gold Coins',ticker:'XAU',category:'Commodity',sector:'Gold',industry:'Precious Metals — Physical',country:'Global',region:'Global',currency:'EUR',exchange:'Physical',broker:'Physical',unit:'troy oz'},
-  {id:'i22',name:'Cash',ticker:'CASH',category:'Cash',sector:'Cash & Equivalents',industry:'Cash',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'Trading 212',broker:'Trading 212'},
-  {id:'i23',name:'Savings',ticker:'SAV',category:'Cash',sector:'Cash & Equivalents',industry:'Savings',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'Trading 212',broker:'Trading 212',interestRate:3.42},
+  {id:'i01',name:'iShares STOXX Europe 600 Utilities',ticker:'IUKS',category:'ETF',sector:'Utilities',gicsGroup:'Utilities',gicsIndustry:'Electric Utilities',industry:'Electric Utilities',country:'—',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.46,distType:'Dist',broker:'Trade Republic',withholdingRate:0},
+  {id:'i02',name:'iShares MSCI Europe Energy Sector',ticker:'IESE',category:'ETF',sector:'Energy',gicsGroup:'Energy',gicsIndustry:'Oil, Gas & Consumable Fuels',industry:'Oil, Gas & Consumable Fuels',country:'—',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.18,distType:'Acc',broker:'Trade Republic'},
+  {id:'i03',name:'iShares STOXX Europe 600 Construction & Materials',ticker:'ICMB',category:'ETF',sector:'Materials',gicsGroup:'Materials',gicsIndustry:'Construction Materials',industry:'Construction Materials',country:'—',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.46,distType:'Dist',broker:'Trade Republic',withholdingRate:0},
+  {id:'i04',name:'iShares MSCI Europe Industrials Sector',ticker:'IIND',category:'ETF',sector:'Industrials',gicsGroup:'Capital Goods',gicsIndustry:'Machinery',industry:'Machinery',country:'—',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.18,distType:'Acc',broker:'Trade Republic'},
+  {id:'i05',name:'VanEck Defense ETF',ticker:'DFNS',category:'ETF',sector:'Industrials',gicsGroup:'Capital Goods',gicsIndustry:'Aerospace & Defense',industry:'Aerospace & Defense',country:'—',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.55,distType:'Acc',broker:'Trade Republic'},
+  {id:'i06',name:'VanEck Uranium & Nuclear Technologies',ticker:'NUKL',category:'ETF',sector:'Energy',gicsGroup:'Energy',gicsIndustry:'Energy Equipment & Services',industry:'Energy Equipment & Services',country:'—',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.55,distType:'Acc',broker:'Trade Republic'},
+  {id:'i07',name:'WisdomTree Uranium & Nuclear Energy',ticker:'WTNC',category:'ETF',sector:'Energy',gicsGroup:'Energy',gicsIndustry:'Energy Equipment & Services',industry:'Energy Equipment & Services',country:'—',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.45,distType:'Acc',broker:'Trade Republic'},
+  {id:'i08',name:'WisdomTree Europe Defence ETF',ticker:'WTDE',category:'ETF',sector:'Industrials',gicsGroup:'Capital Goods',gicsIndustry:'Aerospace & Defense',industry:'Aerospace & Defense',country:'—',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.40,distType:'Acc',broker:'Trade Republic'},
+  {id:'i09',name:'Amundi STOXX Europe 600 Basic Resources',ticker:'AMRS',category:'ETF',sector:'Materials',gicsGroup:'Materials',gicsIndustry:'Metals & Mining',industry:'Metals & Mining',country:'—',region:'Europe',currency:'EUR',exchange:'XETRA',ter:0.30,distType:'Acc',broker:'Trade Republic'},
+  {id:'i10',name:'VanEck Rare Earth & Strategic Metals',ticker:'REMX',category:'ETF',sector:'Materials',gicsGroup:'Materials',gicsIndustry:'Metals & Mining',industry:'Metals & Mining',country:'—',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.59,distType:'Acc',broker:'Trade Republic'},
+  {id:'i11',name:'ING Groep N.V.',ticker:'INGA',category:'Stock',sector:'Financials',gicsGroup:'Banks',gicsIndustry:'Diversified Banks',industry:'Diversified Banks',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'AEX',broker:'ING',withholdingRate:15},
+  {id:'i12',name:'Koninklijke Philips N.V.',ticker:'PHIA',category:'Stock',sector:'Health Care',gicsGroup:'Health Care Equipment & Services',gicsIndustry:'Health Care Equipment & Supplies',industry:'Health Care Equipment & Supplies',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'AEX',broker:'Trading 212',withholdingRate:15},
+  {id:'i13',name:'ACOM Co. Ltd',ticker:'ACOM',category:'Stock',sector:'Financials',gicsGroup:'Financial Services',gicsIndustry:'Consumer Finance',industry:'Consumer Finance',country:'Japan',region:'Asia',currency:'EUR',exchange:'Trading 212',broker:'Trading 212',withholdingRate:10},
+  {id:'i14',name:'ACS Actividades de Construccion',ticker:'ACS',category:'Stock',sector:'Industrials',gicsGroup:'Capital Goods',gicsIndustry:'Construction & Engineering',industry:'Construction & Engineering',country:'Spain',region:'Europe',currency:'EUR',exchange:'BME',broker:'Trading 212',withholdingRate:15},
+  {id:'i15',name:'Hochtief AG',ticker:'HOT',category:'Stock',sector:'Industrials',gicsGroup:'Capital Goods',gicsIndustry:'Construction & Engineering',industry:'Construction & Engineering',country:'Germany',region:'Europe',currency:'EUR',exchange:'XETRA',broker:'Trading 212',withholdingRate:15},
+  {id:'i16',name:'AssetMark Financial Holdings',ticker:'ASY',category:'Stock',sector:'Financials',gicsGroup:'Financial Services',gicsIndustry:'Capital Markets',industry:'Capital Markets',country:'USA',region:'Americas',currency:'EUR',exchange:'NYSE',broker:'Trading 212',withholdingRate:15},
+  {id:'i24',name:'Air France-KLM',ticker:'AF',category:'Stock',sector:'Industrials',gicsGroup:'Transportation',gicsIndustry:'Passenger Airlines',industry:'Passenger Airlines',country:'France',region:'Europe',currency:'EUR',exchange:'Euronext Paris',broker:'Trading 212',withholdingRate:15},
+  {id:'i17',name:'Bitcoin',ticker:'BTC',category:'Crypto',sector:'Bitcoin',gicsGroup:'',gicsIndustry:'',industry:'Digital Currency — Store of Value',country:'Global',region:'Global',currency:'EUR',exchange:'Coinbase',broker:'Coinbase'},
+  {id:'i18',name:'Ethereum',ticker:'ETH',category:'Crypto',sector:'Ethereum',gicsGroup:'',gicsIndustry:'',industry:'Smart Contract Platform',country:'Global',region:'Global',currency:'EUR',exchange:'Coinbase',broker:'Coinbase'},
+  {id:'i19',name:'Solana',ticker:'SOL',category:'Crypto',sector:'Solana',gicsGroup:'',gicsIndustry:'',industry:'Smart Contract Platform',country:'Global',region:'Global',currency:'EUR',exchange:'Coinbase',broker:'Coinbase'},
+  {id:'i20',name:'Gold ETF (4GLD)',ticker:'4GLD',category:'Stock',sector:'Gold',gicsGroup:'',gicsIndustry:'',industry:'Precious Metals — ETF',country:'Global',region:'Global',currency:'EUR',exchange:'Trading 212',broker:'Trading 212',unit:'g'},
+  {id:'i21',name:'Physical Gold Coins',ticker:'XAU',category:'Commodity',sector:'Gold',gicsGroup:'',gicsIndustry:'',industry:'Precious Metals — Physical',country:'Global',region:'Global',currency:'EUR',exchange:'Physical',broker:'Physical',unit:'troy oz'},
+  {id:'i22',name:'Cash',ticker:'CASH',category:'Cash',sector:'Cash & Equivalents',gicsGroup:'',gicsIndustry:'',industry:'Cash',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'Trading 212',broker:'Trading 212'},
+  {id:'i23',name:'Savings',ticker:'SAV',category:'Cash',sector:'Cash & Equivalents',gicsGroup:'',gicsIndustry:'',industry:'Savings',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'Trading 212',broker:'Trading 212',interestRate:3.42},
 ];
 const DEFAULT_TRANSACTIONS = [
   {id:'t01',iid:'i01',type:'buy',date:'2024-01-15',qty:17.5,price:57.15,fees:0,notes:'Initial position'},
@@ -1672,6 +1836,8 @@ function loadDB(){
         // Migrate: ASY correct classification (was Infrastructure)
         const _asy=DB.instruments.find(i=>i.id==='i16');
         if(_asy&&_asy.sector==='Engineering & Infrastructure'){_asy.sector='Financial Services';_asy.industry='Asset Management';}
+        // Normalise all instrument classifications to GICS taxonomy
+        normalizeClassifications();
         return;
       }
     }
@@ -2028,6 +2194,7 @@ function importDB(event){
       // Migrate: ASY correct classification
       const _asyI=DB.instruments.find(i=>i.id==='i16');
       if(_asyI&&_asyI.sector==='Engineering & Infrastructure'){_asyI.sector='Financial Services';_asyI.industry='Asset Management';}
+      normalizeClassifications();
       saveDB();
       const cats=computeCategories();
       if(cats.length) activeCategory=cats[0].label;
@@ -2214,17 +2381,16 @@ function renderKPIs(cats){
 
 // ── RENDER ALLOCATION CHARTS ──
 function renderAlloc(cats){
-  const pal=DISTINCT_COLORS;
   const allH=cats.flatMap(c=>c.holdings);
   const dtEl=document.getElementById('ovwDonutTitle');
   const btEl=document.getElementById('ovwBarTitle');
   const dhEl=document.getElementById('ovwDonutHint');
   const bhEl=document.getElementById('ovwBarHint');
 
-  if(ovwAllocMode==='sector'||ovwAllocMode==='region'||ovwAllocMode==='industry'||ovwAllocMode==='country'){
-    const fldMap={sector:'sector',region:'region',industry:'industry',country:'country'};
+  if(ovwAllocMode==='sector'||ovwAllocMode==='group'||ovwAllocMode==='region'||ovwAllocMode==='industry'||ovwAllocMode==='country'){
+    const fldMap={sector:'sector',group:'gicsGroup',region:'region',industry:'industry',country:'country'};
     const fld=fldMap[ovwAllocMode];
-    const fallback={sector:'Other',region:'Global',industry:'Other',country:'Other'}[ovwAllocMode];
+    const fallback={sector:'Other',group:'Other',region:'Global',industry:'Other',country:'Other'}[ovwAllocMode];
     const map={};
     allH.forEach(h=>{
       const key=(h.inst[fld])||fallback;
@@ -2232,9 +2398,9 @@ function renderAlloc(cats){
       map[key].cur+=h.curVal; map[key].inv+=h.pos.cost;
     });
     const keys=Object.keys(map).sort((a,b)=>map[b].cur-map[a].cur);
-    const colors=keys.map(k=>getEntityColor(k));
+    const colors=keys.map(k=>gicsSectorColor(k));
     const nw=allH.reduce((s,h)=>s+h.curVal,0);
-    const modeLabel={sector:'Sector',region:'Region',industry:'Industry',country:'Country'}[ovwAllocMode];
+    const modeLabel={sector:'Sector',group:'Industry Group',region:'Region',industry:'Industry',country:'Country'}[ovwAllocMode];
     if(dtEl) dtEl.textContent=`By ${modeLabel} (Current Value)`;
     if(btEl) btEl.textContent=`${modeLabel}: Invested vs Current`;
     if(dhEl) dhEl.textContent='👆 Click a slice to filter Holdings';
@@ -2451,11 +2617,10 @@ function renderSectorRegion(){
   });
   const sKeys=Object.keys(sMap).sort((a,b)=>sMap[b].cur-sMap[a].cur);
   const rKeys=Object.keys(rMap).sort((a,b)=>rMap[b].cur-rMap[a].cur);
-  const pal=DISTINCT_COLORS;
   safeDestroy('sectorDonut');
   charts.sec=new Chart(document.getElementById('sectorDonut'),{
     type:'doughnut',
-    data:{labels:sKeys,datasets:[{data:sKeys.map(k=>+sMap[k].cur.toFixed(0)),backgroundColor:sKeys.map((_,i)=>pal[i%pal.length]),borderWidth:2,borderColor:'#fff'}]},
+    data:{labels:sKeys,datasets:[{data:sKeys.map(k=>+sMap[k].cur.toFixed(0)),backgroundColor:sKeys.map(k=>gicsSectorColor(k)),borderWidth:2,borderColor:'#fff'}]},
     options:{
       cutout:'55%',responsive:true,maintainAspectRatio:false,
       layout:{padding:{top:32,right:90,bottom:32,left:90}},
@@ -2478,8 +2643,8 @@ function renderSectorRegion(){
   charts.reg=new Chart(document.getElementById('regionBar'),{
     type:'bar',
     data:{labels:rKeys,datasets:[
-      {label:'Invested',data:rKeys.map(k=>+rMap[k].inv.toFixed(0)),backgroundColor:rKeys.map((_,i)=>pal[i%pal.length]+'55'),borderColor:rKeys.map((_,i)=>pal[i%pal.length]),borderWidth:1.5,borderRadius:4},
-      {label:'Current Value',data:rKeys.map(k=>+rMap[k].cur.toFixed(0)),backgroundColor:rKeys.map((_,i)=>pal[i%pal.length]),borderRadius:4}
+      {label:'Invested',data:rKeys.map(k=>+rMap[k].inv.toFixed(0)),backgroundColor:rKeys.map(k=>gicsSectorColor(k)+'55'),borderColor:rKeys.map(k=>gicsSectorColor(k)),borderWidth:1.5,borderRadius:4},
+      {label:'Current Value',data:rKeys.map(k=>+rMap[k].cur.toFixed(0)),backgroundColor:rKeys.map(k=>gicsSectorColor(k)),borderRadius:4}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,pointStyleWidth:8}},
@@ -2512,8 +2677,7 @@ function renderSectorBreakdown(){
     totalCur+=curVal;
   });
   const sKeys=Object.keys(sMap).sort((a,b)=>sMap[b].cur-sMap[a].cur);
-  const pal=DISTINCT_COLORS;
-  const rows=sKeys.map((sec,i)=>{
+  const rows=sKeys.map((sec)=>{
     const sm=sMap[sec];
     const alloc=totalCur>0?(sm.cur/totalCur*100).toFixed(1):'0.0';
     const retPct=sm.inv>0?(sm.cur-sm.inv)/sm.inv:0;
@@ -2526,7 +2690,7 @@ function renderSectorBreakdown(){
       </div>`).join('');
     return `<div class="bkd-sec">
       <div class="bkd-hdr-row" onclick="this.closest('.bkd-sec').classList.toggle('open')">
-        <span class="bkd-dot" style="background:${pal[i%pal.length]}"></span>
+        <span class="bkd-dot" style="background:${gicsSectorColor(sec)}"></span>
         <span class="bkd-sec-name">${sec}</span>
         <span class="bkd-col-n">${sm.holdings.length} holding${sm.holdings.length>1?'s':''}</span>
         <span class="bkd-col-val">${feur(sm.cur)}</span>
@@ -2667,14 +2831,14 @@ function renderHoldingsTable(cats){
         }
       }
     });
-  } else if(holdDonutMode==='sector'||holdDonutMode==='region'||holdDonutMode==='industry'||holdDonutMode==='country'){
-    const fieldMap={sector:'sector',region:'region',industry:'industry',country:'country'};
+  } else if(holdDonutMode==='sector'||holdDonutMode==='group'||holdDonutMode==='region'||holdDonutMode==='industry'||holdDonutMode==='country'){
+    const fieldMap={sector:'sector',group:'gicsGroup',region:'region',industry:'industry',country:'country'};
     const fld=fieldMap[holdDonutMode];
     const gMap={};
     holdings.forEach(h=>{ const k=(h.inst[fld])||'Other'; gMap[k]=(gMap[k]||0)+h.curVal; });
     const gKeys=Object.keys(gMap).sort((a,b)=>gMap[b]-gMap[a]);
     const gVals=gKeys.map(k=>+gMap[k].toFixed(0));
-    const gColors=gKeys.map(k=>getEntityColor(k));
+    const gColors=gKeys.map(k=>gicsSectorColor(k));
     const gTotal=gVals.reduce((s,v)=>s+v,0);
     charts.hBar=new Chart(holdBarCanvas,{
       type:'bar',
@@ -2729,9 +2893,8 @@ function renderHoldingsTable(cats){
 let ovwAllocMode='allocation';
 function setOvwAllocMode(mode){
   ovwAllocMode=mode;
-  document.querySelectorAll('#ovwAllocToggle .btn').forEach((b,i)=>{
-    const modes=['allocation','sector','region','industry','country','pnl','qty'];
-    const active=modes[i]===mode;
+  document.querySelectorAll('#ovwAllocToggle .alloc-btn').forEach(b=>{
+    const active=b.dataset.m===mode;
     b.style.background=active?'var(--pri)':'';
     b.style.color=active?'#fff':'';
     b.style.border=active?'none':'';
@@ -2742,9 +2905,8 @@ function setOvwAllocMode(mode){
 let holdDonutMode='allocation';
 function setHoldDonutMode(mode){
   holdDonutMode=mode;
-  document.querySelectorAll('#holdDonutToggle .btn').forEach((b,i)=>{
-    const modes=['allocation','sector','region','industry','country','pnl','qty'];
-    const active=modes[i]===mode;
+  document.querySelectorAll('#holdDonutToggle .hold-btn').forEach(b=>{
+    const active=b.dataset.m===mode;
     b.style.background=active?'var(--pri)':'';
     b.style.color=active?'#fff':'';
     b.style.border=active?'none':'';
@@ -2754,13 +2916,13 @@ function setHoldDonutMode(mode){
 function renderHoldDonut(holdings, cats){
   const catOffset={ETF:0,Stock:5,Crypto:10,Commodity:13,Cash:16}[activeCategory]||0;
   let labels, data, colors;
-  if(holdDonutMode==='sector'||holdDonutMode==='region'||holdDonutMode==='industry'||holdDonutMode==='country'){
-    const fld={sector:'sector',region:'region',industry:'industry',country:'country'}[holdDonutMode];
+  if(holdDonutMode==='sector'||holdDonutMode==='group'||holdDonutMode==='region'||holdDonutMode==='industry'||holdDonutMode==='country'){
+    const fld={sector:'sector',group:'gicsGroup',region:'region',industry:'industry',country:'country'}[holdDonutMode];
     const gMap={};
     holdings.forEach(h=>{ const k=(h.inst[fld])||'Other'; gMap[k]=(gMap[k]||0)+h.curVal; });
     labels=Object.keys(gMap).sort((a,b)=>gMap[b]-gMap[a]);
     data=labels.map(k=>+gMap[k].toFixed(0));
-    colors=labels.map(k=>getEntityColor(k));
+    colors=labels.map(k=>gicsSectorColor(k));
   } else if(holdDonutMode==='pnl'){
     labels=holdings.map(h=>h.inst.ticker);
     data=holdings.map(h=>+Math.abs(h.pnl).toFixed(0));
@@ -2800,9 +2962,6 @@ function renderHoldDonut(holdings, cats){
             const h=holdings.find(hh=>hh.inst.ticker===ctx.label);
             const val=h?feur(h.curVal):'—';
             return [` ${ctx.label}: ${fmt(ctx.raw,ctx.raw<10?4:2)} units`,` Value: ${val} · Share of Qty: ${p}%`];
-          }
-          if(holdDonutMode==='industry'||holdDonutMode==='country'){
-            return [` ${ctx.label}: ${feur(ctx.raw)}`,` Share: ${p}%`];
           }
           return [` ${ctx.label}: ${feur(ctx.raw)}`,` Share: ${p}%`];
         }}}
@@ -2949,7 +3108,12 @@ function buildSavingsProjection(cfData, opts={}){
     if(invYTDNet!==0&&invYTDMonth&&row.mRaw===invYTDMonth){ oneTime+=invYTDNet; }
     bal+=oneTime;
     const sav=row.phase==='employed'?t.sav1:row.phase==='ww'?t.sav3:0;
-    bal+=sav;
+    // Salary credited on 23rd of each month — for current month only add if today ≥ 23rd
+    const _todayDay=new Date().getDate();
+    if(sav!==0){
+      if(row.isCurrent){ if(_todayDay>=23) bal+=sav; }
+      else bal+=sav;
+    }
     return{m:row.m,v:+bal.toFixed(0),spike:oneTime!==0};
   });
 }
@@ -3581,6 +3745,10 @@ function openTxModal(){
   ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('tx_date').value=new Date().toISOString().slice(0,10);
   document.querySelectorAll('.ni-fields').forEach(el=>el.classList.remove('show'));
+  ['editInstSection','edit_ter_row','edit_distType_row','edit_divYield_row',
+   'edit_sector_row','edit_group_row','edit_gicsInd_row','edit_country_row','edit_region_row'].forEach(eid=>{
+    const el=document.getElementById(eid); if(el) el.style.display='none';
+  });
   const saveBtn=document.getElementById('txSaveBtn'); if(saveBtn) saveBtn.textContent='Save Transaction';
   openModal('txModal');
 }
@@ -3594,6 +3762,8 @@ function editTx(id){
   else if(tx.type==='savings_add'||tx.type==='savings_withdraw') cat='savings';
   // Open modal in Step 2 directly (no step 1 needed for edit)
   openTxModal();
+  // Elevate txModal above historyModal
+  document.getElementById('txModal').style.zIndex='2000';
   _editTxId=id; // restore after openTxModal clears it
   setTimeout(()=>{
     setTxCategory(cat==='deposit'?'deposit':cat==='savings'?'savings':cat);
@@ -3613,6 +3783,30 @@ function editTx(id){
     calcTotal();
     document.getElementById('txModalTitle').textContent='✏️ Edit Transaction';
     const saveBtn=document.getElementById('txSaveBtn'); if(saveBtn) saveBtn.textContent='Update Transaction';
+    // Show instrument classification for existing (non-cash/savings) instruments
+    const showClassify=inst&&!['deposit','savings_add','savings_withdraw'].includes(tx.type);
+    const isETF=inst&&inst.category==='ETF';
+    const isStock=inst&&inst.category==='Stock';
+    // Show/hide all edit rows
+    const allEditRows=['editInstSection','edit_ter_row','edit_distType_row','edit_divYield_row',
+      'edit_sector_row','edit_group_row','edit_gicsInd_row','edit_country_row','edit_region_row'];
+    allEditRows.forEach(eid=>{ const el=document.getElementById(eid); if(el) el.style.display='none'; });
+    if(showClassify){
+      document.getElementById('editInstSection').style.display='';
+      document.getElementById('edit_sector_row').style.display='';
+      document.getElementById('edit_group_row').style.display='';
+      document.getElementById('edit_gicsInd_row').style.display='';
+      document.getElementById('edit_country_row').style.display='';
+      document.getElementById('edit_region_row').style.display='';
+      if(isETF){ document.getElementById('edit_ter_row').style.display=''; document.getElementById('edit_distType_row').style.display=''; }
+      if(isStock){ document.getElementById('edit_divYield_row').style.display=''; }
+      // Populate GICS cascading dropdowns
+      populateGics('edit',inst.sector||'',inst.gicsGroup||'',inst.gicsIndustry||'');
+      document.getElementById('edit_country').value=inst.country||'';
+      document.getElementById('edit_region').value=inst.region||'';
+      if(isETF){ document.getElementById('edit_ter').value=inst.ter||''; document.getElementById('edit_distType').value=inst.distType||''; }
+      if(isStock) document.getElementById('edit_divYield').value=inst.dividendYield||'';
+    }
   },60);
 }
 function goTxStep1(){
@@ -3645,10 +3839,10 @@ function setTxCategory(cat){
   // Pre-set ni_cat hidden input
   const niCat=document.getElementById('ni_cat');
   if(niCat&&_txCategory) niCat.value=_txCategory;
-  // Build smart dropdowns for new instrument section
-  buildDynamicSelect('ni_sector','sector');
-  buildDynamicSelect('ni_industry','industry');
-  buildDynamicSelect('ni_country','country');
+  // Build GICS cascading dropdowns for new instrument section
+  buildGicsSector('ni_sector','ni_sector_desc','','ni_group');
+  buildGicsGroup('ni_group','','','ni_gicsInd');
+  buildGicsIndustry('ni_gicsInd','','','');
   // Set up type dropdown based on category
   const typeEl=document.getElementById('tx_type');
   if(isDeposit){
@@ -3701,7 +3895,8 @@ function onInstChange(){
   const hasEnrich=isETF||isStock;
   const setVis=(id,vis)=>{const el=document.getElementById(id);if(el)el.style.display=vis?'':'none';};
   setVis('ni_enrich_div',hasEnrich); setVis('ni_sector_row',hasEnrich);
-  setVis('ni_industry_row',hasEnrich); setVis('ni_country_row',hasEnrich); setVis('ni_region_row',hasEnrich);
+  setVis('ni_group_row',hasEnrich); setVis('ni_gicsInd_row',hasEnrich);
+  setVis('ni_country_row',hasEnrich); setVis('ni_region_row',hasEnrich);
   setVis('ni_ter_row',isETF); setVis('ni_distType_row',isETF); setVis('ni_divYield_row',isStock);
 }
 function onTxTypeChange(){
@@ -3786,8 +3981,11 @@ function saveTx(){
     if(!name){ notify('⚠️ Instrument name required.','warn'); return; }
     const ni={
       id:'i'+Date.now(),name,ticker:document.getElementById('ni_ticker').value.trim().toUpperCase(),
-      category:document.getElementById('ni_cat').value,sector:document.getElementById('ni_sector').value,
-      industry:document.getElementById('ni_industry').value,country:document.getElementById('ni_country').value,
+      category:document.getElementById('ni_cat').value,
+      sector:document.getElementById('ni_sector').value,
+      gicsGroup:document.getElementById('ni_group').value,
+      gicsIndustry:document.getElementById('ni_gicsInd').value,
+      country:document.getElementById('ni_country').value,
       dividendYield:parseFloat(document.getElementById('ni_divYield')?.value)||undefined,
       region:document.getElementById('ni_region').value,currency:document.getElementById('ni_currency').value.trim()||'EUR',
       broker:document.getElementById('ni_broker').value.trim(),ter:parseFloat(document.getElementById('ni_ter').value)||null,
@@ -3808,6 +4006,24 @@ function saveTx(){
   if(_editTxId){
     const idx=DB.transactions.findIndex(t=>t.id===_editTxId);
     if(idx>=0){ DB.transactions[idx]={...DB.transactions[idx],...txObj}; }
+    // Persist instrument classification edits
+    if(document.getElementById('editInstSection')?.style.display!=='none'){
+      const editedInst=DB.instruments.find(i=>i.id===iid);
+      if(editedInst){
+        const sv=id=>document.getElementById(id)?.value||'';
+        const nv=id=>parseFloat(document.getElementById(id)?.value)||undefined;
+        editedInst.sector=sv('edit_sector')||editedInst.sector;
+        editedInst.gicsGroup=sv('edit_group')||editedInst.gicsGroup;
+        editedInst.gicsIndustry=sv('edit_gicsInd')||editedInst.gicsIndustry;
+        editedInst.country=sv('edit_country')||editedInst.country;
+        editedInst.region=sv('edit_region')||editedInst.region;
+        if(editedInst.category==='ETF'){
+          if(sv('edit_ter')) editedInst.ter=parseFloat(sv('edit_ter'))||editedInst.ter;
+          if(sv('edit_distType')) editedInst.distType=sv('edit_distType')||editedInst.distType;
+        }
+        if(editedInst.category==='Stock'&&sv('edit_divYield')) editedInst.dividendYield=parseFloat(sv('edit_divYield'))||editedInst.dividendYield;
+      }
+    }
     _editTxId=null;
     saveDB(); closeModal('txModal'); renderHistory(); refreshAll(); notify('✅ Transaction updated.');
   } else {
@@ -3944,11 +4160,9 @@ function showInstForm(editId){
   setVal('inst_ticker', inst?.ticker);
   setVal('inst_cat', inst?.category||'ETF');
   setVal('inst_broker', inst?.broker);
-  buildDynamicSelect('inst_sector','sector');
-  buildDynamicSelect('inst_industry','industry');
-  buildDynamicSelect('inst_country','country');
-  setVal('inst_sector', inst?.sector||'');
-  setVal('inst_industry', inst?.industry||'');
+  buildGicsSector('inst_sector','inst_sector_desc',inst?.sector||'','inst_group');
+  buildGicsGroup('inst_group',inst?.sector||'',inst?.gicsGroup||'','inst_gicsInd');
+  buildGicsIndustry('inst_gicsInd',inst?.gicsGroup||'',inst?.sector||'',inst?.gicsIndustry||'');
   setVal('inst_country', inst?.country||'');
   setVal('inst_region', inst?.region||'Global');
   setVal('inst_currency', inst?.currency||'EUR');
@@ -3969,7 +4183,8 @@ function saveInstForm(){
     name, ticker:getV('inst_ticker').toUpperCase(),
     category:getV('inst_cat')||'ETF',
     broker:getV('inst_broker'), sector:getV('inst_sector'),
-    industry:getV('inst_industry'), country:getV('inst_country'),
+    gicsGroup:getV('inst_group'), gicsIndustry:getV('inst_gicsInd'),
+    industry:getV('inst_gicsInd'), country:getV('inst_country'),
     region:getV('inst_region')||'Global', currency:getV('inst_currency')||'EUR',
     exchange:getV('inst_broker'),
     distType:getV('inst_distType')||undefined,
@@ -4071,7 +4286,7 @@ function openModal(id){
   if(id==='txModal'){ populateInstSel(); document.getElementById('tx_date').value=new Date().toISOString().slice(0,10); }
   if(id==='historyModal'){ populateHistFilter(); renderHistory(); }
 }
-function closeModal(id){ const el=document.getElementById(id); if(el) el.classList.remove('open'); }
+function closeModal(id){ const el=document.getElementById(id); if(el){ el.classList.remove('open'); if(id==='txModal') el.style.zIndex=''; } }
 document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el&&el.id!=='wizOverlay')el.classList.remove('open');}));
 
 // ── NOTIFICATION & DEBOUNCE ──
@@ -5759,6 +5974,7 @@ async function gistFetch(){
     // Migrate: ASY correct classification
     const _asyG=DB.instruments.find(i=>i.id==='i16');
     if(_asyG&&_asyG.sector==='Engineering & Infrastructure'){_asyG.sector='Financial Services';_asyG.industry='Asset Management';}
+    normalizeClassifications();
     try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
     const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     setSyncStatus('ok','Synced '+now);
@@ -5897,5 +6113,18 @@ window.addEventListener('beforeunload', ()=>{ saveDB(); });
 window.addEventListener('pagehide', ()=>{ saveDB(); });
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') saveDB(); });
 </script>
+<!-- Country autocomplete list (HQ registration countries) -->
+<datalist id="countryList">
+  <option>Afghanistan</option><option>Albania</option><option>Algeria</option><option>Argentina</option><option>Australia</option><option>Austria</option>
+  <option>Belgium</option><option>Brazil</option><option>Canada</option><option>Chile</option><option>China</option><option>Colombia</option>
+  <option>Czech Republic</option><option>Denmark</option><option>Egypt</option><option>Finland</option><option>France</option><option>Germany</option>
+  <option>Greece</option><option>Hong Kong</option><option>Hungary</option><option>India</option><option>Indonesia</option><option>Ireland</option>
+  <option>Israel</option><option>Italy</option><option>Japan</option><option>Luxembourg</option><option>Malaysia</option><option>Mexico</option>
+  <option>Netherlands</option><option>New Zealand</option><option>Nigeria</option><option>Norway</option><option>Pakistan</option><option>Philippines</option>
+  <option>Poland</option><option>Portugal</option><option>Romania</option><option>Russia</option><option>Saudi Arabia</option><option>Singapore</option>
+  <option>South Africa</option><option>South Korea</option><option>Spain</option><option>Sweden</option><option>Switzerland</option><option>Taiwan</option>
+  <option>Thailand</option><option>Turkey</option><option>Ukraine</option><option>United Arab Emirates</option><option>United Kingdom</option>
+  <option>USA</option><option>Vietnam</option>
+</datalist>
 </body>
 </html>
