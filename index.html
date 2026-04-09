@@ -316,6 +316,19 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
 .ldg-sum-row:last-child{border-bottom:none}
 .ldg-mon-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
 .ldg-mon-lbl{font-size:22px;font-weight:800;letter-spacing:-.4px;text-align:center}
+
+  /* ── Tax Year Selector Pills ── */
+  .tax-yr-pill{padding:7px 14px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--card);
+    cursor:pointer;font-size:12px;font-weight:600;color:var(--txt2);transition:all .15s;display:block;text-align:left}
+  .tax-yr-pill:hover{border-color:var(--pri);color:var(--pri)}
+  .tax-yr-pill.active{background:var(--pri);color:#fff;border-color:var(--pri)}
+  .tax-yr-pill.active .tax-yr-badge{background:rgba(255,255,255,0.25);color:#fff}
+  .tax-yr-pill.active .t2,.tax-yr-pill.active [style*="color:var(--txt2)"]{color:rgba(255,255,255,0.8)!important}
+  .tax-yr-badge{font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .tax-yr-badge.filed{background:#D1FAE5;color:#065F46}
+  .tax-yr-badge.current{background:#DBEAFE;color:#1E40AF}
+  .tax-yr-badge.provisional{background:#FEF3C7;color:#92400E}
+  .tax-yr-pill.active .tax-yr-badge.filed,.tax-yr-pill.active .tax-yr-badge.current,.tax-yr-pill.active .tax-yr-badge.provisional{background:rgba(255,255,255,0.2);color:#fff}
 </style>
 </head>
 <body>
@@ -849,6 +862,9 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
 
 <!-- TAB: TAX -->
 <div class="tab-content" id="tab-tax">
+  <!-- Zone A: Tax History Strip (dynamic, rendered by renderTaxHistoryCards) -->
+  <div id="taxHistoryCards" style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;padding:14px 20px 0"></div>
+
   <!-- Tax Settings -->
   <div class="section">
     <div class="sec-hdr">
@@ -903,23 +919,28 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <div class="t2" style="font-size:11px;margin-top:4px">Heffingvrij vermogen per person. NL 2025: €57.684.</div>
         </div>
         <div>
-          <label class="ts-lbl">Loonheffing Paid (€/year)</label>
+          <label class="ts-lbl" title="Loonheffing — payroll tax withheld monthly by your employer (from jaaropgaaf)">Loonheffing Paid (€/year)</label>
           <input class="ts-inp" type="number" id="tax_loonheffing" value="0" min="0" step="100"
             oninput="saveTaxSettings()" style="margin-top:6px">
-          <div class="t2" style="font-size:11px;margin-top:4px">Total loonheffing from jaaropgaaf. Deducted from Box 1 tax due.</div>
+          <div class="t2" style="font-size:11px;margin-top:4px">From <span title="Jaaropgaaf — annual employer income statement" style="cursor:help;border-bottom:1px dotted var(--txt2)">jaaropgaaf</span>. Deducted from Box 1 tax due as advance payment already made.</div>
         </div>
-        <div></div>
+        <div>
+          <label class="ts-lbl" title="Dividendbelasting — Dutch dividend withholding tax (15%) levied by Dutch companies. Verrekenbaar: credited against your IB bill.">NL Dividendbelasting (€/year)</label>
+          <input class="ts-inp" type="number" id="tax_nlDivBelasting" value="0" min="0" step="1"
+            oninput="saveTaxSettings()" style="margin-top:6px">
+          <div class="t2" style="font-size:11px;margin-top:4px">Dutch dividend <span title="Voorheffing — withholding tax withheld at source, credited against your final bill" style="cursor:help;border-bottom:1px dotted var(--txt2)">voorheffing</span> ingehouden (ING statements). Credited against Box 1 tax due. Separate from foreign WHT below.</div>
+        </div>
       </div>
-      <!-- Entrepreneur Deductions -->
+      <!-- Entrepreneur Deductions — ZZP Future-Proof Section -->
       <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bdr)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
           <div>
-            <div class="ts-lbl" style="margin-bottom:2px">🧾 Entrepreneur Deductions (ZZP)</div>
-            <div class="t2" style="font-size:11px">Zelfstandigenaftrek · Startersaftrek · MKB-winstvrijstelling — applied to Box 1 business profit only</div>
+            <div class="ts-lbl" style="margin-bottom:2px">🧾 Freelance / ZZP Mode</div>
+            <div class="t2" style="font-size:11px">Enable when you start freelancing. Unlocks Zelfstandigenaftrek · Startersaftrek · MKB-winstvrijstelling · BTW registration · partial-year income split.</div>
           </div>
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600">
             <input type="checkbox" id="tax_zzpEnabled" onchange="saveTaxSettings()" style="width:16px;height:16px;accent-color:var(--pri);cursor:pointer">
-            Apply deductions
+            ZZP active
           </label>
         </div>
         <div class="g" style="grid-template-columns:repeat(3,1fr);gap:16px;align-items:end" id="zzpDeductionFields">
@@ -954,7 +975,14 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
             <div class="t2" style="font-size:11px;margin-top:4px">BTW exemption threshold. Below this you don't charge or remit VAT (Kleineondernemersregeling).</div>
           </div>
         </div>
+        <!-- Transition year / partial employment note -->
+        <div style="margin-top:14px;padding:12px 14px;background:var(--pri-l);border-radius:var(--rs);border:1px solid #BFDBFE;font-size:12px;color:var(--txt2);line-height:1.7" id="zzpTransitionNote">
+          <strong style="color:var(--txt)">💡 Transition year (werknemer → ZZP)</strong><br>
+          In your first ZZP year you may have <em>both</em> employment income (Box 1 loon) and freelance profit. The dashboard adds them together for the tax bracket calculation — making your effective rate higher. Plan ahead: consider <strong>when in the year</strong> you make the switch to optimise your total Box 1 income. Startersaftrek applies for up to <strong>3 years</strong> from your first tax year as ZZP.
+        </div>
       </div>
+    </div>
+  </div>
       <!-- BTW Registration -->
       <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bdr)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -990,13 +1018,15 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     </div>
     <div id="taxBox1"></div>
   </div>
-  <!-- Box 2 -->
-  <div class="section">
-    <div class="sec-hdr">
-      <div class="sec-ttl"><span class="sec-n">2</span>Box 2 — Substantial Interest</div>
-      <span class="t2" style="font-size:12px">BV dividend income · ≥5% company stake · Director salary → Box 1</span>
+  <!-- Box 2 — hidden, not applicable (no BV/substantial interest) -->
+  <div id="box2Section" style="display:none">
+    <div class="section">
+      <div class="sec-hdr">
+        <div class="sec-ttl"><span class="sec-n">2</span>Box 2 — Substantial Interest</div>
+        <span class="t2" style="font-size:12px">BV dividend income · ≥5% company stake · Director salary → Box 1</span>
+      </div>
+      <div id="taxBox2"></div>
     </div>
-    <div id="taxBox2"></div>
   </div>
   <!-- Box 3 -->
   <div class="section">
@@ -1021,6 +1051,52 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       <span class="t2" style="font-size:12px" id="taxYearHdr">Estimated annual tax position · All boxes combined</span>
     </div>
     <div id="taxYearSummary"></div>
+  </div>
+  <!-- Zone C: How Dutch Tax Works (collapsible guide) -->
+  <div style="padding:0 20px">
+    <button onclick="toggleTaxGuide()" id="taxGuideBtn"
+      style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--txt2);background:none;border:1px solid var(--bdr);border-radius:var(--rs);padding:5px 12px;cursor:pointer;letter-spacing:.03em">
+      📖 How Dutch Tax Works <span id="taxGuideArrow">▾</span>
+    </button>
+    <div id="taxGuide" style="display:none;margin-top:10px;padding:16px 20px;background:var(--pri-l);border:1px solid #BFDBFE;border-radius:var(--rs);font-size:12px;line-height:1.75;color:var(--txt)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--txt)">📦 The Three Boxes</div>
+          <div style="margin-bottom:6px">
+            <span title="Inkomstenbelasting uit werk en woning" style="cursor:help;border-bottom:1px dotted #93C5FD;font-weight:600">Box 1 — Income from work</span>:
+            Salary, freelance profit, UWV benefits. Progressive brackets — lower income is taxed lower. Two components combined: IB (<span title="Inkomstenbelasting — personal income tax" style="cursor:help;border-bottom:1px dotted #93C5FD">income tax</span>) + PVV (<span title="Premie volksverzekeringen — national insurance contributions (AOW/ANW/WLZ)" style="cursor:help;border-bottom:1px dotted #93C5FD">national insurance</span>). 2025: 35.82% to €38,441 · 37.48% to €76,817 · 49.50% above.
+          </div>
+          <div style="margin-bottom:6px">
+            <span title="Inkomstenbelasting uit aanmerkelijk belang" style="cursor:help;border-bottom:1px dotted #93C5FD;font-weight:600">Box 2 — Substantial interest</span>:
+            Applies when you own ≥ 5% of a <span title="Besloten Vennootschap — Dutch private limited company" style="cursor:help;border-bottom:1px dotted #93C5FD">BV/NV</span>. BV dividends and capital gains taxed here. Rate: 24.5% (first €67k) / 33% above. Not yet applicable for you.
+          </div>
+          <div>
+            <span title="Inkomstenbelasting uit sparen en beleggen" style="cursor:help;border-bottom:1px dotted #93C5FD;font-weight:600">Box 3 — Wealth tax</span>:
+            Taxed on a <span title="Fictief rendement — deemed return set by tax authority, not your actual return" style="cursor:help;border-bottom:1px dotted #93C5FD">deemed return</span>. Assets split: <span title="Banktegoeden — cash in bank accounts" style="cursor:help;border-bottom:1px dotted #93C5FD">savings</span> at 1.37%, <span title="Overige bezittingen — other assets: stocks, ETFs, crypto" style="cursor:help;border-bottom:1px dotted #93C5FD">investments</span> at 5.88%. The <span title="Voordeel uit sparen en beleggen — deemed profit on your wealth" style="cursor:help;border-bottom:1px dotted #93C5FD">voordeel</span> is taxed at 36%. <span title="Peildatum — reference date for Box 3 assessment: 1 January" style="cursor:help;border-bottom:1px dotted #93C5FD">Peildatum</span> = 1 January.
+          </div>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--txt)">💳 Credits &amp; Withholding</div>
+          <div style="margin-bottom:6px">
+            <span title="Heffingskortingen — tax credits that directly reduce your tax bill" style="cursor:help;border-bottom:1px dotted #93C5FD;font-weight:600">Heffingskortingen</span> reduce your Box 1 bill directly:<br>
+            • <span title="Arbeidskorting — employment tax credit, phases out above ~€48,481" style="cursor:help;border-bottom:1px dotted #93C5FD">Arbeidskorting</span>: employment credit, max ~€5,247 (2025).<br>
+            • <span title="Algemene heffingskorting — general tax credit, phases out above €24,820" style="cursor:help;border-bottom:1px dotted #93C5FD">Algemene heffingskorting</span>: general credit, max €3,362 (2025).
+          </div>
+          <div style="margin-bottom:6px">
+            <span title="Loonheffing — payroll tax withheld by your employer, an advance payment" style="cursor:help;border-bottom:1px dotted #93C5FD;font-weight:600">Loonheffing</span>: employer withholds this monthly. Final bill = tax due − loonheffing paid. Get total from your <span title="Jaaropgaaf — annual income statement from employer" style="cursor:help;border-bottom:1px dotted #93C5FD">jaaropgaaf</span>.
+          </div>
+          <div style="margin-bottom:6px">
+            <span title="Dividendbelasting — Dutch WHT at 15% on Dutch company dividends, verrekenbaar against IB" style="cursor:help;border-bottom:1px dotted #93C5FD;font-weight:600">Dividendbelasting</span>: Dutch companies withhold 15%. <em>Verrekenbaar</em> — credited against your IB bill. Enter total from ING dividend statements.
+          </div>
+          <div>
+            <span title="Voorlopige aanslag — provisional quarterly tax instalment during the year" style="cursor:help;border-bottom:1px dotted #93C5FD;font-weight:600">Voorlopige aanslag</span>: quarterly bill from Belastingdienst. Adjust via Mijn Belastingdienst if income changes. <span title="Definitieve aanslag — final tax assessment ~12-18 months after year-end" style="cursor:help;border-bottom:1px dotted #93C5FD">Definitieve aanslag</span> follows ~12-18 months later.
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:8px 12px;background:#EFF6FF;border-radius:6px;border:1px solid #BFDBFE;font-size:11px;color:#1E40AF">
+        💡 <strong>Filing tip:</strong> File from 1 March — earlier = faster refund. Deadline 2025: 30 April 2026 (you filed 9 April 2026 ✅). Click <strong>✏️ Edit record</strong> in Zone A above to store actual <span title="Aangifte inkomstenbelasting — your annual income tax return" style="cursor:help;border-bottom:1px dotted #1E40AF">aangifte</span> figures per year for comparison.
+      </div>
+    </div>
   </div>
   <!-- Dividend Withholding -->
   <div class="section">
@@ -1061,6 +1137,63 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
 
 
 </div><!-- /main -->
+
+<!-- MODAL: TAX RECORD -->
+<div class="overlay" id="taxRecordModal">
+  <div class="modal" style="max-width:520px;width:95%;max-height:88vh;overflow-y:auto">
+    <div class="mhdr" style="display:flex;align-items:center;justify-content:space-between">
+      <span class="mtitle">📄 Tax Record — <span id="txrYear"></span></span>
+      <button onclick="closeModal('taxRecordModal')" class="mbtn-x">✕</button>
+    </div>
+    <input type="hidden" id="txrYearHidden">
+    <div style="padding:16px 20px;font-size:12px">
+      <!-- Auto-estimate row -->
+      <div style="padding:10px 12px;background:var(--pri-l);border:1px solid #BFDBFE;border-radius:var(--rs);margin-bottom:14px;font-size:11px;color:#1E40AF">
+        Dashboard estimate (from TAX_CONFIG + income below): IB bruto <span id="txrEstIb" style="font-weight:700"></span> · Arbeidskorting <span id="txrEstAk" style="font-weight:700"></span> · AHK <span id="txrEstAhk" style="font-weight:700"></span>
+      </div>
+      <div class="g" style="grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="ts-lbl" title="Box 1 inkomen — total taxable income from work/benefits reported on aangifte">Box 1 Income (€)</label>
+          <input class="ts-inp" type="number" id="txrIncome" min="0" step="100" style="margin-top:4px"
+            oninput="const r=DB.taxRecords?.[+document.getElementById('txrYearHidden').value]||{};const ak=calcArbeidskorting(+this.value,+document.getElementById('txrYearHidden').value);const ahk=calcAlgemeneHeffingskorting(+this.value,+document.getElementById('txrYearHidden').value);const ib=calcBox1Tax(+this.value,+document.getElementById('txrYearHidden').value);document.getElementById('txrEstAk').textContent=feur(ak);document.getElementById('txrEstAhk').textContent=feur(ahk);document.getElementById('txrEstIb').textContent=feur(ib);">
+        </div>
+        <div>
+          <label class="ts-lbl" title="Loonheffing — payroll tax withheld by employer, from jaaropgaaf">Loonheffing (€)</label>
+          <input class="ts-inp" type="number" id="txrLoonheffing" min="0" step="100" style="margin-top:4px">
+        </div>
+        <div>
+          <label class="ts-lbl" title="Dividendbelasting — NL dividend withholding tax (15%), verrekenbaar against IB">NL Dividendbelasting (€)</label>
+          <input class="ts-inp" type="number" id="txrNlDiv" min="0" step="1" style="margin-top:4px">
+        </div>
+        <div>
+          <label class="ts-lbl" title="IB + PVV bruto — gross income tax before heffingskortingen, from aanslag">IB Bruto (actual, €)</label>
+          <input class="ts-inp" type="number" id="txrIbBruto" min="0" step="100" style="margin-top:4px">
+        </div>
+        <div>
+          <label class="ts-lbl" title="Arbeidskorting — employment tax credit applied (from aanslag)">Arbeidskorting (actual, €)</label>
+          <input class="ts-inp" type="number" id="txrAk" min="0" step="1" style="margin-top:4px">
+        </div>
+        <div>
+          <label class="ts-lbl" title="Algemene heffingskorting — general tax credit applied (from aanslag)">Alg. Heffingskorting (actual, €)</label>
+          <input class="ts-inp" type="number" id="txrAhk" min="0" step="1" style="margin-top:4px">
+        </div>
+        <div>
+          <label class="ts-lbl" title="Te betalen / te ontvangen — final balance: positive = you owe, negative = refund">Te Betalen / Teruggave (€)</label>
+          <input class="ts-inp" type="number" id="txrTeBetalen" step="1" style="margin-top:4px">
+          <div class="t2" style="font-size:10px;margin-top:3px">Positive = pay Belastingdienst · Negative = refund</div>
+        </div>
+        <div>
+          <label class="ts-lbl">Notes</label>
+          <input class="ts-inp" type="text" id="txrNotes" placeholder="e.g. definitieve aanslag received" style="margin-top:4px">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+        <button onclick="closeModal('taxRecordModal')" class="mbtn">Cancel</button>
+        <button onclick="saveTaxRecord()" class="mbtn mbtn-pri">Save Record</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL: CLOUD SYNC -->
 <div class="overlay" id="cloudSyncModal">
@@ -1518,6 +1651,93 @@ const SECTOR_COLORS={
   'Gold':'#D97706','Bitcoin':'#F97316','Ethereum':'#6366F1','Solana':'#7C3AED',
   'Crypto':'#EF4444','Cash & Equivalents':'#6EE7B7',
 };
+
+// ── § NL TAX CONFIGURATION — multi-year (2023–2026) ─────────────────────────
+// Sources: Belastingdienst.nl, Rijksoverheid.nl. 2026 = provisional.
+const TAX_CONFIG = {
+  2023:{
+    label:'2023', status:'filed',
+    box1:{brackets:[{upTo:73031,rate:0.3693},{upTo:Infinity,rate:0.4950}]},
+    arbeidskorting:[
+      {from:0,     upTo:10741,   base:0,    rate:0.08231},
+      {from:10741, upTo:23201,   base:884,  rate:0.29861},
+      {from:23201, upTo:44564,   base:4605, rate:0},
+      {from:44564, upTo:115295,  base:4605, rate:-0.0651},
+      {from:115295,upTo:Infinity,base:0,    rate:0}
+    ],
+    algHeffingskorting:{max:3070,phaseStart:22261,phaseEnd:73031,phaseRate:0.06095},
+    box3:{savingsRate:0.36,invRate:6.17,taxRate:0.32,allowance:57000},
+    box2Rate:26.9, zzp:{zelfstandigen:5030,starters:2123,mkb:14.0},
+    korThreshold:20000, btwRate:21
+  },
+  2024:{
+    label:'2024', status:'filed',
+    box1:{brackets:[{upTo:75518,rate:0.3697},{upTo:Infinity,rate:0.4950}]},
+    arbeidskorting:[
+      {from:0,     upTo:11491,   base:0,    rate:0.08085},
+      {from:11491, upTo:24820,   base:929,  rate:0.29817},
+      {from:24820, upTo:47337,   base:5052, rate:0},
+      {from:47337, upTo:124935,  base:5052, rate:-0.0651},
+      {from:124935,upTo:Infinity,base:0,    rate:0}
+    ],
+    algHeffingskorting:{max:3374,phaseStart:24812,phaseEnd:75518,phaseRate:0.06630},
+    box3:{savingsRate:1.03,invRate:6.04,taxRate:0.36,allowance:57000},
+    box2Rate:24.5, zzp:{zelfstandigen:3750,starters:2123,mkb:13.31},
+    korThreshold:20000, btwRate:21
+  },
+  2025:{
+    label:'2025', status:'current',
+    box1:{brackets:[{upTo:38441,rate:0.3582},{upTo:76817,rate:0.3748},{upTo:Infinity,rate:0.4950}]},
+    arbeidskorting:[
+      {from:0,     upTo:11491,   base:0,     rate:0.08053},
+      {from:11491, upTo:24820,   base:925.9, rate:0.29760},
+      {from:24820, upTo:48481,   base:5247,  rate:0},
+      {from:48481, upTo:124935,  base:5247,  rate:-0.0651},
+      {from:124935,upTo:Infinity,base:0,     rate:0}
+    ],
+    algHeffingskorting:{max:3362,phaseStart:24820,phaseEnd:76817,phaseRate:0.06337},
+    box3:{savingsRate:1.37,invRate:5.88,taxRate:0.36,allowance:57684},
+    box2Rate:26.9, zzp:{zelfstandigen:2470,starters:2123,mkb:12.7},
+    korThreshold:20000, btwRate:21
+  },
+  2026:{
+    label:'2026', status:'provisional',
+    box1:{brackets:[{upTo:38441,rate:0.3582},{upTo:76817,rate:0.3748},{upTo:Infinity,rate:0.4950}]},
+    arbeidskorting:[
+      {from:0,     upTo:11491,   base:0,     rate:0.08053},
+      {from:11491, upTo:24820,   base:925.9, rate:0.29760},
+      {from:24820, upTo:43071,   base:5247,  rate:0},
+      {from:43071, upTo:124935,  base:5247,  rate:-0.0651},
+      {from:124935,upTo:Infinity,base:0,     rate:0}
+    ],
+    algHeffingskorting:{max:3362,phaseStart:24820,phaseEnd:76817,phaseRate:0.06337},
+    box3:{savingsRate:1.44,invRate:5.88,taxRate:0.36,allowance:57684},
+    box2Rate:24.5, zzp:{zelfstandigen:1900,starters:2123,mkb:12.7},
+    korThreshold:20000, btwRate:21
+  }
+};
+// Generic bracket / credit evaluators
+function _applyBrackets(income,brackets){
+  let tax=0,prev=0;
+  for(const b of brackets){
+    if(income<=prev) break;
+    tax+=(Math.min(income,b.upTo===Infinity?income:b.upTo)-prev)*b.rate;
+    prev=b.upTo===Infinity?income:b.upTo;
+  }
+  return tax;
+}
+function _applyArbeidskorting(income,segs){
+  if(income<=0) return 0;
+  for(const s of segs){
+    if(income<=s.upTo) return Math.max(0,Math.round(s.base+(income-s.from)*s.rate));
+  }
+  return 0;
+}
+function _applyAlgHeffingskorting(income,ahk){
+  if(income<=ahk.phaseStart) return ahk.max;
+  if(income>=ahk.phaseEnd)   return 0;
+  return Math.max(0,Math.round(ahk.max-(income-ahk.phaseStart)*ahk.phaseRate));
+}
 function gicsSectorColor(key){
   if(SECTOR_COLORS[key]) return SECTOR_COLORS[key];
   // Fall back to deterministic hash for unknown keys
@@ -1753,7 +1973,12 @@ function getDefaults(){
     businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES)),
     sectionOrder:['s-alloc','s-cats','s-nwhistory'],
     ledger:{months:{}},
-    tradingExperiment:{startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20}
+    tradingExperiment:{startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20},
+    taxRecords:{
+      2023:{income:0,loonheffing:0,nlDividendbelasting:0,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,teBetalen:0,notes:''},
+      2024:{income:0,loonheffing:0,nlDividendbelasting:67,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,teBetalen:0,notes:''},
+      2025:{income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,teBetalen:0,notes:''}
+    }
   };
 }
 function loadDB(){
@@ -1781,6 +2006,11 @@ function loadDB(){
         if(DB.taxSettings.korThreshold===undefined) DB.taxSettings.korThreshold=20000;
         if(DB.taxSettings.btwEnabled===undefined) DB.taxSettings.btwEnabled=false;
         if(DB.taxSettings.btwRate===undefined) DB.taxSettings.btwRate=21;
+        if(DB.taxSettings.nlDividendbelasting===undefined) DB.taxSettings.nlDividendbelasting=0;
+        if(!DB.taxRecords) DB.taxRecords={};
+        if(!DB.taxRecords[2023]) DB.taxRecords[2023]={income:0,loonheffing:0,nlDividendbelasting:0,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,teBetalen:0,notes:''};
+        if(!DB.taxRecords[2024]) DB.taxRecords[2024]={income:0,loonheffing:0,nlDividendbelasting:67,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,teBetalen:0,notes:''};
+        if(!DB.taxRecords[2025]) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,teBetalen:0,notes:''};
         // Migrate phase names
         if(!DB.transition) DB.transition={};
         if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
@@ -2162,6 +2392,11 @@ function importDB(event){
       if(DB.taxSettings.korThreshold===undefined) DB.taxSettings.korThreshold=20000;
       if(DB.taxSettings.btwEnabled===undefined) DB.taxSettings.btwEnabled=false;
       if(DB.taxSettings.btwRate===undefined) DB.taxSettings.btwRate=21;
+      if(DB.taxSettings.nlDividendbelasting===undefined) DB.taxSettings.nlDividendbelasting=0;
+      if(!DB.taxRecords) DB.taxRecords={};
+      if(!DB.taxRecords[2023]) DB.taxRecords[2023]={income:0,loonheffing:0,nlDividendbelasting:0,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,teBetalen:0,notes:''};
+      if(!DB.taxRecords[2024]) DB.taxRecords[2024]={income:0,loonheffing:0,nlDividendbelasting:67,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,teBetalen:0,notes:''};
+      if(!DB.taxRecords[2025]) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,teBetalen:0,notes:''};
       if(!DB.transition) DB.transition={};
       if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
       if(!DB.transition.phaseName2) DB.transition.phaseName2='Career Gap';
@@ -2225,10 +2460,10 @@ function getPositions(){
   });
   return Object.fromEntries(Object.entries(pos).filter(([,p])=>p.qty>0.00001));
 }
-function getDividends(){
-  // Returns total dividend/distribution income per instrument id
+function getDividends(year){
+  // Returns dividend/distribution income per instrument id, optionally filtered by year
   const divs={};
-  DB.transactions.filter(tx=>tx.type==='dividend').forEach(tx=>{
+  DB.transactions.filter(tx=>tx.type==='dividend'&&(!year||tx.date.startsWith(String(year)))).forEach(tx=>{
     if(!divs[tx.iid]) divs[tx.iid]=0;
     divs[tx.iid]+=(tx.qty||1)*(tx.price||0);
   });
@@ -4356,32 +4591,20 @@ function calcBox1Income(year){
   }
   return Math.max(0,salaryIncome+taxableBizIncome);
 }
-function calcBox1Tax(income){
+function calcBox1Tax(income,year){
   if(income<=0) return 0;
   const overrideRate=(DB.taxSettings?.box1EffectiveRate||0)/100;
   if(overrideRate>0) return income*overrideRate;
-  // NL 2025 brackets (default)
-  const b1=38441,b2=76817,r1=0.3582,r2=0.3748,r3=0.4950;
-  if(income<=b1) return income*r1;
-  if(income<=b2) return b1*r1+(income-b1)*r2;
-  return b1*r1+(b2-b1)*r2+(income-b2)*r3;
+  const cfg=TAX_CONFIG[year||new Date().getFullYear()]||TAX_CONFIG[2025];
+  return _applyBrackets(income,cfg.box1.brackets);
 }
-// NL 2025 Arbeidskorting (employment tax credit)
-function calcArbeidskorting(income){
-  if(income<=0) return 0;
-  let k=0;
-  if(income<=11491)      k=income*0.08053;
-  else if(income<=24820) k=925.9+(income-11491)*0.29760;
-  else if(income<=43071) k=5247;
-  else if(income<=124935)k=Math.max(0,5247-(income-43071)*0.0651);
-  else k=0;
-  return Math.round(k);
+function calcArbeidskorting(income,year){
+  const cfg=TAX_CONFIG[year||new Date().getFullYear()]||TAX_CONFIG[2025];
+  return _applyArbeidskorting(income,cfg.arbeidskorting);
 }
-// NL 2025 Algemene heffingskorting (general tax credit)
-function calcAlgemeneHeffingskorting(income){
-  if(income<=24820) return 3362;
-  if(income<=76817) return Math.max(0,Math.round(3362-(income-24820)*0.06337));
-  return 0;
+function calcAlgemeneHeffingskorting(income,year){
+  const cfg=TAX_CONFIG[year||new Date().getFullYear()]||TAX_CONFIG[2025];
+  return _applyAlgHeffingskorting(income,cfg.algHeffingskorting);
 }
 function updateInstWithholdingRate(instId,rawVal){
   const v=parseFloat(rawVal);
@@ -4391,6 +4614,38 @@ function updateInstWithholdingRate(instId,rawVal){
 }
 
 // ── TAX TAB ──
+
+// ── § TAX YEAR SELECTOR ──────────────────────────────────────────────────────
+function setTaxYear(year){
+  DB.taxSettings=DB.taxSettings||{};
+  DB.taxSettings.selectedYear=year;
+  saveDB();
+  renderTaxTab();
+}
+function loadTaxYearDefaults(){
+  const year=DB.taxSettings?.selectedYear||new Date().getFullYear();
+  const cfg=TAX_CONFIG[year]||TAX_CONFIG[2025];
+  DB.taxSettings=DB.taxSettings||{};
+  // Box 3
+  DB.taxSettings.box3SavingsRate=cfg.box3.savingsRate;
+  DB.taxSettings.box3InvRate=cfg.box3.invRate;
+  DB.taxSettings.capitalGainsRate=cfg.box3.taxRate*100;
+  DB.taxSettings.box3Allowance=cfg.box3.allowance;
+  // Box 2
+  DB.taxSettings.box2Rate=cfg.box2Rate;
+  // ZZP
+  DB.taxSettings.zelfstandigenaftrek=cfg.zzp.zelfstandigen;
+  DB.taxSettings.startersaftrek=cfg.zzp.starters;
+  DB.taxSettings.mkbVrijstelling=cfg.zzp.mkb;
+  // BTW / KOR
+  DB.taxSettings.korThreshold=cfg.korThreshold;
+  DB.taxSettings.btwRate=cfg.btwRate;
+  // Clear override so bracket calc uses TAX_CONFIG
+  DB.taxSettings.box1EffectiveRate=0;
+  saveDB();
+  renderTaxTab();
+  notify('✅ Loaded official '+year+' tax defaults','ok');
+}
 function saveTaxSettings(){
   const dr=parseFloat(document.getElementById('tax_divRate').value)||15;
   const cr=parseFloat(document.getElementById('tax_cgRate').value)||36;
@@ -4408,17 +4663,109 @@ function saveTaxSettings(){
   const korThr=parseFloat(document.getElementById('tax_korThreshold')?.value)||20000;
   const btwEnabled=document.getElementById('tax_btwEnabled')?.checked||false;
   const btwRate=parseFloat(document.getElementById('tax_btwRate')?.value)||21;
-  DB.taxSettings={dividendWithholdingRate:dr,capitalGainsRate:cr,box3SavingsRate:savRate,box3InvRate:invRate,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2,loonheffing,entrepreneurDeductionsEnabled:zzpEnabled,zelfstandigenaftrek:zzpDed,startersaftrekEnabled:starterEnabled,startersaftrek:starterDed,mkbVrijstelling:mkbPct,korThreshold:korThr,btwEnabled,btwRate};
+  const nlDivBelasting=parseFloat(document.getElementById('tax_nlDivBelasting')?.value)||0;
+  const prevSelectedYear=DB.taxSettings?.selectedYear;
+  DB.taxSettings={selectedYear:prevSelectedYear,dividendWithholdingRate:dr,capitalGainsRate:cr,box3SavingsRate:savRate,box3InvRate:invRate,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2,loonheffing,nlDividendbelasting:nlDivBelasting,entrepreneurDeductionsEnabled:zzpEnabled,zelfstandigenaftrek:zzpDed,startersaftrekEnabled:starterEnabled,startersaftrek:starterDed,mkbVrijstelling:mkbPct,korThreshold:korThr,btwEnabled,btwRate};
   saveDB(); renderTaxTab(); refreshAll();
 }
+
+// ── TAX RECORD HELPERS ────────────────────────────────────────────────────────
+function toggleTaxGuide(){
+  const g=document.getElementById('taxGuide');
+  const arrow=document.getElementById('taxGuideArrow');
+  if(!g) return;
+  const open=g.style.display!=='none';
+  g.style.display=open?'none':'block';
+  if(arrow) arrow.textContent=open?'▾':'▴';
+}
+
+function renderTaxHistoryCards(){
+  const el=document.getElementById('taxHistoryCards');
+  if(!el) return;
+  const currentYear=DB.taxSettings?.selectedYear||new Date().getFullYear();
+  const years=[2023,2024,2025,2026];
+  const statusLabel={filed:'filed',current:'current',provisional:'⚠ provisional'};
+  const statusClass={filed:'filed',current:'current',provisional:'provisional'};
+  let html=years.map(yr=>{
+    const cfg=TAX_CONFIG[yr]||{};
+    const rec=(DB.taxRecords||{})[yr]||{};
+    const isActive=yr===currentYear;
+    const st=cfg.status||'provisional';
+    const badge=`<span class="tax-yr-badge ${statusClass[st]||'provisional'}">${statusLabel[st]||st}</span>`;
+    let detail='';
+    if(rec.income>0){
+      detail+=`<div style="font-size:10px;color:var(--txt2);margin-top:3px">Income: ${feur(rec.income)}</div>`;
+    }
+    if(rec.teBetalen!==0&&rec.teBetalen!==undefined&&rec.teBetalen!==null){
+      const dir=rec.teBetalen>0?'Pay':'Refund';
+      const col=rec.teBetalen>0?'var(--err)':'var(--ok)';
+      detail+=`<div style="font-size:10px;font-weight:700;color:${col};margin-top:2px">${dir}: ${feur(Math.abs(rec.teBetalen))}</div>`;
+    }
+    return`<button class="tax-yr-pill${isActive?' active':''}" data-year="${yr}" onclick="setTaxYear(${yr})" style="text-align:left;min-width:90px;padding:7px 12px;height:auto">
+      <div style="display:flex;align-items:center;gap:5px;font-size:13px">${yr} ${badge}</div>
+      ${detail}
+    </button>`;
+  }).join('');
+  html+=`<div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+    <button onclick="openTaxRecordModal(${currentYear})" style="font-size:11px;padding:4px 10px;border:1px solid var(--bdr);border-radius:var(--rs);background:var(--card);cursor:pointer;color:var(--txt2)">✏️ Edit ${currentYear} record</button>
+    <button onclick="loadTaxYearDefaults()" style="font-size:11px;padding:4px 10px;border:1px solid var(--bdr);border-radius:var(--rs);background:var(--card);cursor:pointer;color:var(--txt2)" title="Load official tax rates for selected year">↺ Load ${currentYear} rates</button>
+  </div>`;
+  el.innerHTML=html;
+}
+
+function openTaxRecordModal(year){
+  const rec=(DB.taxRecords||{})[year]||{};
+  const cfg=TAX_CONFIG[year]||{};
+  const statusBadge=cfg.status==='filed'?' 📄 Filed':cfg.status==='provisional'?' ⚠ Provisional':'';
+  document.getElementById('txrYear').textContent=year+statusBadge;
+  document.getElementById('txrIncome').value=rec.income||0;
+  document.getElementById('txrLoonheffing').value=rec.loonheffing||0;
+  document.getElementById('txrNlDiv').value=rec.nlDividendbelasting||0;
+  document.getElementById('txrIbBruto').value=rec.ibBruto||0;
+  document.getElementById('txrAk').value=rec.arbeidskorting||0;
+  document.getElementById('txrAhk').value=rec.algHeffingskorting||0;
+  document.getElementById('txrTeBetalen').value=rec.teBetalen||0;
+  document.getElementById('txrNotes').value=rec.notes||'';
+  document.getElementById('txrYearHidden').value=year;
+  // Auto-fill estimate from dashboard calculations
+  const estAk=calcArbeidskorting(rec.income||0,year);
+  const estAhk=calcAlgemeneHeffingskorting(rec.income||0,year);
+  const estIb=calcBox1Tax(rec.income||0,year);
+  document.getElementById('txrEstAk').textContent=feur(estAk);
+  document.getElementById('txrEstAhk').textContent=feur(estAhk);
+  document.getElementById('txrEstIb').textContent=feur(estIb);
+  openModal('taxRecordModal');
+}
+
+function saveTaxRecord(){
+  const year=parseInt(document.getElementById('txrYearHidden').value);
+  if(!DB.taxRecords) DB.taxRecords={};
+  DB.taxRecords[year]={
+    income:parseFloat(document.getElementById('txrIncome').value)||0,
+    loonheffing:parseFloat(document.getElementById('txrLoonheffing').value)||0,
+    nlDividendbelasting:parseFloat(document.getElementById('txrNlDiv').value)||0,
+    ibBruto:parseFloat(document.getElementById('txrIbBruto').value)||0,
+    arbeidskorting:parseFloat(document.getElementById('txrAk').value)||0,
+    algHeffingskorting:parseFloat(document.getElementById('txrAhk').value)||0,
+    teBetalen:parseFloat(document.getElementById('txrTeBetalen').value)||0,
+    notes:document.getElementById('txrNotes').value||''
+  };
+  saveDB(); closeModal('taxRecordModal'); renderTaxTab();
+  notify('✅ Tax record saved for '+year,'ok');
+}
+
 function renderTaxTab(){
+  const currentYear=DB.taxSettings?.selectedYear||new Date().getFullYear();
   const cats=computeCategories();
   const pos=getPositions();
-  const divs=getDividends();
+  const divs=getDividends(currentYear);
   const globalWHRate=(DB.taxSettings?.dividendWithholdingRate||15)/100;
   const box3Rate=(DB.taxSettings?.capitalGainsRate||36)/100;
-  const currentYear=new Date().getFullYear();
+  // Render Zone A history cards (year selector + edit button)
+  renderTaxHistoryCards();
   const t=DB.transition;
+  // Per-year record (loonheffing + nlDividendbelasting are year-specific when available)
+  const rec=(DB.taxRecords||{})[currentYear]||{};
   // Populate settings inputs
   const drEl=document.getElementById('tax_divRate');
   const crEl=document.getElementById('tax_cgRate');
@@ -4428,10 +4775,14 @@ function renderTaxTab(){
   const invRateEl=document.getElementById('tax_invRate');
   const alEl=document.getElementById('tax_allowance');
   const loonheffingEl=document.getElementById('tax_loonheffing');
+  const nlDivEl=document.getElementById('tax_nlDivBelasting');
   if(savRateEl) savRateEl.value=DB.taxSettings?.box3SavingsRate??1.37;
   if(invRateEl) invRateEl.value=DB.taxSettings?.box3InvRate??5.88;
   if(alEl) alEl.value=DB.taxSettings?.box3Allowance??57684;
-  if(loonheffingEl) loonheffingEl.value=DB.taxSettings?.loonheffing??0;
+  // loonheffing: use year record if set, fallback to taxSettings global
+  if(loonheffingEl) loonheffingEl.value=rec.loonheffing||DB.taxSettings?.loonheffing||0;
+  // nlDividendbelasting: use year record if set, fallback to taxSettings global
+  if(nlDivEl) nlDivEl.value=rec.nlDividendbelasting!==undefined?rec.nlDividendbelasting:(DB.taxSettings?.nlDividendbelasting||0);
   const b1El=document.getElementById('tax_box1Rate');
   const b2El=document.getElementById('tax_box2Rate');
   if(b1El) b1El.value=DB.taxSettings?.box1EffectiveRate??0;
@@ -4457,7 +4808,7 @@ function renderTaxTab(){
 
   // ── BOX 1 ──
   const box1Income=calcBox1Income(currentYear);
-  const box1GrossTax=calcBox1Tax(box1Income);
+  const box1GrossTax=calcBox1Tax(box1Income,currentYear);
   const phases=[];
   if(t.enddate){
     let mos=0;
@@ -4552,7 +4903,7 @@ function renderTaxTab(){
       <div style="margin-top:10px;padding:10px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:11px;color:#92400E">
         ${(DB.taxSettings?.box1EffectiveRate||0)>0
           ? `⚠️ Using your custom effective rate of <strong>${DB.taxSettings.box1EffectiveRate}%</strong>. Excludes personal tax credits. Consult a tax advisor for your specific situation.`
-          : `⚠️ Using NL 2025 progressive brackets (35.82% · 37.48% · 49.50%). Set a custom effective rate in Tax Settings to override. Heffingskortingen (arbeidskorting + algemene heffingskorting) applied in Tax Year Summary below.`
+          : `⚠️ Using NL ${currentYear} progressive brackets. Set a custom effective rate in Tax Settings to override. Heffingskortingen (arbeidskorting + algemene heffingskorting) applied in Tax Year Summary below.`
         }
       </div>
     </div>`;
@@ -4688,19 +5039,23 @@ function renderTaxTab(){
   },0);
   const salaryGross=phases.reduce((s,ph)=>s+ph.months*ph.monthly,0);
   // NL 2025 heffingskortingen — computed from taxable Box 1 income
-  const arbeidskorting=calcArbeidskorting(box1Income);
-  const algHeffingskorting=calcAlgemeneHeffingskorting(box1Income);
+  const arbeidskorting=calcArbeidskorting(box1Income,currentYear);
+  const algHeffingskorting=calcAlgemeneHeffingskorting(box1Income,currentYear);
   const totalHeffingskortingen=arbeidskorting+algHeffingskorting;
-  // Loonheffing: actual amount from jaaropgaaf (user-entered), or 0
-  const loonheffingActual=ts2.loonheffing||0;
-  // Net Box 1 due = gross tax − heffingskortingen − loonheffing (already paid) − dividend WHT credit
+  // Loonheffing: year record takes priority, fallback to taxSettings global
+  const loonheffingActual=rec.loonheffing||ts2.loonheffing||0;
+  // NL Dividendbelasting (verrekenbaar): year record takes priority, fallback to taxSettings global
+  const nlDivBelastingActual=rec.nlDividendbelasting!==undefined?rec.nlDividendbelasting:(ts2.nlDividendbelasting||0);
+  // Net Box 1 due = gross tax − heffingskortingen − loonheffing − dividend WHT credit − NL dividendbelasting
   const box1AfterCredits=Math.max(0,box1GrossTax-totalHeffingskortingen);
-  const box1NetDue=Math.max(0,box1AfterCredits-loonheffingActual-totalDivWHT);
+  const box1NetDue=Math.max(0,box1AfterCredits-loonheffingActual-totalDivWHT-nlDivBelastingActual);
   const grandDue=box1NetDue+box3Tax+(btwOn?btwNet:0);
   const effectiveRate=box1Income>0?(box1AfterCredits/box1Income)*100:0;
   const voorlopigQ=(box1NetDue+box3Tax)/4;
   const yr=currentYear;
-  document.getElementById('taxYearHdr').textContent=`Estimated annual tax position · ${yr}`;
+  const yrStatus=TAX_CONFIG[currentYear]?.status||'';
+  const yrBadge=yrStatus==='provisional'?' ⚠️ provisional rates':yrStatus==='filed'?' · filed':'';
+  document.getElementById('taxYearHdr').textContent=`Estimated tax position · ${currentYear}${yrBadge}`;
   document.getElementById('taxYearSummary').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div class="tax-card">
@@ -4713,8 +5068,9 @@ function renderTaxTab(){
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px;color:#065F46"><span>&nbsp;↳ Arbeidskorting</span><span class="fw6">+${feur(arbeidskorting)}</span></div>
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px;color:#065F46"><span>&nbsp;↳ Algemene heffingskorting</span><span class="fw6">+${feur(algHeffingskorting)}</span></div>
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;font-weight:600"><span>Tax after heffingskortingen</span><span>${feur(box1AfterCredits)}</span></div>
-        ${loonheffingActual>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span>Loonheffing already paid (jaaropgaaf)</span><span class="fw6">+${feur(loonheffingActual)}</span></div>`:'<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px;color:var(--txt2)"><span>Loonheffing (enter in Tax Settings above)</span><span>—</span></div>'}
-        ${totalDivWHT>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span>Dividend WHT credit</span><span class="fw6">+${feur(totalDivWHT)}</span></div>`:''}
+        ${loonheffingActual>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span title="Loonheffing — payroll tax withheld by employer (from jaaropgaaf)">Loonheffing withheld (jaaropgaaf)</span><span class="fw6">+${feur(loonheffingActual)}</span></div>`:'<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px;color:var(--txt2)"><span>Loonheffing — enter via ✏️ Edit record or Tax Settings</span><span>—</span></div>'}
+        ${nlDivBelastingActual>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span title="Dividendbelasting — Dutch WHT on NL company dividends, verrekenbaar against IB">NL Dividendbelasting credit</span><span class="fw6">+${feur(nlDivBelastingActual)}</span></div>`:''}
+        ${totalDivWHT>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span title="Foreign dividend withholding tax credits">Foreign dividend WHT credit</span><span class="fw6">+${feur(totalDivWHT)}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;font-weight:800;color:${box1NetDue>0?'var(--err)':'var(--ok)'}"><span>${box1NetDue>0?'Net Box 1 still due':'Box 1 fully covered'}</span><span>${box1NetDue>0?'−':''}${feur(box1NetDue)}</span></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:16px">
@@ -4735,7 +5091,7 @@ function renderTaxTab(){
       </div>
     </div>
     <div style="margin-top:12px;padding:10px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:11px;color:#92400E">
-      ⚠️ NL 2025 brackets + heffingskortingen applied automatically. Enter your actual loonheffing from jaaropgaaf in Tax Settings for an accurate "te betalen" figure. Consult a belastingadviseur for your definitive aanslag.
+      ⚠️ NL ${currentYear} brackets + heffingskortingen applied automatically. Click <strong>✏️ Edit ${currentYear} record</strong> in the year strip above to enter your actual loonheffing (jaaropgaaf), NL dividendbelasting, and filed aangifte figures. Consult a belastingadviseur for your definitieve aanslag.
     </div>`;
 
   // ── DIVIDEND WITHHOLDING (per-instrument) ──
@@ -4804,7 +5160,7 @@ function renderTaxTab(){
     </div>`;
 
   // ── TAXES PAID ON SALES ──
-  const curTaxYear=new Date().getFullYear();
+  const curTaxYear=currentYear;
   const sellTxWithTax=(DB.transactions||[]).filter(t=>t.type==='sell'&&t.taxPaid>0)
     .map(t=>{
       const inst=DB.instruments.find(i=>i.id===t.iid)||{name:'Unknown',ticker:'?'};
@@ -5946,6 +6302,11 @@ async function gistFetch(){
     if(DB.taxSettings.korThreshold===undefined) DB.taxSettings.korThreshold=20000;
     if(DB.taxSettings.btwEnabled===undefined) DB.taxSettings.btwEnabled=false;
     if(DB.taxSettings.btwRate===undefined) DB.taxSettings.btwRate=21;
+    if(DB.taxSettings.nlDividendbelasting===undefined) DB.taxSettings.nlDividendbelasting=0;
+    if(!DB.taxRecords) DB.taxRecords={};
+    if(!DB.taxRecords[2023]) DB.taxRecords[2023]={income:0,loonheffing:0,nlDividendbelasting:0,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,teBetalen:0,notes:''};
+    if(!DB.taxRecords[2024]) DB.taxRecords[2024]={income:0,loonheffing:0,nlDividendbelasting:67,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,teBetalen:0,notes:''};
+    if(!DB.taxRecords[2025]) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,teBetalen:0,notes:''};
     if(!DB.settings) DB.settings={currency:'€',country:''};
     if(DB.settings.fiTarget===undefined) DB.settings.fiTarget=0;
     if(!DB.settings.actualsStartDate) DB.settings.actualsStartDate=new Date().toISOString().slice(0,10);
