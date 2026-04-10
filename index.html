@@ -4509,14 +4509,21 @@ function deleteInst(id){
 // CoinGecko: CORS-enabled — for crypto
 // Tickers: Stooq uses lowercase, European exchange suffixes differ from Yahoo:
 //   AEX (.AS Yahoo) → .nl Stooq | Paris (.PA) → .fr | Madrid (.MC) → .es
+// ── STOOQ PRIMARY SOURCE ──
+// These are tried first (instant if available, fails fast otherwise)
+// Maps instrument ID → Stooq-compatible ticker format
 const STOOQ_TICKERS={
-  i01:'iuks.de', i02:'iese.de', i03:'icmb.de', i04:'iind.de',
-  i05:'dfns.de', i06:'nukl.de', i07:'wtnc.de', i08:'wtde.de',
-  i09:'amrs.de', i10:'remx.us',
-  i11:'inga.nl',  i12:'phia.nl',  i13:'acomo.nl',
-  i14:'acs.es',   i15:'hot.de',   i16:'asy.fr',   i24:'af.fr',
-  i20:'4gld.de'
-  // XAU handled separately; crypto via CoinGecko
+  // German-listed (low probability on Stooq, but try)
+  i01:'IUKS.DE', i02:'IESE.DE', i03:'ICMB.DE', i04:'IIND.DE',
+  i05:'DFNS.DE', i06:'NUKL.DE', i07:'WTNC.DE', i08:'WTDE.DE',
+  i09:'AMRS.DE', i10:'REMX',
+  // Amsterdam-listed (higher probability)
+  i11:'INGA.AS', i12:'PHIA.AS', i13:'ACOMO.AS',
+  // Spain/France (moderate probability)
+  i14:'ACS.MC',  i15:'HOT.DE',  i16:'ASY.PA',  i24:'AF.PA',
+  // Gold ETF
+  i20:'4GLD.DE'
+  // XAU handled separately (Stooq xauusd); crypto via CoinGecko
 };
 
 // ══ OPTION A: FAST & SIMPLE ══
@@ -4612,25 +4619,9 @@ async function fetchLivePrices(silent=false){
     }
   }
 
-  // ── 3. All other instruments: Try Alpha Vantage with updated tickers ──
+  // ── 3. All other instruments: Stooq direct first → Alpha Vantage fallback (parallel) ──
   const nonCryptoInsts=targets.filter(i=>!GECKO_IDS[(DB.priceTickers||{})[i.id]]&&(DB.priceTickers||{})[i.id]!=='XAU');
-  const apiKey=(DB.taxSettings||{}).alphaVantageKey;
-  const instResults=await Promise.allSettled(nonCryptoInsts.map(async i=>{
-    const ticker=DB.priceTickers[i.id];
-    if(!ticker) throw new Error('No ticker');
-    // Try Alpha Vantage with the updated ticker (IESE.AS, REMX, etc.)
-    if(apiKey){
-      try{
-        const r=await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${apiKey}`);
-        if(r.ok){
-          const data=await r.json();
-          const price=parseFloat(data?.['Global Quote']?.['05. price']);
-          if(price>0) return price;
-        }
-      }catch(e){}
-    }
-    throw new Error('No price available');
-  }));
+  const instResults=await Promise.allSettled(nonCryptoInsts.map(i=>_fetchInstPrice(i.id)));
 
   // ── Apply results ──
   let updated=0, failed=[];
