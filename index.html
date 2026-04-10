@@ -104,6 +104,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .hdot.green{background:var(--ok);box-shadow:0 0 0 3px var(--ok-l)}
 .hdot.amber{background:var(--wrn);box-shadow:0 0 0 3px var(--wrn-l)}
 .hdot.red{background:var(--err);box-shadow:0 0 0 3px var(--err-l)}
+.price-stale-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--err);vertical-align:super;margin-left:2px;flex-shrink:0;cursor:help}
 .health-comment{font-size:11px;color:var(--txt2);font-style:italic;margin-top:6px;padding:8px;background:var(--neu-l);border-radius:6px;border-left:3px solid var(--wrn);line-height:1.4;text-align:left}
 .cat-card{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--sh);border:1.5px solid var(--bdr);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
 .cat-card:hover{transform:translateY(-2px);box-shadow:var(--shm)}
@@ -270,6 +271,26 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   .modal{border-radius:var(--r) var(--r) 0 0;max-height:85vh;position:fixed;bottom:0;left:0;right:0;top:auto;transform:translateY(100%)}
   .overlay.open .modal{transform:translateY(0)}
   .modal-wide{max-width:100%}
+  /* CF tab: stack 3-column grid to single column */
+  .cf-3col{grid-template-columns:1fr !important}
+  /* Investments table: horizontal scroll, hide XIRR column */
+  .inv-tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .xirr-col{display:none}
+}
+@media(max-width:480px){
+  .hdr-top{padding:8px 0}
+  .brand h1{font-size:13px}
+  .hdr-right .btn-sm{font-size:10px;padding:3px 7px}
+  .main{padding:10px}
+  .mtab{padding:8px 10px;font-size:11px}
+  .g4.kpi-grid-4col{grid-template-columns:1fr 1fr}
+  .kpi{padding:12px}
+  .kpi-val{font-size:19px}
+  .cat-card{padding:12px}
+  .cat-val{font-size:15px}
+  td,th{padding:6px 6px;font-size:11px}
+  .tbl-wrap{font-size:11px}
+  .sec-hdr h2{font-size:14px}
 }
 /* ── PRINT / PDF ── */
 @media print{
@@ -342,7 +363,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       <span id="syncStatusHdr" class="sync-pill sync-idle" title="Cloud sync status" style="cursor:pointer" onclick="openCloudSync()">☁ —</span>
     </div>
     <div class="hdr-right">
-      <button class="btn btn-o btn-sm" onclick="openUpdatePricesModal()">🔄 Update Prices</button>
+      <button id="fetchPricesBtn" class="btn btn-o btn-sm" onclick="fetchLivePrices()">🌐 Fetch Live Prices</button>
     </div>
   </div>
   <div class="main-tabs">
@@ -511,7 +532,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <span id="holdTableChevron" style="font-size:12px;color:var(--txt2)">▲</span>
       </div>
       <div id="holdTableWrap">
-        <div class="tbl-wrap"><table><thead id="holdThead"></thead><tbody id="holdTbody"></tbody></table></div>
+        <div class="inv-tbl-scroll"><div class="tbl-wrap"><table><thead id="holdThead"></thead><tbody id="holdTbody"></tbody></table></div></div>
       </div>
     </div>
   </div>
@@ -611,7 +632,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     </div>
 
     <!-- Cash · Savings · Investment Activity — single row -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:14px;margin-bottom:20px;align-items:start">
+    <div class="cf-3col" style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:14px;margin-bottom:20px;align-items:start">
 
       <!-- Cash card -->
       <div class="cat-card" style="cursor:pointer" onclick="showCashTransactions()" title="Click to view cash transactions">
@@ -1420,21 +1441,6 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   </div>
 </div>
 
-<!-- MODAL: UPDATE PRICES -->
-<div class="overlay" id="pricesModal">
-  <div class="modal modal-wide">
-    <div class="mhdr"><span class="mtitle">🔄 Update Current Prices</span><button class="xbtn" onclick="closeModal('pricesModal')">✕</button></div>
-    <div class="mbody">
-      <p style="font-size:12px;color:var(--txt2);margin-bottom:16px">Update prices to refresh all P&amp;L figures. Each save records a snapshot — enabling period comparisons over time.</p>
-      <div id="pricesList"></div>
-    </div>
-    <div class="mfoot">
-      <button class="btn btn-g" onclick="closeModal('pricesModal')">Cancel</button>
-      <button class="btn btn-p" onclick="savePrices()">Save &amp; Refresh</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL: BUSINESS ENTRY -->
 <div class="overlay" id="bizEntryModal">
   <div class="modal">
@@ -1891,10 +1897,10 @@ const DEFAULT_INSTRUMENTS = [
   {id:'i10',name:'VanEck Rare Earth & Strategic Metals',ticker:'REMX',category:'ETF',sector:'Materials',gicsGroup:'Materials',gicsIndustry:'Metals & Mining',industry:'Metals & Mining',country:'—',region:'Global',currency:'EUR',exchange:'XETRA',ter:0.59,distType:'Acc',broker:'Trade Republic'},
   {id:'i11',name:'ING Groep N.V.',ticker:'INGA',category:'Stock',sector:'Financials',gicsGroup:'Banks',gicsIndustry:'Diversified Banks',industry:'Diversified Banks',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'AEX',broker:'ING',withholdingRate:15},
   {id:'i12',name:'Koninklijke Philips N.V.',ticker:'PHIA',category:'Stock',sector:'Health Care',gicsGroup:'Health Care Equipment & Services',gicsIndustry:'Health Care Equipment & Supplies',industry:'Health Care Equipment & Supplies',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'AEX',broker:'Trading 212',withholdingRate:15},
-  {id:'i13',name:'ACOM Co. Ltd',ticker:'ACOM',category:'Stock',sector:'Financials',gicsGroup:'Financial Services',gicsIndustry:'Consumer Finance',industry:'Consumer Finance',country:'Japan',region:'Asia',currency:'EUR',exchange:'Trading 212',broker:'Trading 212',withholdingRate:10},
+  {id:'i13',name:'Amsterdam Commodities (ACOMO)',ticker:'ACOM',category:'Stock',sector:'Materials',gicsGroup:'Materials',gicsIndustry:'Agricultural Products & Services',industry:'Agricultural Products',country:'Netherlands',region:'Europe',currency:'EUR',exchange:'AEX',broker:'Trading 212',withholdingRate:15},
   {id:'i14',name:'ACS Actividades de Construccion',ticker:'ACS',category:'Stock',sector:'Industrials',gicsGroup:'Capital Goods',gicsIndustry:'Construction & Engineering',industry:'Construction & Engineering',country:'Spain',region:'Europe',currency:'EUR',exchange:'BME',broker:'Trading 212',withholdingRate:15},
   {id:'i15',name:'Hochtief AG',ticker:'HOT',category:'Stock',sector:'Industrials',gicsGroup:'Capital Goods',gicsIndustry:'Construction & Engineering',industry:'Construction & Engineering',country:'Germany',region:'Europe',currency:'EUR',exchange:'XETRA',broker:'Trading 212',withholdingRate:15},
-  {id:'i16',name:'AssetMark Financial Holdings',ticker:'ASY',category:'Stock',sector:'Financials',gicsGroup:'Financial Services',gicsIndustry:'Capital Markets',industry:'Capital Markets',country:'USA',region:'Americas',currency:'EUR',exchange:'NYSE',broker:'Trading 212',withholdingRate:15},
+  {id:'i16',name:'Assystem S.A.',ticker:'ASY',category:'Stock',sector:'Industrials',gicsGroup:'Capital Goods',gicsIndustry:'Engineering & Construction Services',industry:'Engineering & Construction Services',country:'France',region:'Europe',currency:'EUR',exchange:'Euronext Paris',broker:'Trading 212',withholdingRate:12.8},
   {id:'i24',name:'Air France-KLM',ticker:'AF',category:'Stock',sector:'Industrials',gicsGroup:'Transportation',gicsIndustry:'Passenger Airlines',industry:'Passenger Airlines',country:'France',region:'Europe',currency:'EUR',exchange:'Euronext Paris',broker:'Trading 212',withholdingRate:15},
   {id:'i17',name:'Bitcoin',ticker:'BTC',category:'Crypto',sector:'Bitcoin',gicsGroup:'',gicsIndustry:'',industry:'Digital Currency — Store of Value',country:'Global',region:'Global',currency:'EUR',exchange:'Coinbase',broker:'Coinbase'},
   {id:'i18',name:'Ethereum',ticker:'ETH',category:'Crypto',sector:'Ethereum',gicsGroup:'',gicsIndustry:'',industry:'Smart Contract Platform',country:'Global',region:'Global',currency:'EUR',exchange:'Coinbase',broker:'Coinbase'},
@@ -1983,6 +1989,15 @@ function getDefaults(){
       2023:{income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'},
       2024:{income:82744,loonheffing:28761,nlDividendbelasting:67,ibBruto:20960,arbeidskorting:2747,algHeffingskorting:0,pvv:10534,box3TaxFiled:298,teBetalen:217,status:'pending',notes:'Provisional assessment 13 Jun 2025 — definitive assessment still pending.'},
       2025:{income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''}
+    },
+    priceTickers:{
+      i01:'IUKS.DE', i02:'IESE.DE', i03:'ICMB.DE', i04:'IIND.DE',
+      i05:'DFNS.DE', i06:'NUKL.DE', i07:'WTNC.DE', i08:'WTDE.DE',
+      i09:'AMRS.DE', i10:'REMX.DE',
+      i11:'INGA.AS', i12:'PHIA.AS', i13:'ACOMO.AS',
+      i14:'ACS.MC',  i15:'HOT.DE',  i16:'ASY.PA',  i24:'AF.PA',
+      i17:'BTC',     i18:'ETH',     i19:'SOL',
+      i20:'4GLD.DE', i21:'XAU'
     }
   };
 }
@@ -2016,6 +2031,7 @@ function loadDB(){
         if(!DB.taxRecords[2023]||DB.taxRecords[2023].income===0) DB.taxRecords[2023]={income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'};
         if(!DB.taxRecords[2024]||DB.taxRecords[2024].income===0) DB.taxRecords[2024]={income:82744,loonheffing:28761,nlDividendbelasting:67,ibBruto:20960,arbeidskorting:2747,algHeffingskorting:0,pvv:10534,box3TaxFiled:298,teBetalen:217,status:'pending',notes:'Provisional assessment 13 Jun 2025 — definitive assessment still pending.'};
         if(!DB.taxRecords[2025]||!('pvv' in (DB.taxRecords[2025]||{}))) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''};
+        if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.DE',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX.DE',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
         // Migrate phase names
         if(!DB.transition) DB.transition={};
         if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
@@ -2065,12 +2081,16 @@ function loadDB(){
         // Migrate: 4GLD Commodity → Stock (sector: Gold)
         const _4gld=DB.instruments.find(i=>i.id==='i20');
         if(_4gld&&_4gld.category==='Commodity'){_4gld.category='Stock';_4gld.sector='Gold';}
-        // Migrate: ACOM correct classification (was Agriculture)
+        // Migrate: ACOM = Amsterdam Commodities (ACOMO.AS, Netherlands)
         const _acom=DB.instruments.find(i=>i.id==='i13');
-        if(_acom&&_acom.sector==='Agricultural Trade & Distribution'){_acom.sector='Consumer Finance';_acom.industry='Consumer Lending';}
-        // Migrate: ASY correct classification (was Infrastructure)
+        if(_acom&&(_acom.country==='Japan'||_acom.sector==='Agricultural Trade & Distribution'||_acom.name==='ACOM Co. Ltd')){
+          Object.assign(_acom,{name:'Amsterdam Commodities (ACOMO)',sector:'Materials',industry:'Agricultural Products',country:'Netherlands',region:'Europe',exchange:'AEX',withholdingRate:15});
+        }
+        // Migrate: ASY = Assystem S.A. (ASY.PA, France)
         const _asy=DB.instruments.find(i=>i.id==='i16');
-        if(_asy&&_asy.sector==='Engineering & Infrastructure'){_asy.sector='Financial Services';_asy.industry='Asset Management';}
+        if(_asy&&(_asy.country==='USA'||_asy.name==='AssetMark Financial Holdings'||_asy.sector==='Engineering & Infrastructure')){
+          Object.assign(_asy,{name:'Assystem S.A.',sector:'Industrials',industry:'Engineering & Construction Services',country:'France',region:'Europe',exchange:'Euronext Paris',withholdingRate:12.8});
+        }
         // Normalise all instrument classifications to GICS taxonomy
         normalizeClassifications();
         return;
@@ -2402,6 +2422,7 @@ function importDB(event){
       if(!DB.taxRecords[2023]||DB.taxRecords[2023].income===0) DB.taxRecords[2023]={income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'};
       if(!DB.taxRecords[2024]||DB.taxRecords[2024].income===0) DB.taxRecords[2024]={income:82744,loonheffing:28761,nlDividendbelasting:67,ibBruto:20960,arbeidskorting:2747,algHeffingskorting:0,pvv:10534,box3TaxFiled:298,teBetalen:217,status:'pending',notes:'Provisional assessment 13 Jun 2025 — definitive assessment still pending.'};
       if(!DB.taxRecords[2025]||!('pvv' in (DB.taxRecords[2025]||{}))) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''};
+      if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.DE',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX.DE',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
       if(!DB.transition) DB.transition={};
       if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
       if(!DB.transition.phaseName2) DB.transition.phaseName2='Career Gap';
@@ -2428,12 +2449,12 @@ function importDB(event){
       // Migrate: 4GLD Commodity → Stock (sector: Gold)
       const _4gldI=DB.instruments.find(i=>i.id==='i20');
       if(_4gldI&&_4gldI.category==='Commodity'){_4gldI.category='Stock';_4gldI.sector='Gold';}
-      // Migrate: ACOM correct classification
+      // Migrate: ACOM = Amsterdam Commodities (ACOMO.AS)
       const _acomI=DB.instruments.find(i=>i.id==='i13');
-      if(_acomI&&_acomI.sector==='Agricultural Trade & Distribution'){_acomI.sector='Consumer Finance';_acomI.industry='Consumer Lending';}
-      // Migrate: ASY correct classification
+      if(_acomI&&(_acomI.country==='Japan'||_acomI.name==='ACOM Co. Ltd')){Object.assign(_acomI,{name:'Amsterdam Commodities (ACOMO)',sector:'Materials',industry:'Agricultural Products',country:'Netherlands',region:'Europe',exchange:'AEX',withholdingRate:15});}
+      // Migrate: ASY = Assystem S.A. (ASY.PA)
       const _asyI=DB.instruments.find(i=>i.id==='i16');
-      if(_asyI&&_asyI.sector==='Engineering & Infrastructure'){_asyI.sector='Financial Services';_asyI.industry='Asset Management';}
+      if(_asyI&&(_asyI.country==='USA'||_asyI.name==='AssetMark Financial Holdings')){Object.assign(_asyI,{name:'Assystem S.A.',sector:'Industrials',industry:'Engineering & Construction Services',country:'France',region:'Europe',exchange:'Euronext Paris',withholdingRate:12.8});}
       normalizeClassifications();
       saveDB();
       const cats=computeCategories();
@@ -3002,17 +3023,18 @@ function renderHoldingsTable(cats){
     <th class="num">Invested (€)</th>
     <th class="num">Current (€)</th>
     <th class="num">P&amp;L</th>
-    <th class="num">XIRR</th>
+    <th class="num xirr-col">XIRR</th>
     <th class="num" title="Click to edit inline">Price ✏️</th>
   </tr>`;
   document.getElementById('holdTbody').innerHTML=holdings.map(h=>{
     let staleIcon='';
     if(h.inst.category!=='Cash'&&DB.lastPriceUpdateDate){
       const lastUpd=DB.lastPriceUpdateDate[h.inst.id];
-      if(lastUpd){
-        const daysSince=Math.round((new Date()-new Date(lastUpd))/(1000*60*60*24));
-        const freshIco=daysSince<2?'🟢':daysSince<=7?'🟡':'🔴';
-        staleIcon=`<span title="Updated ${daysSince===0?'today':`${daysSince}d ago`}" style="margin-left:4px;font-size:11px;cursor:help">${freshIco}</span>`;
+      const SIX_H=6*60*60*1000;
+      const isStale=!lastUpd||(Date.now()-new Date(lastUpd).getTime())>SIX_H;
+      if(isStale){
+        const hint=lastUpd?`Price last updated ${Math.round((Date.now()-new Date(lastUpd).getTime())/86400000)}d ago`:'Price never fetched';
+        staleIcon=`<span class="price-stale-dot" title="${hint}"></span>`;
       }
     }
     const pnlPct=h.pos.cost>0?h.pnl/h.pos.cost:0;
@@ -3032,7 +3054,7 @@ function renderHoldingsTable(cats){
         <div style="font-size:11px;color:var(--txt2)">${pnlPct>=0?'+':''}${(pnlPct*100).toFixed(1)}%</div>
         ${periodBadge}
       </td>
-      <td class="num" style="font-size:12px">${xirrCell}</td>
+      <td class="num xirr-col" style="font-size:12px">${xirrCell}</td>
       <td class="num"><input class="price-inp" type="number" value="${h.price.toFixed(1)}" step="any" min="0"
         onkeydown="if(event.key==='Enter')this.blur()"
         onblur="updatePriceInline('${h.inst.id}',this.value)"
@@ -4462,61 +4484,129 @@ function deleteInst(id){
   showInstList();
 }
 
-// ── UPDATE PRICES ──
-function openUpdatePricesModal(){
-  const pos=getPositions();
-  const GROUP_ORDER=['ETF','Stock','Crypto','Commodity'];
-  const GROUP_LABEL={ETF:'📊 ETFs',Stock:'💹 Stocks',Crypto:'₿ Crypto',Commodity:'🔶 Gold'};
-  const grouped={};
-  GROUP_ORDER.forEach(g=>grouped[g]=[]);
-  DB.instruments.filter(i=>pos[i.id]&&i.category!=='Cash').forEach(inst=>{
-    const g=inst.category in grouped?inst.category:'Stock';
-    grouped[g].push(inst);
-  });
-  document.getElementById('pricesList').innerHTML=GROUP_ORDER.map(g=>{
-    if(!grouped[g].length) return '';
-    const rows=grouped[g].map(inst=>{
-      const lastUpd=DB.lastPriceUpdateDate?.[inst.id];
-      const daysSince=lastUpd?Math.round((new Date()-new Date(lastUpd))/(86400000)):null;
-      const freshIco2=daysSince===null?'⬜':daysSince<2?'🟢':daysSince<=7?'🟡':'🔴';
-      const staleHint=`<span title="${daysSince===null?'Never updated':daysSince===0?'Updated today':`Updated ${daysSince}d ago`}" style="font-size:11px;margin-left:4px;cursor:help">${freshIco2}</span>`;
-      return`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bdr)">
-        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
-          <div style="min-width:52px">
-            <div style="font-size:15px;font-weight:700;color:var(--txt);line-height:1.2">${inst.ticker}${staleHint}</div>
-          </div>
-          <div style="min-width:0">
-            <div style="font-size:11px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${inst.name}</div>
-            <div style="font-size:10px;color:var(--txt2);opacity:.7;margin-top:1px">${inst.sector}${inst.region&&inst.region!==inst.sector?' · '+inst.region:''}</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-          <span style="font-size:12px;color:var(--txt2)">${inst.currency||'€'}</span>
-          <input class="price-modal-inp" type="number" id="price_${inst.id}" step="any" value="${DB.prices[inst.id]||0}" style="width:96px;text-align:right">
-        </div>
-      </div>`;
-    }).join('');
-    return`<div style="margin-bottom:4px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--txt2);padding:12px 0 6px;display:flex;align-items:center;gap:6px">
-        <span style="width:28px;height:2px;background:${g==='ETF'?'#3B82F6':g==='Stock'?'#8B5CF6':g==='Crypto'?'#EF4444':'#F59E0B'};border-radius:2px;display:inline-block"></span>
-        ${GROUP_LABEL[g]}
-      </div>
-      ${rows}
-    </div>`;
-  }).join('');
-  openModal('pricesModal');
+// ── LIVE PRICE FETCH ──
+const CORS='https://corsproxy.io/?url=';
+const YAHOO=ticker=>`${CORS}https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+
+async function _yahooPrice(ticker){
+  const r=await fetch(YAHOO(ticker),{headers:{'User-Agent':'Mozilla/5.0'}});
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  const d=await r.json();
+  const meta=d?.chart?.result?.[0]?.meta;
+  if(!meta) throw new Error('No meta');
+  const p=meta.regularMarketPrice??meta.chartPreviousClose;
+  if(!p) throw new Error('No price');
+  return p;
 }
-function savePrices(){
+
+async function _geckoPrice(coinId){
+  const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=eur`);
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  const d=await r.json();
+  const p=d?.[coinId]?.eur;
+  if(!p) throw new Error('No price');
+  return p;
+}
+
+const GECKO_IDS={BTC:'bitcoin',ETH:'ethereum',SOL:'solana'};
+
+async function fetchLivePrices(silent=false){
+  const btn=document.getElementById('fetchPricesBtn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Fetching…';}
   const pos=getPositions();
   const today=new Date().toISOString().slice(0,10);
   if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
-  DB.instruments.filter(i=>pos[i.id]).forEach(inst=>{
-    const el=document.getElementById('price_'+inst.id);
-    if(el){ const v=parseFloat(el.value); if(!isNaN(v)&&v>=0) { snapshotPrice(inst.id, DB.prices[inst.id]||v); DB.prices[inst.id]=v; DB.lastPriceUpdateDate[inst.id]=today; } }
+  if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.DE',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX.DE',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
+
+  // Instruments with positions (non-Cash) that have a ticker mapping
+  const targets=DB.instruments.filter(i=>pos[i.id]&&i.category!=='Cash'&&DB.priceTickers[i.id]);
+
+  // Batch CoinGecko (BTC/ETH/SOL in one call)
+  const cryptoInsts=targets.filter(i=>GECKO_IDS[DB.priceTickers[i.id]]);
+  let geckoData={};
+  if(cryptoInsts.length){
+    const ids=[...new Set(cryptoInsts.map(i=>GECKO_IDS[DB.priceTickers[i.id]]))].join(',');
+    try{
+      const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=eur`);
+      if(r.ok) geckoData=await r.json();
+    }catch(e){ console.warn('CoinGecko batch failed',e); }
+  }
+
+  // XAU: gold futures (USD) + EURUSD rate
+  let xauEur=null;
+  const xauInst=targets.find(i=>DB.priceTickers[i.id]==='XAU');
+  if(xauInst){
+    try{
+      const [goldUsd,eurusd]=await Promise.all([_yahooPrice('GC=F'),_yahooPrice('EURUSD=X')]);
+      xauEur=goldUsd/eurusd;
+    }catch(e){ console.warn('XAU fetch failed',e); }
+  }
+
+  // Remaining Yahoo instruments (ETFs, Stocks, 4GLD, non-crypto)
+  const yahooInsts=targets.filter(i=>!GECKO_IDS[DB.priceTickers[i.id]]&&DB.priceTickers[i.id]!=='XAU');
+  const yahooResults=await Promise.allSettled(yahooInsts.map(i=>_yahooPrice(DB.priceTickers[i.id])));
+
+  let updated=0, failed=[];
+  // Apply Yahoo results
+  yahooInsts.forEach((inst,idx)=>{
+    const res=yahooResults[idx];
+    if(res.status==='fulfilled'){
+      snapshotPrice(inst.id, DB.prices[inst.id]||res.value);
+      DB.prices[inst.id]=res.value;
+      DB.lastPriceUpdateDate[inst.id]=today;
+      updated++;
+    } else {
+      console.warn('Yahoo failed for',DB.priceTickers[inst.id],res.reason);
+      failed.push(inst.ticker);
+    }
   });
+  // Apply CoinGecko results
+  cryptoInsts.forEach(inst=>{
+    const coinId=GECKO_IDS[DB.priceTickers[inst.id]];
+    const p=geckoData?.[coinId]?.eur;
+    if(p){
+      snapshotPrice(inst.id, DB.prices[inst.id]||p);
+      DB.prices[inst.id]=p;
+      DB.lastPriceUpdateDate[inst.id]=today;
+      updated++;
+    } else {
+      failed.push(inst.ticker);
+    }
+  });
+  // Apply XAU
+  if(xauInst){
+    if(xauEur){
+      snapshotPrice(xauInst.id, DB.prices[xauInst.id]||xauEur);
+      DB.prices[xauInst.id]=xauEur;
+      DB.lastPriceUpdateDate[xauInst.id]=today;
+      updated++;
+    } else {
+      failed.push('XAU');
+    }
+  }
+
   const now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   document.getElementById('lastUpd').textContent='Last updated: '+now;
-  saveDB(); closeModal('pricesModal'); refreshAll(); notify('✅ Prices updated & dashboard refreshed.');
+  saveDB(); refreshAll();
+  if(btn){btn.disabled=false;btn.textContent='🌐 Fetch Live Prices';}
+  if(!silent){
+    if(failed.length) notify(`✅ ${updated} prices updated. ⚠️ Failed: ${failed.join(', ')}`);
+    else notify(`✅ ${updated} prices updated & saved.`);
+  }
+}
+
+// Auto-fetch on load if any price is older than 6 hours
+function autoFetchPricesIfStale(){
+  if(!DB.lastPriceUpdateDate) return;
+  const SIX_HOURS=6*60*60*1000;
+  const now=Date.now();
+  const hasStale=DB.instruments.some(i=>{
+    if(i.category==='Cash') return false;
+    const t=DB.lastPriceUpdateDate[i.id];
+    if(!t) return true;
+    return (now-new Date(t).getTime())>SIX_HOURS;
+  });
+  if(hasStale) fetchLivePrices(true);
 }
 
 // ── MODAL HELPERS ──
@@ -6326,6 +6416,7 @@ async function gistFetch(){
     if(!DB.taxRecords[2023]||DB.taxRecords[2023].income===0) DB.taxRecords[2023]={income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'};
     if(!DB.taxRecords[2024]||DB.taxRecords[2024].income===0) DB.taxRecords[2024]={income:82744,loonheffing:28761,nlDividendbelasting:67,ibBruto:20960,arbeidskorting:2747,algHeffingskorting:0,pvv:10534,box3TaxFiled:298,teBetalen:217,status:'pending',notes:'Provisional assessment 13 Jun 2025 — definitive assessment still pending.'};
     if(!DB.taxRecords[2025]||!('pvv' in (DB.taxRecords[2025]||{}))) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''};
+    if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.DE',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX.DE',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
     if(!DB.settings) DB.settings={currency:'€',country:''};
     if(DB.settings.fiTarget===undefined) DB.settings.fiTarget=0;
     if(!DB.settings.actualsStartDate) DB.settings.actualsStartDate=new Date().toISOString().slice(0,10);
@@ -6348,12 +6439,12 @@ async function gistFetch(){
     // Migrate: 4GLD Commodity → Stock (sector: Gold)
     const _4gldG=DB.instruments.find(i=>i.id==='i20');
     if(_4gldG&&_4gldG.category==='Commodity'){_4gldG.category='Stock';_4gldG.sector='Gold';}
-    // Migrate: ACOM correct classification
+    // Migrate: ACOM = Amsterdam Commodities (ACOMO.AS)
     const _acomG=DB.instruments.find(i=>i.id==='i13');
-    if(_acomG&&_acomG.sector==='Agricultural Trade & Distribution'){_acomG.sector='Consumer Finance';_acomG.industry='Consumer Lending';}
-    // Migrate: ASY correct classification
+    if(_acomG&&(_acomG.country==='Japan'||_acomG.name==='ACOM Co. Ltd')){Object.assign(_acomG,{name:'Amsterdam Commodities (ACOMO)',sector:'Materials',industry:'Agricultural Products',country:'Netherlands',region:'Europe',exchange:'AEX',withholdingRate:15});}
+    // Migrate: ASY = Assystem S.A. (ASY.PA)
     const _asyG=DB.instruments.find(i=>i.id==='i16');
-    if(_asyG&&_asyG.sector==='Engineering & Infrastructure'){_asyG.sector='Financial Services';_asyG.industry='Asset Management';}
+    if(_asyG&&(_asyG.country==='USA'||_asyG.name==='AssetMark Financial Holdings')){Object.assign(_asyG,{name:'Assystem S.A.',sector:'Industrials',industry:'Engineering & Construction Services',country:'France',region:'Europe',exchange:'Euronext Paris',withholdingRate:12.8});}
     normalizeClassifications();
     try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
     const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
@@ -6487,6 +6578,8 @@ window.addEventListener('DOMContentLoaded',()=>{
     // Show onboarding wizard on first launch (empty DB)
     if(DB.instruments.length===0) showWizard();
   }
+  // Auto-fetch live prices if any are stale (>6h)
+  setTimeout(autoFetchPricesIfStale, 1500);
 });
 // ── SAVE ON CLOSE / NAVIGATE AWAY ──
 window.addEventListener('beforeunload', ()=>{ saveDB(); });
