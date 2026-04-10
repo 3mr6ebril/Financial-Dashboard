@@ -2107,6 +2107,16 @@ function loadDB(){
     }
   }catch(e){}
   DB=getDefaults(); saveDB();
+  // 🔐 Migrate old plaintext GitHub tokens from localStorage → sessionStorage (one-time)
+  const oldToken=localStorage.getItem(GIST_TOKEN_KEY);
+  const oldGistId=localStorage.getItem(GIST_ID_KEY);
+  if(oldToken||oldGistId){
+    if(oldToken) sessionStorage.setItem(GIST_TOKEN_KEY,oldToken);
+    if(oldGistId) sessionStorage.setItem(GIST_ID_KEY,oldGistId);
+    localStorage.removeItem(GIST_TOKEN_KEY);
+    localStorage.removeItem(GIST_ID_KEY);
+    console.log('🔐 GitHub credentials migrated to secure sessionStorage');
+  }
 }
 function saveDB(){ try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){} scheduleGistPush(); }
 // ── ONBOARDING WIZARD ──
@@ -6427,8 +6437,10 @@ const GIST_TOKEN_KEY='findb_gist_token';
 const GIST_ID_KEY='findb_gist_id';
 let _syncDebounce=null;
 
-function getSyncToken(){return localStorage.getItem(GIST_TOKEN_KEY)||'';}
-function getSyncGistId(){return localStorage.getItem(GIST_ID_KEY)||'';}
+function getSyncToken(){return sessionStorage.getItem(GIST_TOKEN_KEY)||'';}
+function getSyncGistId(){return sessionStorage.getItem(GIST_ID_KEY)||'';}
+// 🔐 Security: Credentials stored in sessionStorage (cleared when tab closes), not persistent localStorage
+window.addEventListener('beforeunload',()=>{sessionStorage.removeItem(GIST_TOKEN_KEY);sessionStorage.removeItem(GIST_ID_KEY);});
 
 function setSyncStatus(status,msg){
   const icons={ok:'✅',pending:'⏳',error:'❌',idle:'☁'};
@@ -6577,8 +6589,8 @@ async function connectGist(){
       const newGist=await createRes.json();
       gistId=newGist.id;
     }
-    localStorage.setItem(GIST_TOKEN_KEY,token);
-    localStorage.setItem(GIST_ID_KEY,gistId);
+    sessionStorage.setItem(GIST_TOKEN_KEY,token);
+    sessionStorage.setItem(GIST_ID_KEY,gistId);
     if(tokenEl) tokenEl.value='';
     updateSyncUI();
     const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
@@ -6593,8 +6605,8 @@ async function connectGist(){
 
 function disconnectGist(){
   if(!confirm('Disconnect cloud sync?\n\nYour data stays saved locally. You can reconnect anytime.')) return;
-  localStorage.removeItem(GIST_TOKEN_KEY);
-  localStorage.removeItem(GIST_ID_KEY);
+  sessionStorage.removeItem(GIST_TOKEN_KEY);
+  sessionStorage.removeItem(GIST_ID_KEY);
   setSyncStatus('idle');
   updateSyncUI();
   notify('Cloud sync disconnected.');
