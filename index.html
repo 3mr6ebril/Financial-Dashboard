@@ -4501,26 +4501,51 @@ const STOOQ_TICKERS={
   // XAU handled separately; crypto via CoinGecko
 };
 
-async function _stooqPrice(ticker){
-  const r=await fetch(`https://stooq.com/q/l/?s=${encodeURIComponent(ticker)}&f=sd2t2ohlcv&h&e=csv`);
-  if(!r.ok) throw new Error(`Stooq ${r.status}`);
-  const txt=await r.text();
-  const rows=txt.trim().split('\n');
-  if(rows.length<2) throw new Error('No rows');
-  const cols=rows[1].split(',');
-  const close=parseFloat(cols[6]);
-  if(!close||close<=0||isNaN(close)) throw new Error('N/D');
-  return close;
-}
-
-const _YAHOO_PROXIES=[
+const _PROXIES=[
   url=>`https://corsproxy.io/?url=${encodeURIComponent(url)}`,
   url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
 ];
+
+// Stooq CSV parser. Tries direct fetch first (works if Stooq has CORS headers),
+// then falls back through proxies. allorigins wraps body in {contents:"...csv..."}.
+// CSV format: Symbol,Date,Time,Open,High,Low,Close,Volume
+async function _stooqPrice(ticker){
+  const stooqUrl=`https://stooq.com/q/l/?s=${encodeURIComponent(ticker)}&f=sd2t2ohlcv&h&e=csv`;
+
+  async function _parseCsvText(txt){
+    const rows=txt.trim().split('\n');
+    if(rows.length<2) throw new Error('No rows');
+    const cols=rows[1].split(',');
+    const close=parseFloat(cols[6]);
+    if(!close||close<=0||isNaN(close)) throw new Error(`No data (${cols[6]||'empty'})`);
+    return close;
+  }
+
+  // Attempt 1: direct (Stooq supports CORS for most clients)
+  try{
+    const r=await fetch(stooqUrl);
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await _parseCsvText(await r.text());
+  }catch(e){}
+
+  // Attempts 2-3: via CORS proxies (corsproxy & allorigins)
+  // corsproxy returns the CSV as-is; allorigins wraps in {contents:"..."}
+  for(const makeProxy of _PROXIES){
+    try{
+      const r=await fetch(makeProxy(stooqUrl));
+      if(!r.ok) throw new Error(`HTTP ${r.status}`);
+      const raw=await r.json();
+      const csvTxt=raw?.contents??JSON.stringify(raw);
+      return await _parseCsvText(csvTxt);
+    }catch(e){}
+  }
+  throw new Error('Stooq: all attempts failed');
+}
+
 async function _yahooPrice(ticker){
   const target=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
   let lastErr;
-  for(const makeUrl of _YAHOO_PROXIES){
+  for(const makeUrl of _PROXIES){
     try{
       const r=await fetch(makeUrl(target));
       if(!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -4533,20 +4558,24 @@ async function _yahooPrice(ticker){
       return p;
     }catch(e){ lastErr=e; }
   }
-  throw lastErr||new Error('Yahoo proxies failed');
+  throw lastErr||new Error('Yahoo failed');
 }
 
-// Try Stooq first (more reliable for EU), fall back to Yahoo
+// Stooq first (better EU coverage), then Yahoo proxy fallback.
+// Returns {price, source, error} for diagnostics.
 async function _fetchInstPrice(instId){
   const stooqT=STOOQ_TICKERS[instId];
   const yahooT=(DB.priceTickers||{})[instId];
+  const errors=[];
   if(stooqT){
-    try{ return await _stooqPrice(stooqT); }catch(e){}
+    try{ return await _stooqPrice(stooqT); }
+    catch(e){ errors.push(`Stooq(${stooqT}): ${e.message}`); }
   }
   if(yahooT&&yahooT!=='XAU'){
-    return _yahooPrice(yahooT);
+    try{ return await _yahooPrice(yahooT); }
+    catch(e){ errors.push(`Yahoo(${yahooT}): ${e.message}`); }
   }
-  throw new Error('No ticker for '+instId);
+  throw new Error(errors.join(' | ')||'No ticker');
 }
 
 async function _geckoPrice(coinId){
@@ -4604,6 +4633,8 @@ async function fetchLivePrices(silent=false){
   // ── Apply results ──
   let updated=0, failed=[];
 
+  const failDetails=[]; // {ticker, name, reason}
+
   nonCryptoInsts.forEach((inst,idx)=>{
     const res=instResults[idx];
     if(res.status==='fulfilled'&&res.value>0){
@@ -4611,9 +4642,11 @@ async function fetchLivePrices(silent=false){
       DB.prices[inst.id]=res.value;
       DB.lastPriceUpdateDate[inst.id]=today;
       updated++;
+      console.log(`✅ ${inst.ticker} (${inst.name}): €${res.value.toFixed(2)}`);
     } else {
-      console.warn('Price failed for',inst.ticker,res.reason||'');
-      failed.push(inst.ticker);
+      const reason=res.reason?.message||String(res.reason||'unknown');
+      console.warn(`❌ ${inst.ticker} (${inst.name}): ${reason}`);
+      failDetails.push({ticker:inst.ticker, name:inst.name, reason});
     }
   });
 
@@ -4622,23 +4655,38 @@ async function fetchLivePrices(silent=false){
     if(p){
       snapshotPrice(inst.id, DB.prices[inst.id]||p);
       DB.prices[inst.id]=p; DB.lastPriceUpdateDate[inst.id]=today; updated++;
-    } else { failed.push(inst.ticker); }
+      console.log(`✅ ${inst.ticker} (${inst.name}): €${p.toFixed(2)}`);
+    } else {
+      console.warn(`❌ ${inst.ticker} (${inst.name}): CoinGecko no data`);
+      failDetails.push({ticker:inst.ticker, name:inst.name, reason:'CoinGecko returned no price'});
+    }
   });
 
   if(xauInst){
     if(xauEur&&xauEur>0){
       snapshotPrice(xauInst.id, DB.prices[xauInst.id]||xauEur);
       DB.prices[xauInst.id]=xauEur; DB.lastPriceUpdateDate[xauInst.id]=today; updated++;
-    } else { failed.push('XAU'); }
+      console.log(`✅ XAU (Physical Gold): €${xauEur.toFixed(2)}/troy oz`);
+    } else {
+      console.warn(`❌ XAU: both Stooq and Yahoo failed`);
+      failDetails.push({ticker:'XAU', name:'Physical Gold Coins', reason:'Stooq xauusd and Yahoo GC=F both failed'});
+    }
   }
 
   const now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   document.getElementById('lastUpd').textContent='Last updated: '+now;
   saveDB(); refreshAll();
   if(btn){btn.disabled=false;btn.textContent='🌐 Fetch Live Prices';}
+
   if(!silent){
-    if(failed.length) notify(`✅ ${updated} updated · ⚠️ ${failed.join(', ')} failed`);
-    else notify(`✅ All ${updated} prices updated`);
+    if(failDetails.length){
+      console.group(`⚠️ ${failDetails.length} prices failed to update:`);
+      failDetails.forEach(f=>console.warn(` • ${f.ticker} — ${f.name}\n   Reason: ${f.reason}`));
+      console.groupEnd();
+      notify(`✅ ${updated} updated · ⚠️ ${failDetails.length} failed — see console (F12)`);
+    } else {
+      notify(`✅ All ${updated} prices updated`);
+    }
   }
 }
 
