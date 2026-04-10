@@ -104,7 +104,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .hdot.green{background:var(--ok);box-shadow:0 0 0 3px var(--ok-l)}
 .hdot.amber{background:var(--wrn);box-shadow:0 0 0 3px var(--wrn-l)}
 .hdot.red{background:var(--err);box-shadow:0 0 0 3px var(--err-l)}
-.price-stale-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--err);vertical-align:super;margin-left:2px;flex-shrink:0;cursor:help}
+.price-dot{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:super;margin-left:3px;flex-shrink:0;cursor:help}
+.price-dot.ok{background:var(--ok)}
+.price-dot.err{background:var(--err)}
 .health-comment{font-size:11px;color:var(--txt2);font-style:italic;margin-top:6px;padding:8px;background:var(--neu-l);border-radius:6px;border-left:3px solid var(--wrn);line-height:1.4;text-align:left}
 .cat-card{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--sh);border:1.5px solid var(--bdr);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
 .cat-card:hover{transform:translateY(-2px);box-shadow:var(--shm)}
@@ -199,8 +201,8 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
 .divider{height:1px;background:var(--bdr);margin:16px 0}
 .empty{text-align:center;padding:40px;color:var(--txt2)}
 .chart-ttl{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--txt)}
-.notif{position:fixed;top:20px;right:20px;background:#1F2937;color:#fff;padding:12px 18px;border-radius:var(--rs);font-size:13px;z-index:9999;box-shadow:var(--shl);transform:translateY(-80px);transition:transform .3s;max-width:300px}
-.notif.show{transform:translateY(0)}
+.notif{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(100px);background:#1F2937;color:#fff;padding:14px 28px;border-radius:40px;font-size:14px;font-weight:500;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.3);transition:transform .3s ease;max-width:520px;white-space:nowrap;pointer-events:none}
+.notif.show{transform:translateX(-50%) translateY(0)}
 .fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;background:var(--pri);color:#fff;border:none;border-radius:50%;font-size:24px;cursor:pointer;box-shadow:var(--shl);display:flex;align-items:center;justify-content:center;z-index:200;transition:all .2s}
 .fab:hover{transform:scale(1.1);background:var(--pri-d)}
 .lnk{color:var(--pri);font-size:12px;font-weight:500;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:3px}
@@ -3028,14 +3030,12 @@ function renderHoldingsTable(cats){
   </tr>`;
   document.getElementById('holdTbody').innerHTML=holdings.map(h=>{
     let staleIcon='';
-    if(h.inst.category!=='Cash'&&DB.lastPriceUpdateDate){
-      const lastUpd=DB.lastPriceUpdateDate[h.inst.id];
-      const SIX_H=6*60*60*1000;
-      const isStale=!lastUpd||(Date.now()-new Date(lastUpd).getTime())>SIX_H;
-      if(isStale){
-        const hint=lastUpd?`Price last updated ${Math.round((Date.now()-new Date(lastUpd).getTime())/86400000)}d ago`:'Price never fetched';
-        staleIcon=`<span class="price-stale-dot" title="${hint}"></span>`;
-      }
+    if(h.inst.category!=='Cash'){
+      const lastUpd=(DB.lastPriceUpdateDate||{})[h.inst.id];
+      const today=new Date().toISOString().slice(0,10);
+      const isToday=lastUpd===today;
+      const hint=isToday?'Price updated today':lastUpd?`Last updated ${lastUpd}`:'Price never fetched';
+      staleIcon=`<span class="price-dot ${isToday?'ok':'err'}" title="${hint}"></span>`;
     }
     const pnlPct=h.pos.cost>0?h.pnl/h.pos.cost:0;
     const periodRet=computeInstPeriodReturn(h.inst.id);
@@ -4485,23 +4485,46 @@ function deleteInst(id){
 }
 
 // ── LIVE PRICE FETCH ──
-// Two CORS proxies tried in order — corsproxy first, allorigins as fallback
-// NOTE: the full Yahoo URL must be encoded so ?interval=1d&range=1d isn't
-// parsed as separate parameters on the proxy itself.
-const _PROXIES=[
+// ── PRICE SOURCES ──
+// Stooq.com: free, CORS-enabled, no proxy needed — primary for ETFs & stocks
+// Yahoo Finance v8: via CORS proxies — fallback
+// CoinGecko: CORS-enabled — for crypto
+// Tickers: Stooq uses lowercase, European exchange suffixes differ from Yahoo:
+//   AEX (.AS Yahoo) → .nl Stooq | Paris (.PA) → .fr | Madrid (.MC) → .es
+const STOOQ_TICKERS={
+  i01:'iuks.de', i02:'iese.de', i03:'icmb.de', i04:'iind.de',
+  i05:'dfns.de', i06:'nukl.de', i07:'wtnc.de', i08:'wtde.de',
+  i09:'amrs.de', i10:'remx.us',
+  i11:'inga.nl',  i12:'phia.nl',  i13:'acomo.nl',
+  i14:'acs.es',   i15:'hot.de',   i16:'asy.fr',   i24:'af.fr',
+  i20:'4gld.de'
+  // XAU handled separately; crypto via CoinGecko
+};
+
+async function _stooqPrice(ticker){
+  const r=await fetch(`https://stooq.com/q/l/?s=${encodeURIComponent(ticker)}&f=sd2t2ohlcv&h&e=csv`);
+  if(!r.ok) throw new Error(`Stooq ${r.status}`);
+  const txt=await r.text();
+  const rows=txt.trim().split('\n');
+  if(rows.length<2) throw new Error('No rows');
+  const cols=rows[1].split(',');
+  const close=parseFloat(cols[6]);
+  if(!close||close<=0||isNaN(close)) throw new Error('N/D');
+  return close;
+}
+
+const _YAHOO_PROXIES=[
   url=>`https://corsproxy.io/?url=${encodeURIComponent(url)}`,
   url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
 ];
-
 async function _yahooPrice(ticker){
   const target=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
   let lastErr;
-  for(const makeUrl of _PROXIES){
+  for(const makeUrl of _YAHOO_PROXIES){
     try{
       const r=await fetch(makeUrl(target));
       if(!r.ok) throw new Error(`HTTP ${r.status}`);
       const raw=await r.json();
-      // allorigins wraps response in {contents:"...json string..."}
       const d=raw.contents?JSON.parse(raw.contents):raw;
       const meta=d?.chart?.result?.[0]?.meta;
       if(!meta) throw new Error('No meta');
@@ -4510,7 +4533,20 @@ async function _yahooPrice(ticker){
       return p;
     }catch(e){ lastErr=e; }
   }
-  throw lastErr||new Error('All proxies failed');
+  throw lastErr||new Error('Yahoo proxies failed');
+}
+
+// Try Stooq first (more reliable for EU), fall back to Yahoo
+async function _fetchInstPrice(instId){
+  const stooqT=STOOQ_TICKERS[instId];
+  const yahooT=(DB.priceTickers||{})[instId];
+  if(stooqT){
+    try{ return await _stooqPrice(stooqT); }catch(e){}
+  }
+  if(yahooT&&yahooT!=='XAU'){
+    return _yahooPrice(yahooT);
+  }
+  throw new Error('No ticker for '+instId);
 }
 
 async function _geckoPrice(coinId){
@@ -4530,73 +4566,70 @@ async function fetchLivePrices(silent=false){
   const pos=getPositions();
   const today=new Date().toISOString().slice(0,10);
   if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
-  if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.DE',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX.DE',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
 
-  // Instruments with positions (non-Cash) that have a ticker mapping
-  const targets=DB.instruments.filter(i=>pos[i.id]&&i.category!=='Cash'&&DB.priceTickers[i.id]);
+  // All non-Cash instruments with a position
+  const targets=DB.instruments.filter(i=>pos[i.id]&&i.category!=='Cash');
 
-  // Batch CoinGecko (BTC/ETH/SOL in one call)
-  const cryptoInsts=targets.filter(i=>GECKO_IDS[DB.priceTickers[i.id]]);
+  // ── 1. Batch CoinGecko for crypto (one request) ──
+  const cryptoInsts=targets.filter(i=>GECKO_IDS[(DB.priceTickers||{})[i.id]]);
   let geckoData={};
   if(cryptoInsts.length){
     const ids=[...new Set(cryptoInsts.map(i=>GECKO_IDS[DB.priceTickers[i.id]]))].join(',');
     try{
       const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=eur`);
       if(r.ok) geckoData=await r.json();
-    }catch(e){ console.warn('CoinGecko batch failed',e); }
+    }catch(e){ console.warn('CoinGecko failed',e); }
   }
 
-  // XAU: gold futures (USD) + EURUSD rate
+  // ── 2. XAU: Stooq xauusd ÷ eurusd ──
   let xauEur=null;
-  const xauInst=targets.find(i=>DB.priceTickers[i.id]==='XAU');
+  const xauInst=targets.find(i=>(DB.priceTickers||{})[i.id]==='XAU');
   if(xauInst){
     try{
-      const [goldUsd,eurusd]=await Promise.all([_yahooPrice('GC=F'),_yahooPrice('EURUSD=X')]);
-      xauEur=goldUsd/eurusd;
-    }catch(e){ console.warn('XAU fetch failed',e); }
+      const [xauUsd,eurUsd]=await Promise.all([_stooqPrice('xauusd'),_stooqPrice('eurusd')]);
+      xauEur=xauUsd/eurUsd;
+    }catch(e){
+      // fallback to Yahoo futures
+      try{
+        const [gUsd,fx]=await Promise.all([_yahooPrice('GC=F'),_yahooPrice('EURUSD=X')]);
+        xauEur=gUsd/fx;
+      }catch(e2){ console.warn('XAU all sources failed',e2); }
+    }
   }
 
-  // Remaining Yahoo instruments (ETFs, Stocks, 4GLD, non-crypto)
-  const yahooInsts=targets.filter(i=>!GECKO_IDS[DB.priceTickers[i.id]]&&DB.priceTickers[i.id]!=='XAU');
-  const yahooResults=await Promise.allSettled(yahooInsts.map(i=>_yahooPrice(DB.priceTickers[i.id])));
+  // ── 3. All other instruments: Stooq → Yahoo fallback (parallel) ──
+  const nonCryptoInsts=targets.filter(i=>!GECKO_IDS[(DB.priceTickers||{})[i.id]]&&(DB.priceTickers||{})[i.id]!=='XAU');
+  const instResults=await Promise.allSettled(nonCryptoInsts.map(i=>_fetchInstPrice(i.id)));
 
+  // ── Apply results ──
   let updated=0, failed=[];
-  // Apply Yahoo results
-  yahooInsts.forEach((inst,idx)=>{
-    const res=yahooResults[idx];
-    if(res.status==='fulfilled'){
+
+  nonCryptoInsts.forEach((inst,idx)=>{
+    const res=instResults[idx];
+    if(res.status==='fulfilled'&&res.value>0){
       snapshotPrice(inst.id, DB.prices[inst.id]||res.value);
       DB.prices[inst.id]=res.value;
       DB.lastPriceUpdateDate[inst.id]=today;
       updated++;
     } else {
-      console.warn('Yahoo failed for',DB.priceTickers[inst.id],res.reason);
+      console.warn('Price failed for',inst.ticker,res.reason||'');
       failed.push(inst.ticker);
     }
   });
-  // Apply CoinGecko results
+
   cryptoInsts.forEach(inst=>{
-    const coinId=GECKO_IDS[DB.priceTickers[inst.id]];
-    const p=geckoData?.[coinId]?.eur;
+    const p=geckoData?.[GECKO_IDS[DB.priceTickers[inst.id]]]?.eur;
     if(p){
       snapshotPrice(inst.id, DB.prices[inst.id]||p);
-      DB.prices[inst.id]=p;
-      DB.lastPriceUpdateDate[inst.id]=today;
-      updated++;
-    } else {
-      failed.push(inst.ticker);
-    }
+      DB.prices[inst.id]=p; DB.lastPriceUpdateDate[inst.id]=today; updated++;
+    } else { failed.push(inst.ticker); }
   });
-  // Apply XAU
+
   if(xauInst){
-    if(xauEur){
+    if(xauEur&&xauEur>0){
       snapshotPrice(xauInst.id, DB.prices[xauInst.id]||xauEur);
-      DB.prices[xauInst.id]=xauEur;
-      DB.lastPriceUpdateDate[xauInst.id]=today;
-      updated++;
-    } else {
-      failed.push('XAU');
-    }
+      DB.prices[xauInst.id]=xauEur; DB.lastPriceUpdateDate[xauInst.id]=today; updated++;
+    } else { failed.push('XAU'); }
   }
 
   const now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
@@ -4604,8 +4637,8 @@ async function fetchLivePrices(silent=false){
   saveDB(); refreshAll();
   if(btn){btn.disabled=false;btn.textContent='🌐 Fetch Live Prices';}
   if(!silent){
-    if(failed.length) notify(`✅ ${updated} prices updated. ⚠️ Failed: ${failed.join(', ')}`);
-    else notify(`✅ ${updated} prices updated & saved.`);
+    if(failed.length) notify(`✅ ${updated} updated · ⚠️ ${failed.join(', ')} failed`);
+    else notify(`✅ All ${updated} prices updated`);
   }
 }
 
