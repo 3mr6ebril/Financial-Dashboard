@@ -4485,18 +4485,32 @@ function deleteInst(id){
 }
 
 // ── LIVE PRICE FETCH ──
-const CORS='https://corsproxy.io/?url=';
-const YAHOO=ticker=>`${CORS}https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+// Two CORS proxies tried in order — corsproxy first, allorigins as fallback
+// NOTE: the full Yahoo URL must be encoded so ?interval=1d&range=1d isn't
+// parsed as separate parameters on the proxy itself.
+const _PROXIES=[
+  url=>`https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
+];
 
 async function _yahooPrice(ticker){
-  const r=await fetch(YAHOO(ticker),{headers:{'User-Agent':'Mozilla/5.0'}});
-  if(!r.ok) throw new Error(`HTTP ${r.status}`);
-  const d=await r.json();
-  const meta=d?.chart?.result?.[0]?.meta;
-  if(!meta) throw new Error('No meta');
-  const p=meta.regularMarketPrice??meta.chartPreviousClose;
-  if(!p) throw new Error('No price');
-  return p;
+  const target=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
+  let lastErr;
+  for(const makeUrl of _PROXIES){
+    try{
+      const r=await fetch(makeUrl(target));
+      if(!r.ok) throw new Error(`HTTP ${r.status}`);
+      const raw=await r.json();
+      // allorigins wraps response in {contents:"...json string..."}
+      const d=raw.contents?JSON.parse(raw.contents):raw;
+      const meta=d?.chart?.result?.[0]?.meta;
+      if(!meta) throw new Error('No meta');
+      const p=meta.regularMarketPrice??meta.chartPreviousClose;
+      if(!p||p===0) throw new Error('Zero price');
+      return p;
+    }catch(e){ lastErr=e; }
+  }
+  throw lastErr||new Error('All proxies failed');
 }
 
 async function _geckoPrice(coinId){
