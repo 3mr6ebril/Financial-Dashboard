@@ -954,6 +954,12 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
             oninput="saveTaxSettings()" style="margin-top:6px">
           <div class="t2" style="font-size:11px;margin-top:4px">Dutch dividend <span title="Voorheffing — withholding tax deducted at source" style="cursor:help;border-bottom:1px dotted var(--txt2)">voorheffing</span> from ING statements. Separate from foreign WHT below.</div>
         </div>
+        <div>
+          <label class="ts-lbl" title="Free API key from alphavantage.co for stock/ETF prices. 5 calls/min limit. Stooq used first.">Alpha Vantage API Key (optional)</label>
+          <input class="ts-inp" type="text" id="tax_alphaVantageKey" value=""
+            oninput="saveTaxSettings()" style="margin-top:6px;font-family:monospace;font-size:12px">
+          <div class="t2" style="font-size:11px;margin-top:4px">Optional: Get free key from <a href="https://www.alphavantage.co/api/" target="_blank" style="color:var(--link)">alphavantage.co</a>. Used as fallback when Stooq price fetch fails. Limit: 5 calls/min.</div>
+        </div>
       </div>
       <!-- Entrepreneur Deductions -->
       <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bdr)">
@@ -1977,7 +1983,7 @@ function getDefaults(){
     transactions:[],
     prices:{},
     priceHistory:{},
-    taxSettings:{dividendWithholdingRate:15,capitalGainsRate:36,box3SavingsRate:1.37,box3InvRate:5.88,box3Allowance:57684,box1EffectiveRate:0,box2Rate:26.9,loonheffing:0,entrepreneurDeductionsEnabled:false,zelfstandigenaftrek:2470,startersaftrekEnabled:false,startersaftrek:2123,mkbVrijstelling:12.7,korThreshold:20000,btwEnabled:false,btwRate:21},
+    taxSettings:{dividendWithholdingRate:15,capitalGainsRate:36,box3SavingsRate:1.37,box3InvRate:5.88,box3Allowance:57684,box1EffectiveRate:0,box2Rate:26.9,loonheffing:0,entrepreneurDeductionsEnabled:false,zelfstandigenaftrek:2470,startersaftrekEnabled:false,startersaftrek:2123,mkbVrijstelling:12.7,korThreshold:20000,btwEnabled:false,btwRate:21,alphaVantageKey:''},
     lastPriceUpdateDate:{},
     transition:JSON.parse(JSON.stringify(DEFAULT_TRANSITION)),
     settings:{currency:'€',country:'',fiTarget:0,actualsStartDate:new Date().toISOString().slice(0,10)},
@@ -1993,9 +1999,9 @@ function getDefaults(){
       2025:{income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''}
     },
     priceTickers:{
-      i01:'IUKS.DE', i02:'IESE.DE', i03:'ICMB.DE', i04:'IIND.DE',
+      i01:'IUKS.DE', i02:'IESE.AS', i03:'ICMB.DE', i04:'IIND.DE',
       i05:'DFNS.DE', i06:'NUKL.DE', i07:'WTNC.DE', i08:'WTDE.DE',
-      i09:'AMRS.DE', i10:'REMX.DE',
+      i09:'AMRS.DE', i10:'REMX',
       i11:'INGA.AS', i12:'PHIA.AS', i13:'ACOMO.AS',
       i14:'ACS.MC',  i15:'HOT.DE',  i16:'ASY.PA',  i24:'AF.PA',
       i17:'BTC',     i18:'ETH',     i19:'SOL',
@@ -2029,11 +2035,12 @@ function loadDB(){
         if(DB.taxSettings.btwEnabled===undefined) DB.taxSettings.btwEnabled=false;
         if(DB.taxSettings.btwRate===undefined) DB.taxSettings.btwRate=21;
         if(DB.taxSettings.nlDividendbelasting===undefined) DB.taxSettings.nlDividendbelasting=0;
+        if(DB.taxSettings.alphaVantageKey===undefined) DB.taxSettings.alphaVantageKey='';
         if(!DB.taxRecords) DB.taxRecords={};
         if(!DB.taxRecords[2023]||DB.taxRecords[2023].income===0) DB.taxRecords[2023]={income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'};
         if(!DB.taxRecords[2024]||DB.taxRecords[2024].income===0) DB.taxRecords[2024]={income:82744,loonheffing:28761,nlDividendbelasting:67,ibBruto:20960,arbeidskorting:2747,algHeffingskorting:0,pvv:10534,box3TaxFiled:298,teBetalen:217,status:'pending',notes:'Provisional assessment 13 Jun 2025 — definitive assessment still pending.'};
         if(!DB.taxRecords[2025]||!('pvv' in (DB.taxRecords[2025]||{}))) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''};
-        if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.DE',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX.DE',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
+        if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.AS',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
         // Migrate phase names
         if(!DB.transition) DB.transition={};
         if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
@@ -2420,11 +2427,12 @@ function importDB(event){
       if(DB.taxSettings.btwEnabled===undefined) DB.taxSettings.btwEnabled=false;
       if(DB.taxSettings.btwRate===undefined) DB.taxSettings.btwRate=21;
       if(DB.taxSettings.nlDividendbelasting===undefined) DB.taxSettings.nlDividendbelasting=0;
+      if(DB.taxSettings.alphaVantageKey===undefined) DB.taxSettings.alphaVantageKey='';
       if(!DB.taxRecords) DB.taxRecords={};
       if(!DB.taxRecords[2023]||DB.taxRecords[2023].income===0) DB.taxRecords[2023]={income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'};
       if(!DB.taxRecords[2024]||DB.taxRecords[2024].income===0) DB.taxRecords[2024]={income:82744,loonheffing:28761,nlDividendbelasting:67,ibBruto:20960,arbeidskorting:2747,algHeffingskorting:0,pvv:10534,box3TaxFiled:298,teBetalen:217,status:'pending',notes:'Provisional assessment 13 Jun 2025 — definitive assessment still pending.'};
       if(!DB.taxRecords[2025]||!('pvv' in (DB.taxRecords[2025]||{}))) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''};
-      if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.DE',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX.DE',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
+      if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.AS',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
       if(!DB.transition) DB.transition={};
       if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
       if(!DB.transition.phaseName2) DB.transition.phaseName2='Career Gap';
@@ -4501,81 +4509,49 @@ const STOOQ_TICKERS={
   // XAU handled separately; crypto via CoinGecko
 };
 
-const _PROXIES=[
-  url=>`https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-  url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
-];
+// ══ OPTION A: FAST & SIMPLE ══
+// Stooq.com direct only (instant, fails fast) + optional Alpha Vantage fallback
+// User can add free Alpha Vantage API key in Settings for better coverage
 
-// Stooq CSV parser. Tries direct fetch first (works if Stooq has CORS headers),
-// then falls back through proxies. allorigins wraps body in {contents:"...csv..."}.
-// CSV format: Symbol,Date,Time,Open,High,Low,Close,Volume
+// Direct Stooq fetch — instant for EU instruments, fails fast (< 1s)
 async function _stooqPrice(ticker){
-  const stooqUrl=`https://stooq.com/q/l/?s=${encodeURIComponent(ticker)}&f=sd2t2ohlcv&h&e=csv`;
-
-  async function _parseCsvText(txt){
-    const rows=txt.trim().split('\n');
-    if(rows.length<2) throw new Error('No rows');
-    const cols=rows[1].split(',');
-    const close=parseFloat(cols[6]);
-    if(!close||close<=0||isNaN(close)) throw new Error(`No data (${cols[6]||'empty'})`);
-    return close;
-  }
-
-  // Attempt 1: direct (Stooq supports CORS for most clients)
-  try{
-    const r=await fetch(stooqUrl);
-    if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    return await _parseCsvText(await r.text());
-  }catch(e){}
-
-  // Attempts 2-3: via CORS proxies (corsproxy & allorigins)
-  // corsproxy returns the CSV as-is; allorigins wraps in {contents:"..."}
-  for(const makeProxy of _PROXIES){
-    try{
-      const r=await fetch(makeProxy(stooqUrl));
-      if(!r.ok) throw new Error(`HTTP ${r.status}`);
-      const raw=await r.json();
-      const csvTxt=raw?.contents??JSON.stringify(raw);
-      return await _parseCsvText(csvTxt);
-    }catch(e){}
-  }
-  throw new Error('Stooq: all attempts failed');
+  const r=await fetch(`https://stooq.com/q/l/?s=${encodeURIComponent(ticker)}&f=sd2t2ohlcv&h&e=csv`);
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  const rows=(await r.text()).trim().split('\n');
+  if(rows.length<2) throw new Error('No rows');
+  const close=parseFloat(rows[1].split(',')[6]);
+  if(!close||close<=0) throw new Error('N/A');
+  return close;
 }
 
-async function _yahooPrice(ticker){
-  const target=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
-  let lastErr;
-  for(const makeUrl of _PROXIES){
-    try{
-      const r=await fetch(makeUrl(target));
-      if(!r.ok) throw new Error(`HTTP ${r.status}`);
-      const raw=await r.json();
-      const d=raw.contents?JSON.parse(raw.contents):raw;
-      const meta=d?.chart?.result?.[0]?.meta;
-      if(!meta) throw new Error('No meta');
-      const p=meta.regularMarketPrice??meta.chartPreviousClose;
-      if(!p||p===0) throw new Error('Zero price');
-      return p;
-    }catch(e){ lastErr=e; }
-  }
-  throw lastErr||new Error('Yahoo failed');
+// Optional: Alpha Vantage (user adds free API key in Tax Settings)
+// Free: 5 calls/min, perfect for manual updates. Get key: alphavantage.co
+async function _alphaVantagePrice(ticker,apiKey){
+  const r=await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${apiKey}`);
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  const d=await r.json();
+  const p=parseFloat(d?.['Global Quote']?.['05. price']||0);
+  if(!p||p<=0) throw new Error('No price');
+  return p;
 }
 
-// Stooq first (better EU coverage), then Yahoo proxy fallback.
-// Returns {price, source, error} for diagnostics.
+// Stooq first (instant). Fallback: Alpha Vantage if user configured API key.
 async function _fetchInstPrice(instId){
   const stooqT=STOOQ_TICKERS[instId];
+  const apiKey=(DB.taxSettings||{}).alphaVantageKey;
   const yahooT=(DB.priceTickers||{})[instId];
-  const errors=[];
+
+  // 1. Try Stooq (instant for what it has)
   if(stooqT){
-    try{ return await _stooqPrice(stooqT); }
-    catch(e){ errors.push(`Stooq(${stooqT}): ${e.message}`); }
+    try{ return await _stooqPrice(stooqT); }catch(e){}
   }
-  if(yahooT&&yahooT!=='XAU'){
-    try{ return await _yahooPrice(yahooT); }
-    catch(e){ errors.push(`Yahoo(${yahooT}): ${e.message}`); }
+
+  // 2. Fallback: Alpha Vantage (if user configured API key)
+  if(apiKey&&yahooT&&yahooT!=='XAU'){
+    try{ return await _alphaVantagePrice(yahooT,apiKey); }catch(e){}
   }
-  throw new Error(errors.join(' | ')||'No ticker');
+
+  throw new Error(`No data (${stooqT||yahooT})`);
 }
 
 async function _geckoPrice(coinId){
@@ -4626,9 +4602,25 @@ async function fetchLivePrices(silent=false){
     }
   }
 
-  // ── 3. All other instruments: Stooq → Yahoo fallback (parallel) ──
+  // ── 3. All other instruments: Try Alpha Vantage with updated tickers ──
   const nonCryptoInsts=targets.filter(i=>!GECKO_IDS[(DB.priceTickers||{})[i.id]]&&(DB.priceTickers||{})[i.id]!=='XAU');
-  const instResults=await Promise.allSettled(nonCryptoInsts.map(i=>_fetchInstPrice(i.id)));
+  const apiKey=(DB.taxSettings||{}).alphaVantageKey;
+  const instResults=await Promise.allSettled(nonCryptoInsts.map(async i=>{
+    const ticker=DB.priceTickers[i.id];
+    if(!ticker) throw new Error('No ticker');
+    // Try Alpha Vantage with the updated ticker (IESE.AS, REMX, etc.)
+    if(apiKey){
+      try{
+        const r=await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${apiKey}`);
+        if(r.ok){
+          const data=await r.json();
+          const price=parseFloat(data?.['Global Quote']?.['05. price']);
+          if(price>0) return price;
+        }
+      }catch(e){}
+    }
+    throw new Error('No price available');
+  }));
 
   // ── Apply results ──
   let updated=0, failed=[];
@@ -4854,8 +4846,9 @@ function saveTaxSettings(){
   const btwEnabled=document.getElementById('tax_btwEnabled')?.checked||false;
   const btwRate=parseFloat(document.getElementById('tax_btwRate')?.value)||21;
   const nlDivBelasting=parseFloat(document.getElementById('tax_nlDivBelasting')?.value)||0;
+  const alphaVantageKey=(document.getElementById('tax_alphaVantageKey')?.value||'').trim();
   const prevSelectedYear=DB.taxSettings?.selectedYear;
-  DB.taxSettings={selectedYear:prevSelectedYear,dividendWithholdingRate:dr,capitalGainsRate:cr,box3SavingsRate:savRate,box3InvRate:invRate,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2,loonheffing,nlDividendbelasting:nlDivBelasting,entrepreneurDeductionsEnabled:zzpEnabled,zelfstandigenaftrek:zzpDed,startersaftrekEnabled:starterEnabled,startersaftrek:starterDed,mkbVrijstelling:mkbPct,korThreshold:korThr,btwEnabled,btwRate};
+  DB.taxSettings={selectedYear:prevSelectedYear,dividendWithholdingRate:dr,capitalGainsRate:cr,box3SavingsRate:savRate,box3InvRate:invRate,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2,loonheffing,nlDividendbelasting:nlDivBelasting,entrepreneurDeductionsEnabled:zzpEnabled,zelfstandigenaftrek:zzpDed,startersaftrekEnabled:starterEnabled,startersaftrek:starterDed,mkbVrijstelling:mkbPct,korThreshold:korThr,btwEnabled,btwRate,alphaVantageKey};
   saveDB(); renderTaxTab(); refreshAll();
 }
 function toggleTaxGuide(){
@@ -4986,6 +4979,8 @@ function renderTaxTab(){
   if(loonheffingEl) loonheffingEl.value=rec.loonheffing||DB.taxSettings?.loonheffing||0;
   const nlDivEl=document.getElementById('tax_nlDivBelasting');
   if(nlDivEl) nlDivEl.value=rec.nlDividendbelasting!=null?rec.nlDividendbelasting:(DB.taxSettings?.nlDividendbelasting||0);
+  const alphaKeyEl=document.getElementById('tax_alphaVantageKey');
+  if(alphaKeyEl) alphaKeyEl.value=DB.taxSettings?.alphaVantageKey||'';
   const b1El=document.getElementById('tax_box1Rate');
   const b2El=document.getElementById('tax_box2Rate');
   if(b1El) b1El.value=DB.taxSettings?.box1EffectiveRate??0;
@@ -6507,11 +6502,12 @@ async function gistFetch(){
     if(DB.taxSettings.btwEnabled===undefined) DB.taxSettings.btwEnabled=false;
     if(DB.taxSettings.btwRate===undefined) DB.taxSettings.btwRate=21;
     if(DB.taxSettings.nlDividendbelasting===undefined) DB.taxSettings.nlDividendbelasting=0;
+    if(DB.taxSettings.alphaVantageKey===undefined) DB.taxSettings.alphaVantageKey='';
     if(!DB.taxRecords) DB.taxRecords={};
     if(!DB.taxRecords[2023]||DB.taxRecords[2023].income===0) DB.taxRecords[2023]={income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'};
     if(!DB.taxRecords[2024]||DB.taxRecords[2024].income===0) DB.taxRecords[2024]={income:82744,loonheffing:28761,nlDividendbelasting:67,ibBruto:20960,arbeidskorting:2747,algHeffingskorting:0,pvv:10534,box3TaxFiled:298,teBetalen:217,status:'pending',notes:'Provisional assessment 13 Jun 2025 — definitive assessment still pending.'};
     if(!DB.taxRecords[2025]||!('pvv' in (DB.taxRecords[2025]||{}))) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''};
-    if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.DE',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX.DE',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
+    if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.AS',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
     if(!DB.settings) DB.settings={currency:'€',country:''};
     if(DB.settings.fiTarget===undefined) DB.settings.fiTarget=0;
     if(!DB.settings.actualsStartDate) DB.settings.actualsStartDate=new Date().toISOString().slice(0,10);
