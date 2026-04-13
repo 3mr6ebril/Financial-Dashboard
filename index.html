@@ -377,6 +377,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       <button class="settings-btn" id="settingsMenuBtn" onclick="toggleSettingsMenu()">⚙️ Settings <span class="arrow">▾</span></button>
       <div class="settings-menu" id="settingsMenu">
         <button class="sm-item" onclick="openCloudSync()">☁️ Cloud Sync</button>
+        <button class="sm-item" onclick="openModal('priceSettingsModal');populatePriceSettings();closeSettingsMenu()">🌐 Price Settings</button>
         <button class="sm-item" onclick="openInstModal();closeSettingsMenu()">⚙ Manage Instruments</button>
         <button class="sm-item" onclick="openModal('historyModal');closeSettingsMenu()">📋 Transaction History</button>
         <label class="sm-item sm-sep" style="cursor:pointer">📥 Import<input type="file" accept=".json" onchange="importDB(event);closeSettingsMenu()" style="display:none"></label>
@@ -954,12 +955,6 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
             oninput="saveTaxSettings()" style="margin-top:6px">
           <div class="t2" style="font-size:11px;margin-top:4px">Dutch dividend <span title="Voorheffing — withholding tax deducted at source" style="cursor:help;border-bottom:1px dotted var(--txt2)">voorheffing</span> from ING statements. Separate from foreign WHT below.</div>
         </div>
-        <div>
-          <label class="ts-lbl" title="Free API key from alphavantage.co for stock/ETF prices. 5 calls/min limit. Stooq used first.">Alpha Vantage API Key (optional)</label>
-          <input class="ts-inp" type="text" id="tax_alphaVantageKey" value=""
-            oninput="saveTaxSettings()" style="margin-top:6px;font-family:monospace;font-size:12px">
-          <div class="t2" style="font-size:11px;margin-top:4px">Optional: Get free key from <a href="https://www.alphavantage.co/api/" target="_blank" style="color:var(--link)">alphavantage.co</a>. Used as fallback when Stooq price fetch fails. Limit: 5 calls/min.</div>
-        </div>
       </div>
       <!-- Entrepreneur Deductions -->
       <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bdr)">
@@ -1286,6 +1281,45 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <button class="btn btn-sm" style="background:var(--err-l);color:var(--err);border:1.5px solid #FECACA;font-size:12px" onclick="hardReset()">↺ Factory Reset</button>
         <div style="font-size:11px;color:var(--txt2);margin-top:6px">Clears all data and restarts the setup wizard. Cannot be undone.</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="priceSettingsModal">
+  <div class="modal" style="max-width:600px;width:95%">
+    <div class="mhdr">
+      <span class="mtitle">🌐 Price Fetching Settings</span>
+      <button class="xbtn" onclick="closeModal('priceSettingsModal')">✕</button>
+    </div>
+    <div style="padding:20px 24px 24px">
+      <div style="margin-bottom:20px">
+        <label class="ts-lbl" style="display:block;margin-bottom:8px">Alpha Vantage API Key (for Stocks & ETFs)</label>
+        <input class="ts-inp" type="password" id="priceSettings_apiKey" placeholder="Paste your Alpha Vantage API key"
+          style="margin-bottom:8px;font-family:monospace;font-size:12px">
+        <div class="t2" style="font-size:11px;line-height:1.6">
+          <strong>Get a free API key:</strong><br>
+          1. Visit <a href="https://www.alphavantage.co/support/#api-key" target="_blank" style="color:var(--link)">alphavantage.co/support/#api-key</a><br>
+          2. Takes ~20 seconds, no credit card required<br>
+          3. You'll receive the key by email<br>
+          4. Paste it above — saves automatically<br>
+          <br>
+          <strong>Rate limit:</strong> 5 API calls/minute (free tier). The fetch will queue requests automatically.
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--bdr);padding-top:16px;margin-top:16px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px">
+          <input type="checkbox" id="priceSettings_autoFetch" checked>
+          <span>Auto-fetch prices if older than 6 hours</span>
+        </label>
+        <div class="t2" style="font-size:11px;margin-top:8px;margin-left:28px">
+          On page load, if any price hasn't been updated in 6+ hours, automatically fetch fresh prices.
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--bdr);padding-top:16px;margin-top:16px;display:flex;gap:10px">
+        <button class="btn btn-g" onclick="savePriceApiSettings()">💾 Save Settings</button>
+        <button class="btn btn-o btn-sm" onclick="testAlphaVantageKey()">🧪 Test Connection</button>
+      </div>
+      <div id="priceSettings_status" style="font-size:12px;margin-top:12px;display:none;padding:10px;border-radius:var(--rs);background:var(--ok-l);color:var(--ok)"></div>
     </div>
   </div>
 </div>
@@ -1986,7 +2020,7 @@ function getDefaults(){
     taxSettings:{dividendWithholdingRate:15,capitalGainsRate:36,box3SavingsRate:1.37,box3InvRate:5.88,box3Allowance:57684,box1EffectiveRate:0,box2Rate:26.9,loonheffing:0,entrepreneurDeductionsEnabled:false,zelfstandigenaftrek:2470,startersaftrekEnabled:false,startersaftrek:2123,mkbVrijstelling:12.7,korThreshold:20000,btwEnabled:false,btwRate:21,alphaVantageKey:''},
     lastPriceUpdateDate:{},
     transition:JSON.parse(JSON.stringify(DEFAULT_TRANSITION)),
-    settings:{currency:'€',country:'',fiTarget:0,actualsStartDate:new Date().toISOString().slice(0,10)},
+    settings:{currency:'€',country:'',fiTarget:0,actualsStartDate:new Date().toISOString().slice(0,10),autoFetchStale:true},
     netWorthHistory:[],
     liabilities:[],
     businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES)),
@@ -2057,6 +2091,7 @@ function loadDB(){
         if(!DB.settings) DB.settings={currency:'€',country:''};
         if(DB.settings.fiTarget===undefined) DB.settings.fiTarget=0;
         if(!DB.settings.actualsStartDate) DB.settings.actualsStartDate=new Date().toISOString().slice(0,10);
+        if(DB.settings.autoFetchStale===undefined) DB.settings.autoFetchStale=true;
         if(!DB.netWorthHistory) DB.netWorthHistory=[];
         if(!DB.liabilities) DB.liabilities=[];
         if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
@@ -2456,6 +2491,7 @@ function importDB(event){
       if(!DB.settings) DB.settings={currency:'€',country:''};
       if(DB.settings.fiTarget===undefined) DB.settings.fiTarget=0;
       if(!DB.settings.actualsStartDate) DB.settings.actualsStartDate=new Date().toISOString().slice(0,10);
+      if(DB.settings.autoFetchStale===undefined) DB.settings.autoFetchStale=true;
       if(!DB.netWorthHistory) DB.netWorthHistory=[];
       if(!DB.liabilities) DB.liabilities=[];
       if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
@@ -3894,6 +3930,69 @@ function openCloudSync(){
   openModal('cloudSyncModal');
   updateSyncUI();
 }
+function populatePriceSettings(){
+  const keyEl=document.getElementById('priceSettings_apiKey');
+  const autoEl=document.getElementById('priceSettings_autoFetch');
+  if(keyEl) keyEl.value=DB.taxSettings?.alphaVantageKey||'';
+  if(autoEl) autoEl.checked=DB.settings?.autoFetchStale!==false;
+}
+function savePriceApiSettings(){
+  const keyEl=document.getElementById('priceSettings_apiKey');
+  const autoEl=document.getElementById('priceSettings_autoFetch');
+  const statusEl=document.getElementById('priceSettings_status');
+  const key=(keyEl?.value||'').trim();
+  const autoFetch=autoEl?.checked??true;
+  DB.taxSettings.alphaVantageKey=key;
+  DB.settings.autoFetchStale=autoFetch;
+  saveDB();
+  if(statusEl){
+    statusEl.textContent='✅ Settings saved!';
+    statusEl.style.display='block';
+    setTimeout(()=>statusEl.style.display='none',3000);
+  }
+}
+async function testAlphaVantageKey(){
+  const keyEl=document.getElementById('priceSettings_apiKey');
+  const statusEl=document.getElementById('priceSettings_status');
+  const key=(keyEl?.value||'').trim();
+  if(!key){
+    if(statusEl){
+      statusEl.textContent='⚠️ Please enter an API key first';
+      statusEl.style.display='block';
+      statusEl.style.background='var(--wrn-l)'; statusEl.style.color='var(--wrn)';
+    }
+    return;
+  }
+  if(statusEl){
+    statusEl.textContent='🔄 Testing...';
+    statusEl.style.display='block';
+    statusEl.style.background='var(--pri-l)'; statusEl.style.color='var(--pri)';
+  }
+  try{
+    const r=await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=${encodeURIComponent(key)}`);
+    const d=await r.json();
+    const p=d?.['Global Quote']?.['05. price'];
+    if(p && p>0){
+      if(statusEl){
+        statusEl.textContent=`✅ Success! AAPL price: $${p}`;
+        statusEl.style.display='block';
+        statusEl.style.background='var(--ok-l)'; statusEl.style.color='var(--ok)';
+      }
+    } else {
+      if(statusEl){
+        statusEl.textContent='❌ API key invalid or rate limited — try again in a minute';
+        statusEl.style.display='block';
+        statusEl.style.background='var(--err-l)'; statusEl.style.color='var(--err)';
+      }
+    }
+  } catch(e){
+    if(statusEl){
+      statusEl.textContent='❌ Network error: '+e.message;
+      statusEl.style.display='block';
+      statusEl.style.background='var(--err-l)'; statusEl.style.color='var(--err)';
+    }
+  }
+}
 function jumpToHoldings(cat){
   activeCategory=cat; activeSectorFilter=null; activeRegionFilter=null;
   updateFilterChips(); switchTabByName('holdings');
@@ -4552,23 +4651,23 @@ async function _alphaVantagePrice(ticker,apiKey){
   return p;
 }
 
-// Stooq first (instant). Fallback: Alpha Vantage if user configured API key.
+// Alpha Vantage PRIMARY (CORS-compliant). Stooq fallback for commodities.
 async function _fetchInstPrice(instId){
-  const stooqT=STOOQ_TICKERS[instId];
   const apiKey=(DB.taxSettings||{}).alphaVantageKey;
   const yahooT=(DB.priceTickers||{})[instId];
+  const stooqT=STOOQ_TICKERS[instId];
 
-  // 1. Try Stooq (instant for what it has)
-  if(stooqT){
-    try{ return await _stooqPrice(stooqT); }catch(e){}
-  }
-
-  // 2. Fallback: Alpha Vantage (if user configured API key)
+  // 1. PRIMARY: Alpha Vantage (CORS-enabled, requires API key)
   if(apiKey&&yahooT&&yahooT!=='XAU'){
     try{ return await _alphaVantagePrice(yahooT,apiKey); }catch(e){}
   }
 
-  throw new Error(`No data (${stooqT||yahooT})`);
+  // 2. Fallback: Stooq (for commodities/currencies without API key)
+  if(stooqT){
+    try{ return await _stooqPrice(stooqT); }catch(e){}
+  }
+
+  throw new Error(`No price source (${yahooT||stooqT})`);
 }
 
 async function _geckoPrice(coinId){
@@ -4584,13 +4683,21 @@ const GECKO_IDS={BTC:'bitcoin',ETH:'ethereum',SOL:'solana'};
 
 async function fetchLivePrices(silent=false){
   const btn=document.getElementById('fetchPricesBtn');
-  if(btn){btn.disabled=true;btn.textContent='⏳ Fetching…';}
+  const apiKey=DB.taxSettings?.alphaVantageKey;
+  if(!apiKey&&!silent){
+    notify('⚠️ Alpha Vantage API key not configured — see Settings → Price Settings');
+    return;
+  }
+
+  if(btn) btn.disabled=true;
   const pos=getPositions();
   const today=new Date().toISOString().slice(0,10);
   if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
 
   // All non-Cash instruments with a position
   const targets=DB.instruments.filter(i=>pos[i.id]&&i.category!=='Cash');
+  const failDetails=[];
+  let updated=0;
 
   // ── 1. Batch CoinGecko for crypto (one request) ──
   const cryptoInsts=targets.filter(i=>GECKO_IDS[(DB.priceTickers||{})[i.id]]);
@@ -4598,51 +4705,54 @@ async function fetchLivePrices(silent=false){
   if(cryptoInsts.length){
     const ids=[...new Set(cryptoInsts.map(i=>GECKO_IDS[DB.priceTickers[i.id]]))].join(',');
     try{
+      if(btn) btn.textContent='🌐 Fetching crypto…';
       const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=eur`);
       if(r.ok) geckoData=await r.json();
     }catch(e){ console.warn('CoinGecko failed',e); }
   }
 
-  // ── 2. XAU: Stooq xauusd ÷ eurusd ──
-  let xauEur=null;
-  const xauInst=targets.find(i=>(DB.priceTickers||{})[i.id]==='XAU');
-  if(xauInst){
+  // ── 2. Non-crypto, non-gold: Alpha Vantage with rate limiting (5 calls/min) ──
+  const nonCryptoNonGold=targets.filter(i=>!GECKO_IDS[(DB.priceTickers||{})[i.id]]&&(DB.priceTickers||{})[i.id]!=='XAU');
+  const instResults=new Map(); // instId -> {status, value, reason}
+  const RATE_LIMIT_MS=200; // 5 calls/min ≈ 1 call per 200ms
+  const BATCH_SIZE=1;
+
+  for(let i=0;i<nonCryptoNonGold.length;i++){
+    const inst=nonCryptoNonGold[i];
+    const current=i+1;
+    const total=nonCryptoNonGold.length;
+    if(btn) btn.textContent=`🌐 Fetching ${current}/${total}…`;
+
     try{
-      const [xauUsd,eurUsd]=await Promise.all([_stooqPrice('xauusd'),_stooqPrice('eurusd')]);
-      xauEur=xauUsd/eurUsd;
-    }catch(e){
-      // fallback to Yahoo futures
-      try{
-        const [gUsd,fx]=await Promise.all([_yahooPrice('GC=F'),_yahooPrice('EURUSD=X')]);
-        xauEur=gUsd/fx;
-      }catch(e2){ console.warn('XAU all sources failed',e2); }
+      const price=await _fetchInstPrice(inst.id);
+      instResults.set(inst.id,{status:'fulfilled',value:price});
+      console.log(`✅ ${inst.ticker} (${inst.name}): €${price.toFixed(2)}`);
+    } catch(e){
+      const reason=e.message||'unknown error';
+      instResults.set(inst.id,{status:'rejected',reason});
+      console.warn(`❌ ${inst.ticker} (${inst.name}): ${reason}`);
+      failDetails.push({ticker:inst.ticker, name:inst.name, reason});
+    }
+
+    // Rate limiting: wait between requests
+    if(i<nonCryptoNonGold.length-1){
+      if(btn) btn.textContent=`⏸ Waiting… ${current}/${total} (rate limit)`;
+      await new Promise(r=>setTimeout(r,RATE_LIMIT_MS));
     }
   }
 
-  // ── 3. All other instruments: Stooq direct first → Alpha Vantage fallback (parallel) ──
-  const nonCryptoInsts=targets.filter(i=>!GECKO_IDS[(DB.priceTickers||{})[i.id]]&&(DB.priceTickers||{})[i.id]!=='XAU');
-  const instResults=await Promise.allSettled(nonCryptoInsts.map(i=>_fetchInstPrice(i.id)));
-
-  // ── Apply results ──
-  let updated=0, failed=[];
-
-  const failDetails=[]; // {ticker, name, reason}
-
-  nonCryptoInsts.forEach((inst,idx)=>{
-    const res=instResults[idx];
-    if(res.status==='fulfilled'&&res.value>0){
+  // ── Apply stock/ETF results ──
+  nonCryptoNonGold.forEach(inst=>{
+    const res=instResults.get(inst.id);
+    if(res?.status==='fulfilled'&&res.value>0){
       snapshotPrice(inst.id, DB.prices[inst.id]||res.value);
       DB.prices[inst.id]=res.value;
       DB.lastPriceUpdateDate[inst.id]=today;
       updated++;
-      console.log(`✅ ${inst.ticker} (${inst.name}): €${res.value.toFixed(2)}`);
-    } else {
-      const reason=res.reason?.message||String(res.reason||'unknown');
-      console.warn(`❌ ${inst.ticker} (${inst.name}): ${reason}`);
-      failDetails.push({ticker:inst.ticker, name:inst.name, reason});
     }
   });
 
+  // ── 3. Crypto: apply CoinGecko results ──
   cryptoInsts.forEach(inst=>{
     const p=geckoData?.[GECKO_IDS[DB.priceTickers[inst.id]]]?.eur;
     if(p){
@@ -4655,28 +4765,23 @@ async function fetchLivePrices(silent=false){
     }
   });
 
+  // ── 4. Gold: manual update only ──
+  const xauInst=targets.find(i=>(DB.priceTickers||{})[i.id]==='XAU');
   if(xauInst){
-    if(xauEur&&xauEur>0){
-      snapshotPrice(xauInst.id, DB.prices[xauInst.id]||xauEur);
-      DB.prices[xauInst.id]=xauEur; DB.lastPriceUpdateDate[xauInst.id]=today; updated++;
-      console.log(`✅ XAU (Physical Gold): €${xauEur.toFixed(2)}/troy oz`);
-    } else {
-      console.warn(`❌ XAU: both Stooq and Yahoo failed`);
-      failDetails.push({ticker:'XAU', name:'Physical Gold Coins', reason:'Stooq xauusd and Yahoo GC=F both failed'});
-    }
+    if(!silent) failDetails.push({ticker:'XAU', name:'Physical Gold Coins', reason:'Manual update — edit holdings table'});
   }
 
   const now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   document.getElementById('lastUpd').textContent='Last updated: '+now;
   saveDB(); refreshAll();
-  if(btn){btn.disabled=false;btn.textContent='🌐 Fetch Live Prices';}
+  if(btn){ btn.disabled=false; btn.textContent='🌐 Fetch Live Prices'; }
 
   if(!silent){
     if(failDetails.length){
-      console.group(`⚠️ ${failDetails.length} prices failed to update:`);
-      failDetails.forEach(f=>console.warn(` • ${f.ticker} — ${f.name}\n   Reason: ${f.reason}`));
+      console.group(`📊 Fetch Results: ${updated} updated`);
+      failDetails.forEach(f=>console.info(` • ${f.ticker} — ${f.name}\n   ${f.reason}`));
       console.groupEnd();
-      notify(`✅ ${updated} updated · ⚠️ ${failDetails.length} failed — see console (F12)`);
+      notify(`✅ ${updated} updated · ℹ️ ${failDetails.length} skipped/failed`);
     } else {
       notify(`✅ All ${updated} prices updated`);
     }
@@ -4685,7 +4790,7 @@ async function fetchLivePrices(silent=false){
 
 // Auto-fetch on load if any price is older than 6 hours
 function autoFetchPricesIfStale(){
-  if(!DB.lastPriceUpdateDate) return;
+  if(!DB.lastPriceUpdateDate||DB.settings?.autoFetchStale===false) return;
   const SIX_HOURS=6*60*60*1000;
   const now=Date.now();
   const hasStale=DB.instruments.some(i=>{
@@ -4847,9 +4952,9 @@ function saveTaxSettings(){
   const btwEnabled=document.getElementById('tax_btwEnabled')?.checked||false;
   const btwRate=parseFloat(document.getElementById('tax_btwRate')?.value)||21;
   const nlDivBelasting=parseFloat(document.getElementById('tax_nlDivBelasting')?.value)||0;
-  const alphaVantageKey=(document.getElementById('tax_alphaVantageKey')?.value||'').trim();
   const prevSelectedYear=DB.taxSettings?.selectedYear;
-  DB.taxSettings={selectedYear:prevSelectedYear,dividendWithholdingRate:dr,capitalGainsRate:cr,box3SavingsRate:savRate,box3InvRate:invRate,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2,loonheffing,nlDividendbelasting:nlDivBelasting,entrepreneurDeductionsEnabled:zzpEnabled,zelfstandigenaftrek:zzpDed,startersaftrekEnabled:starterEnabled,startersaftrek:starterDed,mkbVrijstelling:mkbPct,korThreshold:korThr,btwEnabled,btwRate,alphaVantageKey};
+  const prevAlphaKey=DB.taxSettings?.alphaVantageKey||'';
+  DB.taxSettings={selectedYear:prevSelectedYear,dividendWithholdingRate:dr,capitalGainsRate:cr,box3SavingsRate:savRate,box3InvRate:invRate,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2,loonheffing,nlDividendbelasting:nlDivBelasting,entrepreneurDeductionsEnabled:zzpEnabled,zelfstandigenaftrek:zzpDed,startersaftrekEnabled:starterEnabled,startersaftrek:starterDed,mkbVrijstelling:mkbPct,korThreshold:korThr,btwEnabled,btwRate,alphaVantageKey:prevAlphaKey};
   saveDB(); renderTaxTab(); refreshAll();
 }
 function toggleTaxGuide(){
@@ -4980,8 +5085,6 @@ function renderTaxTab(){
   if(loonheffingEl) loonheffingEl.value=rec.loonheffing||DB.taxSettings?.loonheffing||0;
   const nlDivEl=document.getElementById('tax_nlDivBelasting');
   if(nlDivEl) nlDivEl.value=rec.nlDividendbelasting!=null?rec.nlDividendbelasting:(DB.taxSettings?.nlDividendbelasting||0);
-  const alphaKeyEl=document.getElementById('tax_alphaVantageKey');
-  if(alphaKeyEl) alphaKeyEl.value=DB.taxSettings?.alphaVantageKey||'';
   const b1El=document.getElementById('tax_box1Rate');
   const b2El=document.getElementById('tax_box2Rate');
   if(b1El) b1El.value=DB.taxSettings?.box1EffectiveRate??0;
@@ -6514,6 +6617,7 @@ async function gistFetch(){
     if(!DB.settings) DB.settings={currency:'€',country:''};
     if(DB.settings.fiTarget===undefined) DB.settings.fiTarget=0;
     if(!DB.settings.actualsStartDate) DB.settings.actualsStartDate=new Date().toISOString().slice(0,10);
+    if(DB.settings.autoFetchStale===undefined) DB.settings.autoFetchStale=true;
     if(!DB.netWorthHistory) DB.netWorthHistory=[];
     if(!DB.liabilities) DB.liabilities=[];
     if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
