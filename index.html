@@ -1293,17 +1293,14 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     </div>
     <div style="padding:20px 24px 24px">
       <div style="margin-bottom:20px">
-        <label class="ts-lbl" style="display:block;margin-bottom:8px">Alpha Vantage API Key (for Stocks & ETFs)</label>
-        <input class="ts-inp" type="password" id="priceSettings_apiKey" placeholder="Paste your Alpha Vantage API key"
+        <label class="ts-lbl" style="display:block;margin-bottom:8px">API Key for Stock Prices (Tiingo Recommended)</label>
+        <input class="ts-inp" type="password" id="priceSettings_apiKey" placeholder="Paste your API key"
           style="margin-bottom:8px;font-family:monospace;font-size:12px">
         <div class="t2" style="font-size:11px;line-height:1.6">
-          <strong>Get a free API key:</strong><br>
-          1. Visit <a href="https://www.alphavantage.co/support/#api-key" target="_blank" style="color:var(--link)">alphavantage.co/support/#api-key</a><br>
-          2. Takes ~20 seconds, no credit card required<br>
-          3. You'll receive the key by email<br>
-          4. Paste it above — saves automatically<br>
+          <strong>Recommended:</strong> <a href="https://tiingo.com/account/api/token" target="_blank" style="color:var(--link)"><strong>Tiingo</strong></a> (5000 requests/day, instant signup)<br>
+          <strong>Alternative:</strong> <a href="https://www.alphavantage.co/support/#api-key" target="_blank" style="color:var(--link)">Alpha Vantage</a> (25 requests/day, email delivery)<br>
           <br>
-          <strong>Rate limit:</strong> 5 API calls/minute (free tier). The fetch will queue requests automatically.
+          The system will try Tiingo first (much higher limit), then Alpha Vantage as fallback.
         </div>
       </div>
       <div style="border-top:1px solid var(--bdr);padding-top:16px;margin-top:16px">
@@ -3964,30 +3961,62 @@ async function testAlphaVantageKey(){
     return;
   }
   if(statusEl){
-    statusEl.textContent='🔄 Testing...';
+    statusEl.textContent='🔄 Testing Tiingo...';
     statusEl.style.display='block';
     statusEl.style.background='var(--pri-l)'; statusEl.style.color='var(--pri)';
   }
   try{
-    const r=await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=${encodeURIComponent(key)}`);
-    const d=await r.json();
-    const p=d?.['Global Quote']?.['05. price'];
-    if(p && p>0){
+    // Try Tiingo first (5000/day, much better than Alpha Vantage 25/day)
+    console.log('Testing Tiingo with key:', key.substring(0,4)+'...');
+    const tiingoUrl=`https://api.tiingo.com/tiingo/daily/AAPL/prices?token=${encodeURIComponent(key)}&limit=1`;
+    console.log('Tiingo URL:', tiingoUrl);
+    const rTiingo=await fetch(tiingoUrl);
+    console.log('Tiingo response status:', rTiingo.status);
+
+    if(rTiingo.ok){
+      const dTiingo=await rTiingo.json();
+      console.log('Tiingo response:', dTiingo);
+      if(Array.isArray(dTiingo)&&dTiingo.length>0){
+        const p=parseFloat(dTiingo[0]?.close||0);
+        if(p&&p>0){
+          if(statusEl){
+            statusEl.textContent=`✅ Tiingo OK: AAPL $${p} (5000/day)`;
+            statusEl.style.display='block';
+            statusEl.style.background='var(--ok-l)'; statusEl.style.color='var(--ok)';
+          }
+          return;
+        }
+      }
+    }
+
+    // Fallback: Try Alpha Vantage
+    console.log('Tiingo failed, trying Alpha Vantage...');
+    const avUrl=`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=${encodeURIComponent(key)}`;
+    const rAV=await fetch(avUrl);
+    const dAV=await rAV.json();
+    console.log('Alpha Vantage response:', dAV);
+
+    if(dAV?.['Note']) throw new Error('Rate limited: '+dAV['Note']);
+    if(dAV?.['Error Message']) throw new Error(dAV['Error Message']);
+    if(dAV?.['Information']) throw new Error(dAV['Information']);
+
+    const quote=dAV?.['Global Quote'];
+    if(!quote) throw new Error('Neither API returned valid price');
+
+    const p=parseFloat(quote['05. price']||0);
+    if(p&&p>0){
       if(statusEl){
-        statusEl.textContent=`✅ Success! AAPL price: $${p}`;
+        statusEl.textContent=`✅ Alpha Vantage OK: AAPL $${p} (25/day)`;
         statusEl.style.display='block';
         statusEl.style.background='var(--ok-l)'; statusEl.style.color='var(--ok)';
       }
-    } else {
-      if(statusEl){
-        statusEl.textContent='❌ API key invalid or rate limited — try again in a minute';
-        statusEl.style.display='block';
-        statusEl.style.background='var(--err-l)'; statusEl.style.color='var(--err)';
-      }
+      return;
     }
+    throw new Error('Invalid price');
   } catch(e){
+    console.error('❌ Test failed:', e.message);
     if(statusEl){
-      statusEl.textContent='❌ Network error: '+e.message;
+      statusEl.textContent='❌ '+e.message;
       statusEl.style.display='block';
       statusEl.style.background='var(--err-l)'; statusEl.style.color='var(--err)';
     }
@@ -4640,34 +4669,55 @@ async function _stooqPrice(ticker){
   return close;
 }
 
-// Optional: Alpha Vantage (user adds free API key in Tax Settings)
-// Free: 5 calls/min, perfect for manual updates. Get key: alphavantage.co
+// Alpha Vantage (primary): 5 calls/min, free tier. Get key: alphavantage.co
 async function _alphaVantagePrice(ticker,apiKey){
   const r=await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${apiKey}`);
   if(!r.ok) throw new Error(`HTTP ${r.status}`);
   const d=await r.json();
+  if(d?.['Note']) throw new Error('Rate limited: '+d['Note']);
+  if(d?.['Error Message']) throw new Error(d['Error Message']);
   const p=parseFloat(d?.['Global Quote']?.['05. price']||0);
-  if(!p||p<=0) throw new Error('No price');
+  if(!p||p<=0) throw new Error('No price in response');
   return p;
 }
 
-// Alpha Vantage PRIMARY (CORS-compliant). Stooq fallback for commodities.
+// Tiingo (fallback): 5000 calls/day, free tier. Get key: tiingo.com/account/api/token
+async function _tiingoPrice(ticker,apiKey){
+  const r=await fetch(`https://api.tiingo.com/tiingo/daily/${encodeURIComponent(ticker)}/prices?token=${apiKey}&limit=1`);
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  const d=await r.json();
+  if(!Array.isArray(d)||d.length===0) throw new Error('No price data');
+  const p=parseFloat(d[0]?.close||0);
+  if(!p||p<=0) throw new Error('No close price');
+  return p;
+}
+
+// Try multiple sources: Tiingo (primary, 5000/day) → Alpha Vantage (fallback, 25/day) → Stooq (last resort)
 async function _fetchInstPrice(instId){
   const apiKey=(DB.taxSettings||{}).alphaVantageKey;
   const yahooT=(DB.priceTickers||{})[instId];
   const stooqT=STOOQ_TICKERS[instId];
+  const errors=[];
 
-  // 1. PRIMARY: Alpha Vantage (CORS-enabled, requires API key)
+  // 1. PRIMARY: Tiingo (5000 calls/day free, CORS-enabled, no rate limit issues)
   if(apiKey&&yahooT&&yahooT!=='XAU'){
-    try{ return await _alphaVantagePrice(yahooT,apiKey); }catch(e){}
+    try{ return await _tiingoPrice(yahooT,apiKey); }
+    catch(e){ errors.push('Tiingo: '+e.message); }
   }
 
-  // 2. Fallback: Stooq (for commodities/currencies without API key)
+  // 2. FALLBACK: Alpha Vantage (25 calls/day free, CORS-enabled)
+  if(apiKey&&yahooT&&yahooT!=='XAU'){
+    try{ return await _alphaVantagePrice(yahooT,apiKey); }
+    catch(e){ errors.push('Alpha V: '+e.message); }
+  }
+
+  // 3. LAST RESORT: Stooq (for commodities or no API key)
   if(stooqT){
-    try{ return await _stooqPrice(stooqT); }catch(e){}
+    try{ return await _stooqPrice(stooqT); }
+    catch(e){ errors.push('Stooq: '+e.message); }
   }
 
-  throw new Error(`No price source (${yahooT||stooqT})`);
+  throw new Error(`All sources failed: ${errors.join(' | ')}`);
 }
 
 async function _geckoPrice(coinId){
