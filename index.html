@@ -668,162 +668,60 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       </div>
     </div>
 
-      <!-- Editable Settings -->
-      <div class="card">
-        <div class="sec-ttl" style="font-size:11px;margin-bottom:14px">⚙️ Assumptions — Edit with real values when available</div>
-        <!-- Phase name labels -->
-        <div class="g" style="grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px dashed var(--bdr)">
-          <div class="ts-field">
-            <label class="ts-lbl">Phase 1 Label</label>
-            <input class="ts-inp" id="cfg_phaseName1" type="text" placeholder="e.g. Employment Phase" oninput="onTransitionInput('phaseName1',this);refreshPhaseLabels()">
-          </div>
-          <div class="ts-field">
-            <label class="ts-lbl">Phase 2 Label</label>
-            <input class="ts-inp" id="cfg_phaseName2" type="text" placeholder="e.g. Career Gap" oninput="onTransitionInput('phaseName2',this);refreshPhaseLabels()">
-          </div>
-          <div class="ts-field">
-            <label class="ts-lbl">Phase 3 Label</label>
-            <input class="ts-inp" id="cfg_phaseName3" type="text" placeholder="e.g. Benefits Phase" oninput="onTransitionInput('phaseName3',this);refreshPhaseLabels()">
+    <!-- Plan vs Actual -->
+    <div class="section">
+      <div class="sec-hdr">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div class="sec-ttl">📊 Plan vs Actual</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn btn-g btn-sm" onclick="ledgerPrevMonth()">‹</button>
+            <span id="ldgMonthLabel" style="font-size:15px;font-weight:700;min-width:110px;text-align:center">—</span>
+            <button class="btn btn-g btn-sm" onclick="ledgerNextMonth()">›</button>
           </div>
         </div>
-        <div class="g" style="grid-template-columns:repeat(3,1fr);gap:16px">
-          <!-- Phase 1 -->
-          <div>
-            <div id="phaseHdr1" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#2563EB;margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid #BFDBFE">📘 Phase 1</div>
-            <div class="ts-field" style="margin-bottom:8px">
-              <label class="ts-lbl">Monthly Net Salary (€) <span class="badge badge-est" id="est_salary">estimated</span></label>
-              <input class="ts-inp" id="cfg_salary" type="number" placeholder="0" oninput="onTransitionInput('salary',this)">
-            </div>
-            <div class="ts-field" style="margin-bottom:8px">
-              <label class="ts-lbl">Monthly Expenses (€) <span class="badge badge-est" id="est_exp1">estimated</span></label>
-              <input class="ts-inp" id="cfg_exp1" type="number" placeholder="0" oninput="onTransitionInput('exp1',this)">
-            </div>
-            <div class="ts-field" style="margin-bottom:8px">
-              <label class="ts-lbl">Monthly Savings (€) <span class="badge badge-est" id="est_sav1">estimated</span></label>
-              <input class="ts-inp" id="cfg_sav1" type="number" placeholder="0" oninput="onTransitionInput('sav1',this)">
-            </div>
-            <div class="ts-field">
-              <label class="ts-lbl">Last Month on ING Payroll <span class="badge badge-est" id="est_enddate">estimated</span></label>
-              <input class="ts-inp" id="cfg_enddate" type="month" oninput="onTransitionInput('enddate',this)">
-            </div>
-          </div>
-          <!-- Phase 2 -->
-          <div>
-            <div id="phaseHdr2" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#EF4444;margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid #FECACA">⚠️ Phase 2 <span style="font-weight:400;font-style:italic;text-transform:none">(leave blank if none)</span></div>
-            <div class="ts-field" style="margin-bottom:8px">
-              <label class="ts-lbl">Start Month <span class="badge badge-est" id="est_gstart">optional</span></label>
-              <input class="ts-inp" id="cfg_gstart" type="month" value="" oninput="onTransitionInput('gstart',this)" placeholder="blank = no gap">
-            </div>
-            <div class="ts-field" style="margin-bottom:8px">
-              <label class="ts-lbl">End Month <span class="badge badge-est" id="est_gend">optional</span></label>
-              <input class="ts-inp" id="cfg_gend" type="month" value="" oninput="onTransitionInput('gend',this)" placeholder="blank = no gap">
-            </div>
-            <div class="ts-field">
-              <label class="ts-lbl">Monthly Expenses (€) <span class="badge badge-est" id="est_gexp">estimated</span></label>
-              <input class="ts-inp" id="cfg_gexp" type="number" placeholder="0" oninput="onTransitionInput('gexp',this)">
-            </div>
-          </div>
-          <!-- Phase 3 -->
-          <div>
-            <div id="phaseHdr3" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#7C3AED;margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid #DDD6FE">🎯 Phase 3</div>
-            <div class="ts-field" style="margin-bottom:8px">
-              <label class="ts-lbl">Start Month <span class="badge badge-est" id="est_wstart">estimated</span></label>
-              <input class="ts-inp" id="cfg_wstart" type="month" oninput="onTransitionInput('wstart',this)">
-            </div>
-            <div class="ts-field" style="margin-bottom:8px">
-              <label class="ts-lbl">Phase 3 Monthly Income (€) <span class="badge badge-ph" id="est_ww">placeholder</span></label>
-              <input class="ts-inp" id="cfg_ww" type="number" placeholder="0" oninput="onTransitionInput('ww',this)">
-            </div>
-            <div class="ts-field" style="margin-bottom:8px">
-              <label class="ts-lbl">Monthly Expenses (€) <span class="badge badge-est" id="est_wexp">estimated</span></label>
-              <input class="ts-inp" id="cfg_wexp" type="number" placeholder="0" oninput="onTransitionInput('wexp',this)">
-            </div>
-            <div class="ts-field">
-              <label class="ts-lbl">Monthly Savings (€) <span class="badge badge-est" id="est_sav3">estimated</span></label>
-              <input class="ts-inp" id="cfg_sav3" type="number" placeholder="0" oninput="onTransitionInput('sav3',this)">
-            </div>
-            <div class="ts-field">
-              <label class="ts-lbl">Phase 3 Duration (months) <span class="badge badge-ph" id="est_wwDuration">placeholder</span></label>
-              <input class="ts-inp" id="cfg_wwDuration" type="number" value="0" placeholder="e.g. 24" oninput="onTransitionInput('wwDuration',this)">
-            </div>
-          </div>
-        </div>
-
-        <!-- One-Time Inflows -->
-        <div style="margin-top:14px;padding-top:14px;border-top:2px dashed #D1FAE5">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#059669;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-            💰 One-Time Inflows
-            <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt2);font-size:10px">— confirm amounts with lawyer &amp; ING before updating</span>
-          </div>
-          <div class="g" style="grid-template-columns:repeat(5,1fr);gap:10px;align-items:end">
-            <div class="ts-field">
-              <label class="ts-lbl">Severance Net (€) <span class="badge badge-ph" id="est_severance">placeholder</span></label>
-              <input class="ts-inp" id="cfg_severance" type="number" value="0" placeholder="0" oninput="onTransitionInput('severance',this)">
-            </div>
-            <div class="ts-field">
-              <label class="ts-lbl">Leave Hours Count <span class="badge badge-ph" id="est_leaveHours">placeholder</span></label>
-              <input class="ts-inp" id="cfg_leaveHours" type="number" value="0" placeholder="e.g. 89" oninput="onTransitionInput('leaveHours',this);updateLeaveHoursTotal()">
-            </div>
-            <div class="ts-field">
-              <label class="ts-lbl">Leave Hourly Rate (€/hr) <span class="badge badge-ph" id="est_leaveHoursRate">placeholder</span></label>
-              <input class="ts-inp" id="cfg_leaveHoursRate" type="number" value="0" placeholder="€/hr" oninput="onTransitionInput('leaveHoursRate',this);updateLeaveHoursTotal();rebuildCashFlow()">
-            </div>
-            <div class="ts-field">
-              <label class="ts-lbl">Leave Hours Total (€) <span class="badge" style="background:#D1FAE5;color:#065F46;font-size:9px;padding:1px 5px;border-radius:4px">calculated</span></label>
-              <div class="ts-inp" id="leaveHoursTotalDisplay" style="background:var(--bg);color:var(--ok);font-weight:700;display:flex;align-items:center;min-height:34px;pointer-events:none">—</div>
-            </div>
-            <div class="ts-field">
-              <label class="ts-lbl">Payout Month <span class="badge badge-ph" id="est_severanceMonth">placeholder</span></label>
-              <input class="ts-inp" id="cfg_severanceMonth" type="month" oninput="onTransitionInput('severanceMonth',this)">
-            </div>
-          </div>
-        </div>
-
-        <!-- Savings buffer -->
-        <div class="divider"></div>
-        <div class="g" style="grid-template-columns:1fr 1fr;gap:16px">
-          <div class="ts-field">
-            <label class="ts-lbl">Additional Buffer (€) <span class="badge" style="background:#EDE9FE;color:#6D28D9;font-size:9px;padding:1px 5px;border-radius:4px">optional</span></label>
-            <input class="ts-inp" id="cfg_buf" type="number" placeholder="0 — untracked cash/bank" oninput="onTransitionInput('buf',this);rebuildCashFlow()">
-          </div>
-          <div class="ts-field">
-            <label class="ts-lbl">Projection End Month</label>
-            <input class="ts-inp" id="cfg_endproj" type="month" oninput="rebuildCashFlow()">
-          </div>
-        </div>
+        <button class="btn btn-g btn-sm" onclick="openPlanSettings()" style="font-size:12px">✎ Edit plan</button>
       </div>
-
-    <!-- Charts -->
-    <div class="g g1" style="margin-bottom:16px">
-      <div class="card">
-        <div class="chart-ttl">Monthly Cash Flow — Income vs Expenses</div>
-        <div style="position:relative;height:240px"><canvas id="cfChart"></canvas></div>
-        <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;flex-wrap:wrap">
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#3B82F6;border-radius:2px;display:inline-block"></span><span id="lgd1">Phase 1 income</span></span>
-          <span id="lgd2" style="display:none"></span>
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#8B5CF6;border-radius:2px;display:inline-block"></span><span id="lgd3">Phase 3 income</span></span>
-          <span id="lgd4" style="display:none"></span>
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#F59E0B55;border-radius:2px;border:1px solid #F59E0B;display:inline-block"></span>Expenses</span>
-        </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="background:var(--bg2);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
+              <th style="padding:8px 16px;text-align:left;font-weight:600">Category</th>
+              <th style="padding:8px 16px;text-align:right;font-weight:600;width:130px">Plan</th>
+              <th style="padding:8px 16px;text-align:right;font-weight:600;width:150px">Actual</th>
+              <th style="padding:8px 16px;text-align:right;font-weight:600;width:110px">Diff</th>
+            </tr>
+          </thead>
+          <tbody id="planVsActualBody"></tbody>
+        </table>
       </div>
     </div>
-    <div class="g g1">
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div class="chart-ttl" style="margin-bottom:0">Savings Projection</div>
-          <span style="font-size:11px;color:var(--txt2);font-style:italic">🟡 = one-time inflow</span>
-        </div>
-        <div style="position:relative;height:220px"><canvas id="savChart"></canvas></div>
-      </div>
-    </div>
+
+    <!-- Charts: row 1 = CF full width, row 2 = Savings + Deviation -->
     <div class="g g1" style="margin-top:16px">
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div class="chart-ttl" style="margin-bottom:0">📈 Dividend Income — Trailing 12 Months</div>
-          <span style="font-size:11px;color:var(--txt2)" id="divForecastTotal"></span>
+        <div class="chart-ttl" style="margin-bottom:8px">Monthly Cash Flow — Income vs Expenses</div>
+        <div style="position:relative;height:220px"><canvas id="cfChart"></canvas></div>
+        <div style="display:flex;gap:14px;margin-top:8px;font-size:11px;flex-wrap:wrap">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#3B82F6;border-radius:2px;display:inline-block"></span><span id="lgd1">Phase 1</span></span>
+          <span id="lgd2" style="display:none"></span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#8B5CF6;border-radius:2px;display:inline-block"></span><span id="lgd3">Phase 3</span></span>
+          <span id="lgd4" style="display:none"></span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#F59E0B55;border-radius:2px;border:1px solid #F59E0B;display:inline-block"></span>Expenses</span>
         </div>
-        <div style="position:relative;height:200px"><canvas id="divForecastChart"></canvas></div>
-        <div id="divForecastEmpty" style="display:none;text-align:center;padding:30px;color:var(--txt2);font-size:13px">No dividend transactions recorded yet.</div>
+      </div>
+    </div>
+    <div class="g g2" style="margin-top:14px">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="chart-ttl" style="margin-bottom:0">Savings Projection</div>
+          <span style="font-size:10px;color:var(--txt2);font-style:italic">🟡 = one-time inflow</span>
+        </div>
+        <div style="position:relative;height:200px"><canvas id="savChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="chart-ttl" style="margin-bottom:8px">How did I actually do?</div>
+        <div style="position:relative;height:200px"><canvas id="deviationChart" style="display:none"></canvas></div>
+        <div id="ldgChartEmpty" style="text-align:center;padding:20px;color:var(--txt2);font-size:12px">Enter actuals for at least one month to see the chart.</div>
       </div>
     </div>
   </div>
@@ -1101,7 +999,11 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       <button class="xbtn" onclick="closeModal('taxRecordModal')">✕</button>
     </div>
     <div style="padding:16px 20px 20px">
-      <div style="font-size:12px;color:var(--txt2);margin-bottom:14px">Store your actual filed numbers from your tax return and assessment. The dashboard estimate is shown alongside for comparison.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+        <div style="font-size:12px;color:var(--txt2)">Store your actual filed numbers from your tax return and assessment.</div>
+        <button class="btn btn-g btn-sm" style="font-size:11px;white-space:nowrap"
+          onclick="syncTaxFromCF(+document.getElementById('taxRecordModal').dataset.year)">↻ Sync income from CF plan</button>
+      </div>
       <!-- Estimate banner -->
       <div id="taxRecEstBanner" style="background:var(--bg);border:1px solid var(--bdr);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--txt2);margin-bottom:16px;display:none"></div>
       <!-- Fields grid -->
@@ -1159,6 +1061,89 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
         <button class="btn-ghost" onclick="closeModal('taxRecordModal')">Cancel</button>
         <button class="btn-primary" onclick="saveTaxRecord()">Save Record</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PLAN SETTINGS -->
+<div class="overlay" id="planSettingsModal">
+  <div class="modal" style="max-width:680px;width:95%;max-height:90vh;overflow-y:auto">
+    <div class="mhdr">
+      <span class="mtitle">✎ Edit Plan</span>
+      <button class="xbtn" onclick="closeModal('planSettingsModal')">✕</button>
+    </div>
+    <div style="padding:16px 20px 20px">
+      <!-- Phase labels -->
+      <div class="g" style="grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px dashed var(--bdr)">
+        <div><label class="ts-lbl">Phase 1 Label</label>
+          <input class="ts-inp" id="cfg_phaseName1" type="text" placeholder="e.g. Employment" style="margin-top:4px" oninput="onTransitionInput('phaseName1',this);refreshPhaseLabels()"></div>
+        <div><label class="ts-lbl">Phase 2 Label</label>
+          <input class="ts-inp" id="cfg_phaseName2" type="text" placeholder="e.g. Career Gap" style="margin-top:4px" oninput="onTransitionInput('phaseName2',this);refreshPhaseLabels()"></div>
+        <div><label class="ts-lbl">Phase 3 Label</label>
+          <input class="ts-inp" id="cfg_phaseName3" type="text" placeholder="e.g. UWV Phase" style="margin-top:4px" oninput="onTransitionInput('phaseName3',this);refreshPhaseLabels()"></div>
+      </div>
+      <!-- Phase 1 -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#2563EB;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #BFDBFE" id="phaseHdr1">📘 Phase 1</div>
+      <div class="g" style="grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px">
+        <div><label class="ts-lbl">Monthly Net Salary (€)</label>
+          <input class="ts-inp" id="cfg_salary" type="number" placeholder="0" style="margin-top:4px" oninput="onTransitionInput('salary',this)"></div>
+        <div><label class="ts-lbl">Monthly Expenses (€)</label>
+          <input class="ts-inp" id="cfg_exp1" type="number" placeholder="0" style="margin-top:4px" oninput="onTransitionInput('exp1',this)"></div>
+        <div><label class="ts-lbl">Last Month on Payroll</label>
+          <input class="ts-inp" id="cfg_enddate" type="month" style="margin-top:4px" oninput="onTransitionInput('enddate',this)"></div>
+      </div>
+      <!-- Phase 2 -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#EF4444;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #FECACA" id="phaseHdr2">⚠️ Phase 2 <span style="font-weight:400;font-style:italic;text-transform:none">(leave blank if no gap)</span></div>
+      <div class="g" style="grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px">
+        <div><label class="ts-lbl">Start Month</label>
+          <input class="ts-inp" id="cfg_gstart" type="month" style="margin-top:4px" oninput="onTransitionInput('gstart',this)"></div>
+        <div><label class="ts-lbl">End Month</label>
+          <input class="ts-inp" id="cfg_gend" type="month" style="margin-top:4px" oninput="onTransitionInput('gend',this)"></div>
+        <div><label class="ts-lbl">Monthly Expenses (€)</label>
+          <input class="ts-inp" id="cfg_gexp" type="number" placeholder="0" style="margin-top:4px" oninput="onTransitionInput('gexp',this)"></div>
+      </div>
+      <!-- Phase 3 -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#7C3AED;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #DDD6FE" id="phaseHdr3">🎯 Phase 3</div>
+      <div class="g" style="grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px">
+        <div><label class="ts-lbl">Start Month</label>
+          <input class="ts-inp" id="cfg_wstart" type="month" style="margin-top:4px" oninput="onTransitionInput('wstart',this)"></div>
+        <div><label class="ts-lbl">Monthly Income (€)</label>
+          <input class="ts-inp" id="cfg_ww" type="number" placeholder="0" style="margin-top:4px" oninput="onTransitionInput('ww',this)"></div>
+        <div><label class="ts-lbl">Duration (months)</label>
+          <input class="ts-inp" id="cfg_wwDuration" type="number" placeholder="e.g. 24" style="margin-top:4px" oninput="onTransitionInput('wwDuration',this)"></div>
+        <div><label class="ts-lbl">Monthly Expenses (€)</label>
+          <input class="ts-inp" id="cfg_wexp" type="number" placeholder="0" style="margin-top:4px" oninput="onTransitionInput('wexp',this)"></div>
+        <div><label class="ts-lbl">Monthly Savings (€)</label>
+          <input class="ts-inp" id="cfg_sav3" type="number" placeholder="0" style="margin-top:4px" oninput="onTransitionInput('sav3',this)"></div>
+      </div>
+      <!-- One-Time Inflows -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#059669;margin-bottom:8px;border-top:1px dashed #D1FAE5;padding-top:10px">💰 One-Time Inflows</div>
+      <div class="g" style="grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px">
+        <div><label class="ts-lbl">Severance Net (€)</label>
+          <input class="ts-inp" id="cfg_severance" type="number" value="0" style="margin-top:4px" oninput="onTransitionInput('severance',this)"></div>
+        <div><label class="ts-lbl">Leave Hours Count</label>
+          <input class="ts-inp" id="cfg_leaveHours" type="number" value="0" style="margin-top:4px" oninput="onTransitionInput('leaveHours',this);updateLeaveHoursTotal()"></div>
+        <div><label class="ts-lbl">Leave Rate (€/hr)</label>
+          <input class="ts-inp" id="cfg_leaveHoursRate" type="number" value="0" style="margin-top:4px" oninput="onTransitionInput('leaveHoursRate',this);updateLeaveHoursTotal();rebuildCashFlow()"></div>
+        <div><label class="ts-lbl">Leave Hours Total</label>
+          <div class="ts-inp" id="leaveHoursTotalDisplay" style="background:var(--bg);color:var(--ok);font-weight:700;display:flex;align-items:center;min-height:34px;margin-top:4px">—</div></div>
+        <div><label class="ts-lbl">Payout Month</label>
+          <input class="ts-inp" id="cfg_severanceMonth" type="month" style="margin-top:4px" oninput="onTransitionInput('severanceMonth',this)"></div>
+      </div>
+      <!-- Other settings -->
+      <div style="padding-top:10px;border-top:1px dashed var(--bdr)">
+        <div class="g" style="grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div><label class="ts-lbl">Additional Buffer (€)</label>
+            <input class="ts-inp" id="cfg_buf" type="number" placeholder="0" style="margin-top:4px" oninput="onTransitionInput('buf',this);rebuildCashFlow()"></div>
+          <div><label class="ts-lbl">Monthly Savings Ph.1 (€)</label>
+            <input class="ts-inp" id="cfg_sav1" type="number" placeholder="0" style="margin-top:4px" oninput="onTransitionInput('sav1',this)"></div>
+          <div><label class="ts-lbl">Projection End Month</label>
+            <input class="ts-inp" id="cfg_endproj" type="month" style="margin-top:4px" oninput="rebuildCashFlow()"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:16px">
+        <button class="btn btn-p" onclick="closeModal('planSettingsModal');rebuildCashFlow()">Done</button>
       </div>
     </div>
   </div>
@@ -1906,6 +1891,14 @@ const DEFAULT_BUSINESSES=[
   {id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]}
 ];
 let activeBiz='biz1';
+const DEFAULT_EXPENSE_CATS = [
+  {id:'housing',       label:'Housing',        sub:'rent, mortgage, utilities'},
+  {id:'food',          label:'Food & Groceries',sub:''},
+  {id:'transport',     label:'Transport',       sub:'fuel, OV, car'},
+  {id:'subscriptions', label:'Subscriptions',   sub:'streaming, tools, gym'},
+  {id:'insurance',     label:'Insurance',       sub:'health, home, liability'},
+  {id:'other',         label:'Other Expenses',  sub:'miscellaneous'}
+];
 let DB = {instruments:[],transactions:[],prices:{},priceHistory:{},taxSettings:{},transition:{}};
 let activeCategory = 'ETF';
 let activeSectorFilter = null;
@@ -1925,7 +1918,7 @@ function getDefaults(){
     liabilities:[],
     businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES)),
     sectionOrder:['s-alloc','s-cats','s-nwhistory'],
-    ledger:{months:{}},
+    ledger:{months:{},expenseCategories:[...DEFAULT_EXPENSE_CATS]},
     tradingExperiment:{startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20},
     taxRecords:{
       2023:{income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'},
@@ -1987,6 +1980,7 @@ function loadDB(){
         // Ensure biz3 (Self Trading) always exists — for manual entry support alongside auto-calc
         if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
         if(!DB.ledger) DB.ledger={months:{}};
+    if(!DB.ledger.expenseCategories) DB.ledger.expenseCategories=[...DEFAULT_EXPENSE_CATS];
         if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
         // Migrate Cash/Savings instrument names (one-time rename)
         const _c=DB.instruments.find(i=>i.id==='i22');
@@ -2371,6 +2365,7 @@ function importDB(event){
       if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory'];
       if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
       if(!DB.ledger) DB.ledger={months:{}};
+    if(!DB.ledger.expenseCategories) DB.ledger.expenseCategories=[...DEFAULT_EXPENSE_CATS];
       if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
       // Migrate: 4GLD Commodity → Stock (sector: Gold)
       const _4gldI=DB.instruments.find(i=>i.id==='i20');
@@ -3282,25 +3277,43 @@ function buildCFData(lookback=6){
 
 function buildSavingsProjection(cfData, opts={}){
   const t=DB.transition;
-  // Starting balance: user buffer + actual cash/savings (if set)
-  const {cashStart=0, savStart=0, invYTDNet=0, invYTDMonth=null} = opts;
-  let bal=(t.buf||0)+cashStart+savStart;
-  return cfData.map((row,i)=>{
+  const {savStart=0} = opts; // current actual savings — used to anchor the current month
+  let bal=(t.buf||0);        // start from additional buffer; actuals will build from here
+  const _todayDay=new Date().getDate();
+  return cfData.map(row=>{
     let oneTime=0;
     if(t.severance>0&&t.severanceMonth&&row.mRaw===t.severanceMonth) oneTime+=t.severance;
     const leaveHoursPayout=(t.leaveHours||0)*(t.leaveHoursRate||0);
     if(leaveHoursPayout>0&&t.severanceMonth&&row.mRaw===t.severanceMonth) oneTime+=leaveHoursPayout;
-    // Investment activity: inject YTD net flow as one-time inflow in the matching month
-    if(invYTDNet!==0&&invYTDMonth&&row.mRaw===invYTDMonth){ oneTime+=invYTDNet; }
     bal+=oneTime;
-    const sav=row.phase==='employed'?t.sav1:row.phase==='ww'?t.sav3:0;
-    // Salary credited on 23rd of each month — for current month only add if today ≥ 23rd
-    const _todayDay=new Date().getDate();
-    if(sav!==0){
-      if(row.isCurrent){ if(_todayDay>=23) bal+=sav; }
-      else bal+=sav;
+    const plannedSav=row.phase==='employed'?t.sav1:row.phase==='ww'?t.sav3:0;
+    if(row.isCurrent){
+      // Hard-anchor to actual savings so past actuals and future projection connect cleanly
+      bal=savStart;
+      if(plannedSav!==0&&_todayDay>=23) bal+=plannedSav;
+    } else if(row.isPast){
+      // Past months: actual data takes priority over plan
+      const ldgData=(DB.ledger?.months||{})[row.mRaw];
+      if(ldgData?.closingCash!=null){
+        // Closing cash entered — use as absolute anchor
+        bal=ldgData.closingCash;
+      } else {
+        const hasData=ldgData&&(ldgData.salary||ldgData.uwv||ldgData.other||
+          Object.values(ldgData.expenses||{}).some(v=>v>0));
+        if(hasData){
+          // Use actual net cash flow from ledger
+          const{net}=getLedgerActualNetForMonth(row.mRaw);
+          bal+=net;
+        } else {
+          // No data entered — fall back to planned savings
+          if(plannedSav) bal+=plannedSav;
+        }
+      }
+    } else {
+      // Future: planned savings (unchanged)
+      if(plannedSav!==0) bal+=plannedSav;
     }
-    return{m:row.m,v:+bal.toFixed(0),spike:oneTime!==0};
+    return{m:row.m,v:+bal.toFixed(0),spike:oneTime!==0,isPast:row.isPast,isCurrent:row.isCurrent};
   });
 }
 
@@ -3485,71 +3498,49 @@ function rebuildCashFlow(){
 
   const curMonth=new Date().toISOString().slice(0,7);
   // Savings projection only runs from current month forward — past months have no projection
-  const futureCFData=cfData.filter(d=>!d.isPast);
-  // Projection starts from savVal only — cashVal reflects investment activity and should
-  // not reduce the savings runway projection (investment outflows tracked separately in activity section)
-  const savData=buildSavingsProjection(futureCFData,{savStart:savVal});
+  // Full timeline: actuals for past months, plan for future
+  const savData=buildSavingsProjection(cfData,{savStart:savVal});
+  // Split into actual (past+current) and projected (current+future) for two-tone display
+  const savActual=savData.map(d=>(d.isPast||d.isCurrent)?d.v:null);
+  const savProjected=savData.map(d=>(!d.isPast||d.isCurrent)?d.v:null);
   safeDestroy('savChart');
   charts.sav=new Chart(document.getElementById('savChart'),{
     type:'line',
-    data:{labels:savData.map(d=>d.m),datasets:[{
-      label:'Projected Savings (€)',
-      data:savData.map(d=>d.v),
-      borderColor:'#10B981',borderWidth:2,backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,200);g.addColorStop(0,'rgba(16,185,129,.25)');g.addColorStop(1,'rgba(16,185,129,0)');return g;},fill:true,tension:0.35,
-      pointRadius:savData.map(d=>d.spike?7:3),
-      pointHoverRadius:savData.map(d=>d.spike?9:5),
-      pointBackgroundColor:savData.map(d=>d.spike?'#F59E0B':'#10B981'),
-      pointBorderColor:savData.map(d=>d.spike?'#92400E':'#10B981'),
-      pointBorderWidth:savData.map(d=>d.spike?2:1)
-    }]},
+    data:{labels:savData.map(d=>d.isCurrent?'▶ '+d.m:d.m),datasets:[
+      {
+        label:'Actual',
+        data:savActual,
+        borderColor:'#10B981',borderWidth:2.5,
+        backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,200);g.addColorStop(0,'rgba(16,185,129,.18)');g.addColorStop(1,'rgba(16,185,129,0)');return g;},
+        fill:true,tension:0.35,spanGaps:false,
+        pointRadius:savData.map(d=>d.spike?7:savActual[savData.indexOf(d)]!=null?3:0),
+        pointBackgroundColor:savData.map(d=>d.spike?'#F59E0B':'#10B981'),
+        pointBorderColor:savData.map(d=>d.spike?'#92400E':'#10B981'),
+        pointBorderWidth:savData.map(d=>d.spike?2:1)
+      },
+      {
+        label:'Projected',
+        data:savProjected,
+        borderColor:'#10B981',borderWidth:2,borderDash:[5,4],
+        backgroundColor:'transparent',fill:false,tension:0.35,spanGaps:false,
+        pointRadius:savData.map(d=>d.spike&&!d.isPast?7:savProjected[savData.indexOf(d)]!=null&&!d.isCurrent?3:0),
+        pointBackgroundColor:savData.map(d=>d.spike?'#F59E0B':'#10B981'),
+        pointBorderColor:savData.map(d=>d.spike?'#92400E':'#10B981'),
+        pointBorderWidth:1
+      }
+    ]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const d=savData[ctx.dataIndex];return d.spike?` Savings: ${feur(ctx.raw)} ⬆ one-time inflow`:` Savings: ${feur(ctx.raw)}`;} }}},
+      plugins:{
+        legend:{display:true,position:'top',labels:{boxWidth:20,font:{size:10},usePointStyle:true,generateLabels:chart=>[
+          {text:'Actual (past)',strokeStyle:'#10B981',fillStyle:'rgba(16,185,129,.18)',lineWidth:2,pointStyle:'line'},
+          {text:'Projected (future)',strokeStyle:'#10B981',fillStyle:'transparent',lineWidth:2,pointStyle:'line',lineDash:[5,4]}
+        ]}},
+        tooltip:{callbacks:{label:ctx=>{const d=savData[ctx.dataIndex];return d.spike?` ${ctx.dataset.label}: ${feur(ctx.raw)} ⬆ one-time inflow`:` ${ctx.dataset.label}: ${feur(ctx.raw)}`;} }}
+      },
       scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:9}}}}
     }
   });
-  renderDivForecast();
-}
-function renderDivForecast(){
-  const canvas=document.getElementById('divForecastChart');
-  const emptyEl=document.getElementById('divForecastEmpty');
-  const totalEl=document.getElementById('divForecastTotal');
-  if(!canvas) return;
-  // Build trailing 12 months labels
-  const months=[];
-  const now=new Date();
-  for(let i=11;i>=0;i--){
-    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
-    months.push(d.toISOString().slice(0,7)); // YYYY-MM
-  }
-  // Sum dividends per month
-  const monthTotals={};
-  months.forEach(m=>monthTotals[m]=0);
-  (DB.transactions||[]).filter(t=>t.type==='dividend').forEach(t=>{
-    const ym=t.date.slice(0,7);
-    if(monthTotals[ym]!==undefined) monthTotals[ym]+=(t.qty||1)*(t.price||0);
-  });
-  const values=months.map(m=>+monthTotals[m].toFixed(2));
-  const total=values.reduce((s,v)=>s+v,0);
-  const hasData=values.some(v=>v>0);
-  if(!hasData){
-    canvas.style.display='none';
-    if(emptyEl) emptyEl.style.display='block';
-    if(totalEl) totalEl.textContent='';
-    return;
-  }
-  canvas.style.display='block';
-  if(emptyEl) emptyEl.style.display='none';
-  if(totalEl) totalEl.textContent=`Total: +${feur(total)}`;
-  const labels=months.map(m=>{ const[y,mo]=m.split('-'); return new Date(+y,+mo-1,1).toLocaleString('default',{month:'short'})+' '+y.slice(2); });
-  safeDestroy('divForecastChart');
-  charts.divForecast=new Chart(canvas,{
-    type:'bar',
-    data:{labels,datasets:[{label:'Dividends',data:values,backgroundColor:'rgba(16,185,129,0.7)',borderColor:'#10B981',borderWidth:1,borderRadius:4}]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${feur(ctx.raw,2)}`}}},
-      scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>feur(v),font:{size:9}},beginAtZero:true}}
-    }
-  });
+  renderLedger();
 }
 
 // ── NAVIGATION ──
@@ -3593,6 +3584,10 @@ function openCloudSync(){
   closeSettingsMenu();
   openModal('cloudSyncModal');
   updateSyncUI();
+}
+function openPlanSettings(){
+  loadTransitionSettings();
+  openModal('planSettingsModal');
 }
 function jumpToHoldings(cat){
   activeCategory=cat; activeSectorFilter=null; activeRegionFilter=null;
@@ -4628,6 +4623,21 @@ function saveTaxRecord(){
   renderTaxTab();
 }
 
+// Pre-fill income, earned income credit, and general tax credit from the CF phases model.
+// Non-destructive — user must still click Save Record to persist.
+function syncTaxFromCF(year){
+  if(!year) return;
+  const income=Math.round(calcBox1Income(year));
+  const ak=Math.round(calcArbeidskorting(income,year));
+  const ahk=Math.round(calcAlgemeneHeffingskorting(income,year));
+  const grossTax=Math.round(calcBox1Tax(income,year));
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el&&v>0) el.value=v; };
+  set('trIncome',   income);
+  set('trIbBruto',  grossTax);
+  set('trArbeidskorting', ak);
+  set('trAhk',      ahk);
+  notify(`↻ Synced from plan: income €${income.toLocaleString()} · gross tax €${grossTax.toLocaleString()} · earned income credit €${ak.toLocaleString()}`);
+}
 function renderTaxTab(){
   const currentYear=DB.taxSettings?.selectedYear||new Date().getFullYear();
   const cats=computeCategories();
@@ -5573,9 +5583,11 @@ function deleteLiability(id){
 
 // ── LEDGER ──
 let _ldgMonth = new Date().toISOString().slice(0,7);
+let _ldgExpEditMode = false;
 
 function getLedgerMonth(ym){
   if(!DB.ledger) DB.ledger={months:{}};
+    if(!DB.ledger.expenseCategories) DB.ledger.expenseCategories=[...DEFAULT_EXPENSE_CATS];
   if(!DB.ledger.months[ym]) DB.ledger.months[ym]={
     salary:0,uwv:0,portfolioWithdrawal:0,other:0,
     expenses:{housing:0,food:0,transport:0,subscriptions:0,insurance:0,other:0},
@@ -5655,13 +5667,12 @@ function getLedgerTaxProvision(bizNet, tradingNet){
 
 function getLedgerActualNetForMonth(ym){
   const d=getLedgerMonth(ym);
-  const bizNet=getLedgerBizNet(ym);
   const divs=getLedgerDividends(ym);
-  const tradingNet=getLedgerTradingNet(ym);
-  const taxProvision=getLedgerTaxProvision(bizNet, tradingNet);
-  const totalIncome=(d.salary||0)+(d.uwv||0)+bizNet+divs+tradingNet+(d.portfolioWithdrawal||0)+(d.other||0);
-  const totalExp=Object.values(d.expenses||{}).reduce((s,v)=>s+(v||0),0)+taxProvision;
-  return{totalIncome,totalExp,net:totalIncome-totalExp,bizNet,divs,tradingNet,taxProvision};
+  // Income: salary/UWV/other (manual) + dividends (auto from transactions)
+  // Investments (Box 3) and business profit (not active yet) excluded
+  const totalIncome=(d.salary||0)+(d.uwv||0)+(d.other||0)+divs;
+  const totalExp=Object.values(d.expenses||{}).reduce((s,v)=>s+(v||0),0);
+  return{totalIncome,totalExp,net:totalIncome-totalExp,divs};
 }
 
 function ledgerPrevMonth(){ _ldgMonth=addM(_ldgMonth,-1); renderLedger(); }
@@ -5670,120 +5681,239 @@ function ledgerNextMonth(){ _ldgMonth=addM(_ldgMonth,1); renderLedger(); }
 function updateLedgerCalc(){
   const ym=_ldgMonth;
   const d=getLedgerMonth(ym);
-  ['salary','uwv','portfolioWithdrawal','other'].forEach(f=>{ const el=document.getElementById('ldg_'+f); if(el) d[f]=parseFloat(el.value)||0; });
-  ['housing','food','transport','subscriptions','insurance','other'].forEach(f=>{ const el=document.getElementById('ldgx_'+f); if(el) d.expenses[f]=parseFloat(el.value)||0; });
+  ['salary','uwv','other'].forEach(f=>{ const el=document.getElementById('ldg_'+f); if(el) d[f]=parseFloat(el.value)||0; });
+  // Read all expense category inputs dynamically
+  (DB.ledger.expenseCategories||DEFAULT_EXPENSE_CATS).forEach(cat=>{ const el=document.getElementById('ldgx_'+cat.id); if(el) d.expenses[cat.id]=parseFloat(el.value)||0; });
   const cc=document.getElementById('ldg_closingCash'); if(cc) d.closingCash=cc.value===''?null:parseFloat(cc.value)||0;
-  const nt=document.getElementById('ldg_notes'); if(nt) d.notes=nt.value;
   saveDB();
   const{totalIncome,totalExp,net}=getLedgerActualNetForMonth(ym);
+  const planRow=buildCFData().find(r=>r.mRaw===ym);
+  const t=DB.transition;
+  const phase=planRow?planRow.phase:'';
+  const planSalary=phase==='employed'?t.salary||0:null;
+  const planUWV=phase==='ww'?t.ww||0:null;
+  const planExpTotal=planRow?Math.abs(planRow.exp):null;
+  const planIncTotal=planRow?planRow.income:null;
+  const planned=getPlannedNetForMonth(ym);
+
+  // Helper: update a diff span by ID
+  const updDiffInc=(id,actual,plan)=>{
+    const el=document.getElementById(id); if(!el) return;
+    if(actual==null||plan==null){el.textContent='—';el.style.color='var(--txt2)';el.style.fontWeight='';return;}
+    const dv=actual-plan;
+    el.textContent=Math.abs(dv)<1?'✓':(dv>0?'+':'')+feur(dv);
+    el.style.color=Math.abs(dv)<1?'var(--ok)':dv>=0?'var(--ok)':'var(--err)';
+    el.style.fontWeight=Math.abs(dv)<1?'':'600';
+  };
+  const updDiffExp=(id,actual,plan)=>{
+    const el=document.getElementById(id); if(!el) return;
+    if(actual==null||plan==null){el.textContent='—';el.style.color='var(--txt2)';el.style.fontWeight='';return;}
+    const dv=plan-actual; // inverted: positive = under budget
+    el.textContent=Math.abs(dv)<1?'✓':(dv>0?'+':'')+feur(dv);
+    el.style.color=Math.abs(dv)<1?'var(--ok)':dv>=0?'var(--ok)':'var(--err)';
+    el.style.fontWeight=Math.abs(dv)<1?'':'600';
+  };
+
+  // Update totals
   const ti=document.getElementById('ldg_totalIncome'); if(ti) ti.textContent=feur(totalIncome);
   const te=document.getElementById('ldg_totalExp'); if(te) te.textContent=feur(totalExp);
-  const nEl=document.getElementById('ldg_net'); if(nEl){nEl.textContent=(net>=0?'+':'')+feur(net);nEl.className=net>=0?'tg':'tr';}
-  const planned=getPlannedNetForMonth(ym);
+  const nEl=document.getElementById('ldg_net'); if(nEl){nEl.textContent=(net>=0?'+':'')+feur(net);nEl.style.color=net>=0?'var(--ok)':'var(--err)';}
+
+  // Update all diff cells
+  updDiffInc('ldgd_salary', d.salary||0, planSalary);
+  updDiffInc('ldgd_uwv', d.uwv||0, planUWV);
+  updDiffInc('ldgd_incTotal', totalIncome, planIncTotal);
+  updDiffExp('ldgd_expTotal', totalExp, planExpTotal);
+
+  // Update section summaries in collapsed headers
+  const incSum=document.getElementById('ldg-sum-inc');
+  const expSum=document.getElementById('ldg-sum-exp');
+  if(incSum) incSum.textContent=planIncTotal!=null?`${feur(totalIncome)} / ${feur(planIncTotal)}`:`${feur(totalIncome)}`;
+  if(expSum) expSum.textContent=planExpTotal!=null?`${feur(totalExp)} / ${feur(planExpTotal)}`:`${feur(totalExp)}`;
+
+  // Net deviation
   if(planned!==null){
-    const pEl=document.getElementById('ldg_planned'); if(pEl) pEl.textContent=(planned.net>=0?'+':'')+feur(planned.net);
     const dev=net-planned.net;
-    const dEl=document.getElementById('ldg_deviation'); if(dEl){dEl.textContent=(dev>=0?'+':'')+feur(dev);dEl.className=dev>=0?'tg':'tr';}
+    const dEl=document.getElementById('ldg_deviation'); if(dEl) dEl.innerHTML=`<span style="font-weight:700;color:${Math.abs(dev)<10?'var(--ok)':dev>0?'var(--ok)':'var(--err)'}">${Math.abs(dev)<10?'✓ on track':dev>0?'+'+feur(dev)+' ahead':feur(dev)+' behind'}</span>`;
   }
   renderDeviationChart();
 }
 
 function renderLedger(){
-  if(!document.getElementById('ldgMonthLabel')) return; // tab removed
+  const el=document.getElementById('planVsActualBody');
+  if(!el) return;
   const ym=_ldgMonth;
   const d=getLedgerMonth(ym);
-  const bizNet=getLedgerBizNet(ym);
   const divs=getLedgerDividends(ym);
-  const{totalIncome,totalExp,net,tradingNet,taxProvision}=getLedgerActualNetForMonth(ym);
+  const{totalIncome,totalExp,net}=getLedgerActualNetForMonth(ym);
   const planned=getPlannedNetForMonth(ym);
+  const planRow=buildCFData().find(r=>r.mRaw===ym);
   const dev=planned!==null?net-planned.net:null;
+  const t=DB.transition;
+  const expCats=DB.ledger.expenseCategories||DEFAULT_EXPENSE_CATS;
 
   document.getElementById('ldgMonthLabel').textContent=fmtM(ym);
 
-  const incRows=[
-    {id:'salary',label:'Salary / Severance',sub:'net received from employer'},
-    {id:'uwv',label:'UWV Benefit',sub:'net benefit received'},
-    {id:'portfolioWithdrawal',label:'Portfolio Withdrawal',sub:'explicit drawdown to fund expenses'},
-    {id:'other',label:'Other Income',sub:'freelance, one-off, gifts'}
-  ];
-  const expRows=[
-    {id:'housing',label:'Housing',sub:'rent, mortgage, utilities'},
-    {id:'food',label:'Food &amp; Groceries',sub:''},
-    {id:'transport',label:'Transport',sub:'fuel, OV, car'},
-    {id:'subscriptions',label:'Subscriptions',sub:'streaming, tools, gym'},
-    {id:'insurance',label:'Insurance',sub:'health, home, liability'},
-    {id:'other',label:'Other Expenses',sub:'miscellaneous'}
-  ];
+  const phase=planRow?planRow.phase:'';
+  const planSalary=phase==='employed'?t.salary||0:null;
+  const planUWV=phase==='ww'?t.ww||0:null;
+  const planExpTotal=planRow?Math.abs(planRow.exp):null;
+  const planIncTotal=planRow?planRow.income:null;
+  const planNet=planned?planned.net:null;
 
-  const incHTML=
-    incRows.map(r=>`
-      <div class="ldg-row">
-        <div class="ldg-lbl">${r.label}<small>${r.sub}</small></div>
-        <input class="ldg-inp" id="ldg_${r.id}" type="number" min="0" step="0.01" placeholder="0" value="${d[r.id]||''}" oninput="updateLedgerCalc()">
-      </div>`).join('')+
-    `<div class="ldg-row">
-        <div class="ldg-lbl">Business Net (auto)<small>Mushroom Farm + Coaching gross profit</small></div>
-        <div class="ldg-auto ${bizNet>0?'tg':bizNet<0?'tr':''}">${bizNet!==0?(bizNet>=0?'+':'')+feur(bizNet):'—'}</div>
-      </div>
-      <div class="ldg-row">
-        <div class="ldg-lbl">Dividends (auto)<small>net after withholding tax</small></div>
-        <div class="ldg-auto ${divs>0?'tg':''}">${divs>0?feur(divs):'—'}</div>
-      </div>
-      <div class="ldg-row">
-        <div class="ldg-lbl">Self Trading (auto)<small>realized gains/losses − fees + biz3 entries</small></div>
-        <div class="ldg-auto ${tradingNet>0?'tg':tradingNet<0?'tr':''}">${tradingNet!==0?(tradingNet>=0?'+':'')+feur(tradingNet):'—'}</div>
-      </div>
-      <div class="ldg-row ldg-total-row">
-        <div style="flex:1;font-weight:700">Total Income</div>
-        <div style="font-weight:800;font-size:15px" id="ldg_totalIncome">${feur(totalIncome)}</div>
-      </div>`;
+  const pf=v=>v!=null?feur(v):'<span style="color:var(--txt2)">—</span>';
+  const inp=(id,val)=>`<input class="ldg-inp" id="${id}" type="number" min="0" step="0.01" placeholder="0" value="${val||''}" oninput="updateLedgerCalc()" style="width:100%;text-align:right">`;
 
-  const expHTML=
-    expRows.map(r=>`
-      <div class="ldg-row">
-        <div class="ldg-lbl">${r.label}${r.sub?`<small>${r.sub}</small>`:''}</div>
-        <input class="ldg-inp" id="ldgx_${r.id}" type="number" min="0" step="0.01" placeholder="0" value="${(d.expenses||{})[r.id]||''}" oninput="updateLedgerCalc()">
-      </div>`).join('')+
-    `<div class="ldg-row">
-        <div class="ldg-lbl">Tax Provision (auto)<small>est. Box 1 on biz profit · ${DB.taxSettings?.box1EffectiveRate>0?DB.taxSettings.box1EffectiveRate+'%':'37.48% default'}</small></div>
-        <div class="ldg-auto ${taxProvision>0?'tr':''}">${taxProvision>0?'−'+feur(taxProvision):'—'}</div>
-      </div>
-      <div class="ldg-row ldg-total-row">
-        <div style="flex:1;font-weight:700">Total Expenses (incl. tax)</div>
-        <div style="font-weight:800;font-size:15px" id="ldg_totalExp">${feur(totalExp)}</div>
-      </div>`;
+  const diffInc=(actual,plan,id='')=>{
+    const span=id?`id="${id}"`:'';
+    if(actual==null||plan==null) return `<span ${span} style="color:var(--txt2)">—</span>`;
+    const dv=actual-plan;
+    if(Math.abs(dv)<1) return `<span ${span} style="color:var(--ok)">✓</span>`;
+    const col=dv>=0?'var(--ok)':'var(--err)';
+    return `<span ${span} style="color:${col};font-weight:600">${dv>0?'+':''}${feur(dv)}</span>`;
+  };
+  const diffExp=(actual,plan,id='')=>{
+    const span=id?`id="${id}"`:'';
+    if(actual==null||plan==null) return `<span ${span} style="color:var(--txt2)">—</span>`;
+    const dv=plan-actual;
+    if(Math.abs(dv)<1) return `<span ${span} style="color:var(--ok)">✓</span>`;
+    const col=dv>=0?'var(--ok)':'var(--err)';
+    return `<span ${span} style="color:${col};font-weight:600">${dv>0?'+':''}${feur(dv)}</span>`;
+  };
 
-  const summaryHTML=`
-    <div class="ldg-sum-row">
-      <span class="t2" style="font-size:13px">Net Cash Flow</span>
-      <span style="font-size:20px;font-weight:800" id="ldg_net" class="${net>=0?'tg':'tr'}">${(net>=0?'+':'')+feur(net)}</span>
-    </div>
-    ${planned!==null?`
-    <div class="ldg-sum-row">
-      <span class="t2" style="font-size:13px">Model Prediction</span>
-      <span style="font-size:15px;font-weight:600" id="ldg_planned">${(planned.net>=0?'+':'')+feur(planned.net)}</span>
-    </div>
-    <div class="ldg-sum-row">
-      <span class="t2" style="font-size:13px">Deviation vs Plan<small style="display:block;font-size:10px">${dev!==null?Math.abs(dev)<10?'on track':dev>0?'ahead of plan':'behind plan':''}</small></span>
-      <span style="font-size:15px;font-weight:700" id="ldg_deviation" class="${dev!==null&&dev>=0?'tg':'tr'}">${dev!==null?(dev>=0?'+':'')+feur(dev):'—'}</span>
-    </div>`:''
-    }
-    <div class="ldg-sum-row">
-      <div>
-        <span class="t2" style="font-size:13px">Closing Cash Balance</span>
-        <small style="display:block;font-size:10px;color:var(--txt2)">Actual bank balance at month end — reconciliation anchor</small>
-      </div>
-      <input class="ldg-inp" id="ldg_closingCash" type="number" step="0.01" placeholder="—" value="${d.closingCash!==null&&d.closingCash!==undefined?d.closingCash:''}" oninput="updateLedgerCalc()">
-    </div>
-    <div class="ldg-sum-row" style="flex-direction:column;align-items:flex-start;gap:6px">
-      <span class="t2" style="font-size:13px">Notes</span>
-      <textarea id="ldg_notes" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:12px;resize:vertical;min-height:48px" oninput="updateLedgerCalc()" placeholder="Any notes for this month…">${d.notes||''}</textarea>
-    </div>`;
+  // Fixed detRow: 4 separate <td> elements, no comma operator
+  const detRow=(section,label,sub,planCell,actualCell,diffCell)=>`
+    <tr class="ldg-det-${section}" style="display:none;border-bottom:1px solid var(--bdr)">
+      <td style="padding:6px 16px">${label}${sub?`<div style="font-size:10px;color:var(--txt2);margin-top:1px">${sub}</div>`:''}</td>
+      <td style="padding:6px 16px;text-align:right;color:var(--txt2);font-size:12px">${planCell}</td>
+      <td style="padding:6px 12px;text-align:right">${actualCell}</td>
+      <td style="padding:6px 16px;text-align:right;font-size:12px">${diffCell}</td>
+    </tr>`;
 
-  document.getElementById('ldgIncomeCard').innerHTML=incHTML;
-  document.getElementById('ldgExpenseCard').innerHTML=expHTML;
-  document.getElementById('ldgSummaryCard').innerHTML=summaryHTML;
+  const totRow=(label,planCell,actualId,actualVal,diffId,diffHtml)=>`
+    <tr style="border-bottom:2px solid var(--bdr);font-weight:700;background:var(--bg2)">
+      <td style="padding:8px 16px">${label}</td>
+      <td style="padding:6px 16px;text-align:right;color:var(--txt2);font-size:12px">${planCell}</td>
+      <td style="padding:6px 16px;text-align:right"><span id="${actualId}" style="font-weight:800;font-size:14px">${actualVal}</span></td>
+      <td style="padding:6px 16px;text-align:right;font-size:13px"><span id="${diffId}">${diffHtml}</span></td>
+    </tr>`;
+
+  const incSummary=planIncTotal!=null?`${feur(totalIncome)} / ${feur(planIncTotal)}`:`${feur(totalIncome)}`;
+  const expSummary=planExpTotal!=null?`${feur(totalExp)} / ${feur(planExpTotal)}`:`${feur(totalExp)}`;
+
+  // Expense section: normal view vs edit mode
+  let expRows='';
+  if(_ldgExpEditMode){
+    // Edit mode: rename inputs + delete buttons, no Plan/Actual/Diff
+    expRows=`<tr style="background:var(--bg2);border-bottom:1px solid var(--bdr)">
+      <td colspan="4" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
+        <span style="margin-right:6px">✏️</span>Edit Expense Categories
+        <button class="btn btn-g btn-sm" onclick="toggleExpEditMode()" style="margin-left:12px;font-size:11px">✓ Done</button>
+      </td>
+    </tr>`+
+    expCats.map(cat=>`
+      <tr style="border-bottom:1px solid var(--bdr)">
+        <td style="padding:6px 16px" colspan="3">
+          <input type="text" class="ts-inp" value="${cat.label}" style="width:60%;font-size:13px;padding:4px 8px"
+            onblur="renameExpCat('${cat.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+          <span style="font-size:11px;color:var(--txt2);margin-left:8px">${feur((d.expenses||{})[cat.id]||0)} this month</span>
+        </td>
+        <td style="padding:6px 16px;text-align:right">
+          <button class="btn btn-sm" style="background:var(--err-l);color:var(--err);border:1px solid #FECACA;font-size:11px;padding:2px 8px"
+            onclick="removeExpCat('${cat.id}')">✕ Remove</button>
+        </td>
+      </tr>`).join('')+
+    `<tr style="border-bottom:1px solid var(--bdr)">
+      <td colspan="4" style="padding:8px 16px">
+        <button class="btn btn-g btn-sm" onclick="addExpCat()" style="font-size:12px">＋ Add category</button>
+      </td>
+    </tr>`;
+  } else {
+    const expHdr=`<tr class="ldg-sec-hdr" onclick="toggleLdgSection('exp')" style="background:var(--bg2);cursor:pointer;user-select:none">
+      <td colspan="3" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
+        <span id="ldg-arr-exp" style="display:inline-block;transition:transform .2s;margin-right:6px">▶</span>Expenses
+        <span id="ldg-sum-exp" style="font-weight:400;font-size:11px;color:var(--txt2);margin-left:8px">${expSummary}</span>
+      </td>
+      <td style="padding:6px 12px;text-align:right">
+        <button class="btn-ghost" onclick="event.stopPropagation();toggleExpEditMode()" style="font-size:11px;padding:2px 6px" title="Edit categories">✎</button>
+      </td>
+    </tr>`;
+    const expDetail=expCats.map(cat=>
+      detRow('exp', cat.label, cat.sub||'', '—',
+        inp('ldgx_'+cat.id, (d.expenses||{})[cat.id]),
+        '<span style="color:var(--txt2)">—</span>')
+    ).join('');
+    expRows=expHdr+expDetail;
+  }
+
+  el.innerHTML=
+    // Income section header
+    `<tr class="ldg-sec-hdr" onclick="toggleLdgSection('inc')" style="background:var(--bg2);cursor:pointer;user-select:none">
+      <td colspan="4" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
+        <span id="ldg-arr-inc" style="display:inline-block;transition:transform .2s;margin-right:6px">▶</span>Income
+        <span id="ldg-sum-inc" style="font-weight:400;font-size:11px;color:var(--txt2);margin-left:8px">${incSummary}</span>
+      </td>
+    </tr>`+
+    // Income detail rows
+    detRow('inc','Salary / Severance','net received',pf(planSalary),inp('ldg_salary',d.salary),diffInc(d.salary||0,planSalary,'ldgd_salary'))+
+    detRow('inc','UWV Benefit','net benefit received',pf(planUWV),inp('ldg_uwv',d.uwv),diffInc(d.uwv||0,planUWV,'ldgd_uwv'))+
+    detRow('inc','Other Income','freelance, one-off',pf(null),inp('ldg_other',d.other),'<span style="color:var(--txt2)">—</span>')+
+    detRow('inc','Dividends','net after WHT — auto',
+      divs>0?feur(divs):'<span style="color:var(--txt2)">—</span>',
+      `<span style="font-weight:600;color:${divs>0?'var(--ok)':'var(--txt2)'}">${divs>0?feur(divs):'—'}</span>`,
+      '<span style="color:var(--txt2)">auto</span>')+
+    totRow('Total Income',pf(planIncTotal),'ldg_totalIncome',feur(totalIncome),'ldgd_incTotal',diffInc(totalIncome,planIncTotal))+
+    // Expense section (normal or edit mode)
+    expRows+
+    // Total Expenses (only in normal mode)
+    (_ldgExpEditMode?'':totRow('Total Expenses',pf(planExpTotal),'ldg_totalExp',feur(totalExp),'ldgd_expTotal',diffExp(totalExp,planExpTotal)))+
+    // Summary
+    `<tr style="background:var(--bg2)"><td colspan="4" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">Summary</td></tr>`+
+    `<tr style="border-bottom:1px solid var(--bdr);font-weight:700">
+      <td style="padding:8px 16px">Net Cash Flow</td>
+      <td style="padding:6px 16px;text-align:right;color:var(--txt2);font-size:12px">${pf(planNet)}</td>
+      <td style="padding:6px 16px;text-align:right"><span id="ldg_net" style="font-weight:800;font-size:15px;color:${net>=0?'var(--ok)':'var(--err)'}">${net>=0?'+':''}${feur(net)}</span></td>
+      <td style="padding:6px 16px;text-align:right;font-size:13px"><span id="ldg_deviation">${
+        dev!=null?`<span style="font-weight:700;color:${Math.abs(dev)<10?'var(--ok)':dev>0?'var(--ok)':'var(--err)'}">${Math.abs(dev)<10?'✓ on track':dev>0?'+'+feur(dev)+' ahead':feur(dev)+' behind'}</span>`:'—'
+      }</span></td>
+    </tr>`+
+    `<tr style="border-bottom:1px solid var(--bdr)">
+      <td style="padding:6px 16px">Closing Cash Balance<div style="font-size:10px;color:var(--txt2);margin-top:1px">actual bank balance at month end</div></td>
+      <td style="padding:6px 16px;text-align:right;color:var(--txt2)">—</td>
+      <td style="padding:6px 12px;text-align:right">${inp('ldg_closingCash',d.closingCash!=null?d.closingCash:'')}</td>
+      <td style="padding:6px 16px"></td>
+    </tr>`;
   renderDeviationChart();
+}
+
+
+function toggleExpEditMode(){
+  _ldgExpEditMode=!_ldgExpEditMode;
+  renderLedger();
+}
+function addExpCat(){
+  const label=prompt('New category name (e.g. Dining, Gym, Kids):');
+  if(!label||!label.trim()) return;
+  const id='cat_'+Date.now();
+  (DB.ledger.expenseCategories=DB.ledger.expenseCategories||[...DEFAULT_EXPENSE_CATS]).push({id,label:label.trim(),sub:''});
+  saveDB(); renderLedger();
+}
+function removeExpCat(id){
+  if(!confirm('Remove this expense category? Recorded amounts stay in the data but won\'t show in the table.')) return;
+  DB.ledger.expenseCategories=(DB.ledger.expenseCategories||[]).filter(c=>c.id!==id);
+  saveDB(); renderLedger();
+}
+function renameExpCat(id,newLabel){
+  const cat=(DB.ledger.expenseCategories||[]).find(c=>c.id===id);
+  if(cat&&newLabel.trim()&&newLabel.trim()!==cat.label){ cat.label=newLabel.trim(); saveDB(); }
+}
+
+function toggleLdgSection(id){
+  const rows=document.querySelectorAll(`.ldg-det-${id}`);
+  const arr=document.getElementById(`ldg-arr-${id}`);
+  const isOpen=rows.length&&rows[0].style.display!=='none';
+  rows.forEach(r=>r.style.display=isOpen?'none':'table-row');
+  if(arr) arr.style.transform=isOpen?'':'rotate(90deg)';
 }
 
 function renderDeviationChart(){
@@ -5835,7 +5965,7 @@ function renderDeviationChart(){
       ]
     },
     options:{
-      responsive:true,
+      responsive:true,maintainAspectRatio:false,
       interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
@@ -6192,6 +6322,7 @@ async function gistFetch(){
     if(!DB.transition._cashV2){ DB.transition.cashTxDelta=0; DB.transition._cashV2=true; }
     if(!DB.priceHistory) DB.priceHistory={};
     if(!DB.ledger) DB.ledger={months:{}};
+    if(!DB.ledger.expenseCategories) DB.ledger.expenseCategories=[...DEFAULT_EXPENSE_CATS];
     if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
     // Migrate: 4GLD Commodity → Stock (sector: Gold)
     const _4gldG=DB.instruments.find(i=>i.id==='i20');
