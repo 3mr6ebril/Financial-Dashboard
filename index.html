@@ -97,9 +97,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .bg{background:var(--ok-l);color:var(--ok)}.br{background:var(--err-l);color:var(--err)}
 .bw{background:var(--wrn-l);color:var(--wrn)}.bn{background:var(--neu-l);color:var(--neu)}
 .bp{background:var(--pri-l);color:var(--pri)}
-.badge-est{background:#FEF9C3;color:#92400E;font-size:10px;padding:1px 6px}
 .badge-act{background:var(--ok-l);color:var(--ok);font-size:10px;padding:1px 6px}
-.badge-ph{background:#F3F4F6;color:#9CA3AF;font-size:10px;padding:1px 6px;font-style:italic}
 .hdot{width:12px;height:12px;border-radius:50%;flex-shrink:0;display:inline-block}
 .hdot.green{background:var(--ok);box-shadow:0 0 0 3px var(--ok-l)}
 .hdot.amber{background:var(--wrn);box-shadow:0 0 0 3px var(--wrn-l)}
@@ -218,7 +216,6 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
 .price-modal-inp:hover{border-color:var(--pri)}
 /* Income / info badges */
 .badge-div{background:#ECFDF5;color:#059669;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap}
-.badge-ter{background:#FEF3C7;color:#B45309;font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;white-space:nowrap}
 .badge-acc{background:#EFF6FF;color:#2563EB;font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px}
 .badge-div-tx{background:#ECFDF5;color:#059669}
 /* Sector breakdown table */
@@ -1962,7 +1959,6 @@ function loadDB(){
         if(!DB.priceHistory) DB.priceHistory={};
         if(!DB.taxSettings) DB.taxSettings={dividendWithholdingRate:15,capitalGainsRate:36};
         // Migrate new taxSettings fields
-        if(DB.taxSettings.fictitiousReturnRate!==undefined&&DB.taxSettings.box3SavingsRate===undefined){delete DB.taxSettings.fictitiousReturnRate;}
         if(DB.taxSettings.box3SavingsRate===undefined) DB.taxSettings.box3SavingsRate=1.37;
         if(DB.taxSettings.box3InvRate===undefined) DB.taxSettings.box3InvRate=5.88;
         if(DB.taxSettings.box3Allowance===undefined||DB.taxSettings.box3Allowance===57000) DB.taxSettings.box3Allowance=57684;
@@ -2001,7 +1997,7 @@ function loadDB(){
         if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
         if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
         // Remove obsolete section IDs from saved order
-        DB.sectionOrder=DB.sectionOrder.filter(id=>!['s-biz-income','s-sectors','s-kpis'].includes(id));
+        DB.sectionOrder=DB.sectionOrder.filter(id=>id!=='s-biz-income'&&id!=='s-sectors');
         if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
         if(!DB.sectionOrder.includes('s-notes')) DB.sectionOrder.push('s-notes');
         // Ensure biz3 (Self Trading) always exists — for manual entry support alongside auto-calc
@@ -2355,7 +2351,6 @@ function importDB(event){
       // Ensure all migrations are applied to imported data
       if(!DB.priceHistory) DB.priceHistory={};
       if(!DB.taxSettings) DB.taxSettings={dividendWithholdingRate:15,capitalGainsRate:36,box3SavingsRate:1.37,box3InvRate:5.88,box3Allowance:57684};
-      if(DB.taxSettings.fictitiousReturnRate!==undefined&&DB.taxSettings.box3SavingsRate===undefined){delete DB.taxSettings.fictitiousReturnRate;}
       if(DB.taxSettings.box3SavingsRate===undefined) DB.taxSettings.box3SavingsRate=1.37;
       if(DB.taxSettings.box3InvRate===undefined) DB.taxSettings.box3InvRate=5.88;
       if(DB.taxSettings.box3Allowance===undefined||DB.taxSettings.box3Allowance===57000) DB.taxSettings.box3Allowance=57684;
@@ -2390,7 +2385,7 @@ function importDB(event){
       if(!DB.liabilities) DB.liabilities=[];
       if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
       if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
-      DB.sectionOrder=DB.sectionOrder.filter(id=>!['s-biz-income','s-sectors','s-kpis'].includes(id));
+      DB.sectionOrder=DB.sectionOrder.filter(id=>id!=='s-biz-income'&&id!=='s-sectors');
       if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
       if(!DB.sectionOrder.includes('s-notes')) DB.sectionOrder.push('s-notes');
       if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
@@ -5692,19 +5687,6 @@ function getLedgerMonth(ym){
   return d;
 }
 
-function getLedgerBizNet(ym){
-  // Auto: biz1+biz2 net profit for month (Box 1 businesses only, not Self Trading)
-  const bizs=(DB.businesses||[]).filter(b=>b.id!=='biz3');
-  let net=0;
-  bizs.forEach(biz=>{
-    const entries=(biz.entries||[]).filter(e=>e.date.startsWith(ym));
-    const rev=entries.filter(e=>e.type==='revenue').reduce((s,e)=>s+e.amount,0);
-    const exp=entries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
-    net+=rev-exp;
-  });
-  return net;
-}
-
 function getLedgerDividends(ym){
   // Auto: net dividends in month (after per-instrument withholding tax)
   const instMap={};
@@ -5713,48 +5695,12 @@ function getLedgerDividends(ym){
     .reduce((s,tx)=>{ const whr=(instMap[tx.iid]??15)/100; return s+(tx.qty||1)*(tx.price||0)*(1-whr); },0);
 }
 
-function getLedgerTradingNet(ym){
-  // Auto: realized gains/losses − fees for the month + biz3 manual entries (platform fees etc.)
-  // Dividends excluded — already captured by getLedgerDividends
-  const start=ym+'-01', end=ym+'-31';
-  const tradingCats=new Set(['ETF','Stock','Crypto']);
-  const instCat={}; DB.instruments.forEach(i=>{ instCat[i.id]=i.category; });
-  const txs=[...DB.transactions].sort((a,b)=>a.date.localeCompare(b.date));
-  const pos={};
-  let realizedNet=0, fees=0;
-  txs.forEach(tx=>{
-    if(!tradingCats.has(instCat[tx.iid])) return;
-    if(!pos[tx.iid]) pos[tx.iid]={qty:0,cost:0};
-    const p=pos[tx.iid];
-    const inRange=tx.date>=start&&tx.date<=end;
-    if(tx.type==='buy'){ p.cost+=tx.qty*tx.price+(tx.fees||0); p.qty+=tx.qty; if(inRange) fees+=(tx.fees||0); }
-    else if(tx.type==='sell'){
-      const avg=p.qty>0?p.cost/p.qty:0;
-      const gain=tx.qty*tx.price-tx.qty*avg-(tx.fees||0);
-      p.cost-=avg*tx.qty; p.qty-=tx.qty;
-      if(inRange) realizedNet+=gain;
-    }
-    // dividends: skip — already in getLedgerDividends
-  });
-  const biz3=getBizPLForRange('biz3',start,end);
-  return realizedNet - fees + biz3.profit;
-}
-
 function getPlannedNetForMonth(ym){
   // Returns planned {income, expense, net} from runway model for given month
   const rows=buildCFData();
   const row=rows.find(r=>r.mRaw===ym);
   if(!row) return null;
   return{income:row.income,expense:row.exp,net:row.income+row.exp};
-}
-
-function getLedgerTaxProvision(bizNet, tradingNet){
-  // Estimated Box 1 tax on gross business income (biz1+biz2 only — salary/UWV already net, divs/trading = Box 3)
-  const taxable=Math.max(0, bizNet);
-  const rate=DB.taxSettings?.box1EffectiveRate>0
-    ? DB.taxSettings.box1EffectiveRate/100
-    : 0.3748; // default NL ~37.48% bracket
-  return taxable * rate;
 }
 
 function getLedgerActualNetForMonth(ym){
@@ -6435,7 +6381,6 @@ async function gistFetch(){
     DB=parsed;
     // run migrations
     if(!DB.taxSettings) DB.taxSettings={dividendWithholdingRate:15,capitalGainsRate:36,box3SavingsRate:1.37,box3InvRate:5.88,box3Allowance:57684,box1EffectiveRate:0,box2Rate:26.9};
-    if(DB.taxSettings.fictitiousReturnRate!==undefined&&DB.taxSettings.box3SavingsRate===undefined){delete DB.taxSettings.fictitiousReturnRate;}
     if(DB.taxSettings.box3SavingsRate===undefined) DB.taxSettings.box3SavingsRate=1.37;
     if(DB.taxSettings.box3InvRate===undefined) DB.taxSettings.box3InvRate=5.88;
     if(DB.taxSettings.box3Allowance===undefined||DB.taxSettings.box3Allowance===57000) DB.taxSettings.box3Allowance=57684;
