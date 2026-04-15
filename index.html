@@ -354,6 +354,18 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   .tax-yr-badge.provisional{background:#FEF3C7;color:#92400E}
   .tax-yr-badge.not-filed{background:var(--bg);color:var(--txt2)}
   .tax-yr-pill.active .tax-yr-badge.filed,.tax-yr-pill.active .tax-yr-badge.current,.tax-yr-pill.active .tax-yr-badge.provisional{background:rgba(255,255,255,0.2);color:#fff}
+
+.notes-board{display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start;min-height:220px;max-height:220px;overflow-y:auto;padding:4px 0}
+.note-card{position:relative;padding:10px 14px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--card);box-shadow:var(--sh);min-width:120px;max-width:240px;flex:1 1 140px;cursor:default}
+.note-card:hover .note-actions{opacity:1}
+.note-card-border{position:absolute;left:0;top:8px;bottom:8px;width:4px;border-radius:0 3px 3px 0}
+.note-text{font-size:15px;font-weight:800;line-height:1.25;word-break:break-word;padding-right:4px}
+.note-text[contenteditable=true]{outline:1px dashed var(--bdr);border-radius:4px;padding:2px 4px;min-width:60px;cursor:text}
+.note-actions{position:absolute;top:5px;right:6px;display:flex;gap:3px;opacity:0;transition:opacity .15s}
+.note-act-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;border-radius:4px;color:var(--txt2);line-height:1}
+.note-act-btn:hover{background:var(--bg2)}
+.note-add-card{padding:10px 14px;border-radius:10px;border:1.5px dashed var(--bdr);background:transparent;min-width:100px;flex:0 0 auto;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--txt2);font-weight:600;transition:background .15s;align-self:flex-start}
+.note-add-card:hover{background:var(--bg2)}
 </style>
 </head>
 <body>
@@ -477,6 +489,17 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       <div id="nwEmptyMsg" style="display:none;text-align:center;padding:40px;color:var(--txt2);font-size:13px">
         📈 Your net worth chart will build up automatically — one data point per day you open the dashboard.
       </div>
+    </div>
+  </div>
+
+  <!-- Notes Board -->
+  <div class="section" id="s-notes">
+    <div class="sec-hdr">
+      <div class="sec-ttl">📌 Notes</div>
+      <span class="t2" style="font-size:11px">Click ✎ to edit · ✕ to delete</span>
+    </div>
+    <div class="card" style="padding:14px 16px">
+      <div class="notes-board" id="notesBoard"></div>
     </div>
   </div>
   </div><!-- /ovwSections -->
@@ -1891,6 +1914,7 @@ const DEFAULT_BUSINESSES=[
   {id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]}
 ];
 let activeBiz='biz1';
+const DEFAULT_INCOME_ORDER = ['salary','uwv','other','dividends'];
 const DEFAULT_EXPENSE_CATS = [
   {id:'housing',       label:'Housing',        sub:'rent, mortgage, utilities'},
   {id:'food',          label:'Food & Groceries',sub:''},
@@ -1915,10 +1939,11 @@ function getDefaults(){
     transition:JSON.parse(JSON.stringify(DEFAULT_TRANSITION)),
     settings:{currency:'€',country:''},
     netWorthHistory:[],
+    notes:[],
     liabilities:[],
     businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES)),
-    sectionOrder:['s-alloc','s-cats','s-nwhistory'],
-    ledger:{months:{},expenseCategories:[...DEFAULT_EXPENSE_CATS]},
+    sectionOrder:['s-alloc','s-cats','s-nwhistory','s-notes'],
+    ledger:{months:{},expenseCategories:[...DEFAULT_EXPENSE_CATS],incomeCategories:[...DEFAULT_INCOME_ORDER]},
     tradingExperiment:{startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20},
     taxRecords:{
       2023:{income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'},
@@ -1971,16 +1996,19 @@ function loadDB(){
         // Migrate settings
         if(!DB.settings) DB.settings={currency:'€',country:''};
         if(!DB.netWorthHistory) DB.netWorthHistory=[];
+        if(!DB.notes) DB.notes=[];
         if(!DB.liabilities) DB.liabilities=[];
         if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
-        if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory'];
+        if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
         // Remove obsolete section IDs from saved order
         DB.sectionOrder=DB.sectionOrder.filter(id=>!['s-biz-income','s-sectors','s-kpis'].includes(id));
-        if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory'];
+        if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
+        if(!DB.sectionOrder.includes('s-notes')) DB.sectionOrder.push('s-notes');
         // Ensure biz3 (Self Trading) always exists — for manual entry support alongside auto-calc
         if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
         if(!DB.ledger) DB.ledger={months:{}};
     if(!DB.ledger.expenseCategories) DB.ledger.expenseCategories=[...DEFAULT_EXPENSE_CATS];
+    if(!DB.ledger.incomeCategories) DB.ledger.incomeCategories=[...DEFAULT_INCOME_ORDER];
         if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
         // Migrate Cash/Savings instrument names (one-time rename)
         const _c=DB.instruments.find(i=>i.id==='i22');
@@ -2358,14 +2386,17 @@ function importDB(event){
       if(!DB.transition._cashV2){ DB.transition.cashTxDelta=0; DB.transition._cashV2=true; }
       if(!DB.settings) DB.settings={currency:'€',country:''};
       if(!DB.netWorthHistory) DB.netWorthHistory=[];
+        if(!DB.notes) DB.notes=[];
       if(!DB.liabilities) DB.liabilities=[];
       if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
-      if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory'];
+      if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
       DB.sectionOrder=DB.sectionOrder.filter(id=>!['s-biz-income','s-sectors','s-kpis'].includes(id));
-      if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory'];
+      if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
+      if(!DB.sectionOrder.includes('s-notes')) DB.sectionOrder.push('s-notes');
       if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
       if(!DB.ledger) DB.ledger={months:{}};
     if(!DB.ledger.expenseCategories) DB.ledger.expenseCategories=[...DEFAULT_EXPENSE_CATS];
+    if(!DB.ledger.incomeCategories) DB.ledger.incomeCategories=[...DEFAULT_INCOME_ORDER];
       if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
       // Migrate: 4GLD Commodity → Stock (sector: Gold)
       const _4gldI=DB.instruments.find(i=>i.id==='i20');
@@ -4294,7 +4325,7 @@ function debounce(fn,ms){ return(...args)=>{ clearTimeout(_debounceTimer); _debo
 
 // ── FULL REFRESH ──
 // ── SECTION REORDER ──
-const DEFAULT_SECTION_ORDER=['s-alloc','s-cats','s-nwhistory'];
+const DEFAULT_SECTION_ORDER=['s-alloc','s-cats','s-nwhistory','s-notes'];
 function applySectionOrder(){
   const container=document.getElementById('ovwSections');
   if(!container) return;
@@ -4311,6 +4342,64 @@ function renumberSections(){
   });
 }
 
+// ── NOTES BOARD ──
+const NOTE_COLORS={blue:'#3B82F6',green:'#10B981',purple:'#8B5CF6',red:'#EF4444',amber:'#F59E0B',pink:'#EC4899',teal:'#06B6D4'};
+const NOTE_COLOR_CYCLE=['blue','green','purple','red','amber','pink','teal'];
+
+function renderNotesBoard(){
+  const board=document.getElementById('notesBoard');
+  if(!board) return;
+  const notes=DB.notes||[];
+  board.innerHTML=notes.map(n=>{
+    const col=NOTE_COLORS[n.color]||NOTE_COLORS.blue;
+    return `<div class="note-card" id="nc-${n.id}">
+      <div class="note-card-border" style="background:${col}"></div>
+      <div class="note-actions">
+        <button class="note-act-btn" onclick="startEditNote('${n.id}')" title="Edit">✎</button>
+        <button class="note-act-btn" onclick="deleteNote('${n.id}')" title="Delete" style="color:var(--err)">✕</button>
+      </div>
+      <div class="note-text" style="color:${col}" id="nt-${n.id}">${n.text}</div>
+    </div>`;
+  }).join('')+
+  `<button class="note-add-card" onclick="addNote()">
+    <span style="font-size:18px;line-height:1">＋</span> Add note
+  </button>`;
+}
+
+function addNote(){
+  const text=prompt('Note text:');
+  if(!text||!text.trim()) return;
+  const notes=DB.notes||[];
+  const colorIdx=notes.length%NOTE_COLOR_CYCLE.length;
+  const color=NOTE_COLOR_CYCLE[colorIdx];
+  notes.push({id:'n'+Date.now(), text:text.trim(), color});
+  DB.notes=notes;
+  saveDB(); renderNotesBoard();
+}
+
+function deleteNote(id){
+  DB.notes=(DB.notes||[]).filter(n=>n.id!==id);
+  saveDB(); renderNotesBoard();
+}
+
+function startEditNote(id){
+  const el=document.getElementById('nt-'+id);
+  if(!el) return;
+  el.contentEditable='true';
+  el.focus();
+  // Select all text
+  const range=document.createRange(); range.selectNodeContents(el);
+  const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  const done=()=>{
+    el.contentEditable='false';
+    const note=(DB.notes||[]).find(n=>n.id===id);
+    if(note){ note.text=el.textContent.trim()||note.text; if(!el.textContent.trim()) el.textContent=note.text; }
+    saveDB();
+  };
+  el.onblur=done;
+  el.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } if(e.key==='Escape'){ el.textContent=(DB.notes||[]).find(n=>n.id===id)?.text||''; el.blur(); } };
+}
+
 function refreshAll(){
   const cats=computeCategories();
   rebuildCashFlow(); // must run first — sets window._cashVal/_savVal used by renderKPIs
@@ -4319,6 +4408,7 @@ function refreshAll(){
   snapshotNetWorth(cats); // keep NW chart end-point fresh after price updates
   renderNWChart(cats);
   updatePeriodMenuLocks();
+  renderNotesBoard();
 }
 
 // ── TAX HELPERS ──
@@ -5584,10 +5674,12 @@ function deleteLiability(id){
 // ── LEDGER ──
 let _ldgMonth = new Date().toISOString().slice(0,7);
 let _ldgExpEditMode = false;
+let _ldgIncEditMode = false;
 
 function getLedgerMonth(ym){
   if(!DB.ledger) DB.ledger={months:{}};
     if(!DB.ledger.expenseCategories) DB.ledger.expenseCategories=[...DEFAULT_EXPENSE_CATS];
+    if(!DB.ledger.incomeCategories) DB.ledger.incomeCategories=[...DEFAULT_INCOME_ORDER];
   if(!DB.ledger.months[ym]) DB.ledger.months[ym]={
     salary:0,uwv:0,portfolioWithdrawal:0,other:0,
     expenses:{housing:0,food:0,transport:0,subscriptions:0,insurance:0,other:0},
@@ -5751,6 +5843,7 @@ function renderLedger(){
   const dev=planned!==null?net-planned.net:null;
   const t=DB.transition;
   const expCats=DB.ledger.expenseCategories||DEFAULT_EXPENSE_CATS;
+  const incOrder=DB.ledger.incomeCategories||DEFAULT_INCOME_ORDER;
 
   document.getElementById('ldgMonthLabel').textContent=fmtM(ym);
 
@@ -5767,21 +5860,16 @@ function renderLedger(){
   const diffInc=(actual,plan,id='')=>{
     const span=id?`id="${id}"`:'';
     if(actual==null||plan==null) return `<span ${span} style="color:var(--txt2)">—</span>`;
-    const dv=actual-plan;
-    if(Math.abs(dv)<1) return `<span ${span} style="color:var(--ok)">✓</span>`;
-    const col=dv>=0?'var(--ok)':'var(--err)';
-    return `<span ${span} style="color:${col};font-weight:600">${dv>0?'+':''}${feur(dv)}</span>`;
+    const dv=actual-plan; if(Math.abs(dv)<1) return `<span ${span} style="color:var(--ok)">✓</span>`;
+    return `<span ${span} style="color:${dv>=0?'var(--ok)':'var(--err)'};font-weight:600">${dv>0?'+':''}${feur(dv)}</span>`;
   };
   const diffExp=(actual,plan,id='')=>{
     const span=id?`id="${id}"`:'';
     if(actual==null||plan==null) return `<span ${span} style="color:var(--txt2)">—</span>`;
-    const dv=plan-actual;
-    if(Math.abs(dv)<1) return `<span ${span} style="color:var(--ok)">✓</span>`;
-    const col=dv>=0?'var(--ok)':'var(--err)';
-    return `<span ${span} style="color:${col};font-weight:600">${dv>0?'+':''}${feur(dv)}</span>`;
+    const dv=plan-actual; if(Math.abs(dv)<1) return `<span ${span} style="color:var(--ok)">✓</span>`;
+    return `<span ${span} style="color:${dv>=0?'var(--ok)':'var(--err)'};font-weight:600">${dv>0?'+':''}${feur(dv)}</span>`;
   };
 
-  // Fixed detRow: 4 separate <td> elements, no comma operator
   const detRow=(section,label,sub,planCell,actualCell,diffCell)=>`
     <tr class="ldg-det-${section}" style="display:none;border-bottom:1px solid var(--bdr)">
       <td style="padding:6px 16px">${label}${sub?`<div style="font-size:10px;color:var(--txt2);margin-top:1px">${sub}</div>`:''}</td>
@@ -5798,29 +5886,85 @@ function renderLedger(){
       <td style="padding:6px 16px;text-align:right;font-size:13px"><span id="${diffId}">${diffHtml}</span></td>
     </tr>`;
 
+  // ↑/↓ move buttons for edit modes
+  const moveBtn=(fn,id,dir,disabled)=>
+    `<button class="btn btn-g" onclick="${fn}('${id}','${dir}')" style="padding:1px 6px;font-size:12px;min-width:24px${disabled?';opacity:.3;pointer-events:none':''}">${dir==='up'?'↑':'↓'}</button>`;
+
+  // ── Income section ──────────────────────────────────────────────
+  // Definition of each income item (label, plan value, actual input, diff)
+  const incItemDef={
+    salary:   {label:'Salary / Severance',  sub:'net received',        plan:pf(planSalary), actual:inp('ldg_salary',d.salary),  diff:diffInc(d.salary||0,planSalary,'ldgd_salary')},
+    uwv:      {label:'UWV Benefit',         sub:'net benefit received', plan:pf(planUWV),    actual:inp('ldg_uwv',d.uwv),        diff:diffInc(d.uwv||0,planUWV,'ldgd_uwv')},
+    other:    {label:'Other Income',        sub:'freelance, one-off',   plan:pf(null),       actual:inp('ldg_other',d.other),    diff:'<span style="color:var(--txt2)">—</span>'},
+    dividends:{label:'Dividends',           sub:'net after WHT — auto', plan:divs>0?feur(divs):'<span style="color:var(--txt2)">—</span>',
+               actual:`<span style="font-weight:600;color:${divs>0?'var(--ok)':'var(--txt2)'}">${divs>0?feur(divs):'—'}</span>`,
+               diff:'<span style="color:var(--txt2)">auto</span>'}
+  };
+
+  let incSectionRows='';
   const incSummary=planIncTotal!=null?`${feur(totalIncome)} / ${feur(planIncTotal)}`:`${feur(totalIncome)}`;
+
+  if(_ldgIncEditMode){
+    incSectionRows=`<tr style="background:var(--bg2);border-bottom:1px solid var(--bdr)">
+      <td colspan="4" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
+        ↕️ Reorder Income Items
+        <button class="btn btn-g btn-sm" onclick="toggleIncEditMode()" style="margin-left:12px;font-size:11px">✓ Done</button>
+      </td>
+    </tr>`+
+    incOrder.map((id,idx)=>{
+      const itm=incItemDef[id]||{label:id,sub:''};
+      return `<tr style="border-bottom:1px solid var(--bdr)">
+        <td style="padding:6px 12px;display:flex;align-items:center;gap:6px">
+          ${moveBtn('moveIncCat',id,'up',idx===0)}
+          ${moveBtn('moveIncCat',id,'down',idx===incOrder.length-1)}
+          <span style="font-size:13px">${itm.label}</span>
+          <span style="font-size:10px;color:var(--txt2)">${itm.sub}</span>
+        </td>
+        <td colspan="3" style="padding:6px 12px;font-size:11px;color:var(--txt2)">order: ${idx+1} of ${incOrder.length}</td>
+      </tr>`;
+    }).join('');
+  } else {
+    const incHdr=`<tr class="ldg-sec-hdr" onclick="toggleLdgSection('inc')" style="background:var(--bg2);cursor:pointer;user-select:none">
+      <td colspan="3" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
+        <span id="ldg-arr-inc" style="display:inline-block;transition:transform .2s;margin-right:6px">▶</span>Income
+        <span id="ldg-sum-inc" style="font-weight:400;font-size:11px;color:var(--txt2);margin-left:8px">${incSummary}</span>
+      </td>
+      <td style="padding:6px 12px;text-align:right">
+        <button class="btn-ghost" onclick="event.stopPropagation();toggleIncEditMode()" style="font-size:11px;padding:2px 6px" title="Reorder items">↕</button>
+      </td>
+    </tr>`;
+    const incDetail=incOrder.map(id=>{
+      const itm=incItemDef[id]; if(!itm) return '';
+      return detRow('inc',itm.label,itm.sub,itm.plan,itm.actual,itm.diff);
+    }).join('');
+    incSectionRows=incHdr+incDetail;
+  }
+
+  // ── Expense section ─────────────────────────────────────────────
+  let expRows='';
   const expSummary=planExpTotal!=null?`${feur(totalExp)} / ${feur(planExpTotal)}`:`${feur(totalExp)}`;
 
-  // Expense section: normal view vs edit mode
-  let expRows='';
   if(_ldgExpEditMode){
-    // Edit mode: rename inputs + delete buttons, no Plan/Actual/Diff
     expRows=`<tr style="background:var(--bg2);border-bottom:1px solid var(--bdr)">
       <td colspan="4" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
-        <span style="margin-right:6px">✏️</span>Edit Expense Categories
+        ✏️ Edit Expense Categories
         <button class="btn btn-g btn-sm" onclick="toggleExpEditMode()" style="margin-left:12px;font-size:11px">✓ Done</button>
       </td>
     </tr>`+
-    expCats.map(cat=>`
+    expCats.map((cat,idx)=>`
       <tr style="border-bottom:1px solid var(--bdr)">
-        <td style="padding:6px 16px" colspan="3">
-          <input type="text" class="ts-inp" value="${cat.label}" style="width:60%;font-size:13px;padding:4px 8px"
-            onblur="renameExpCat('${cat.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
-          <span style="font-size:11px;color:var(--txt2);margin-left:8px">${feur((d.expenses||{})[cat.id]||0)} this month</span>
+        <td style="padding:5px 8px 5px 12px">
+          <div style="display:flex;align-items:center;gap:5px">
+            ${moveBtn('moveExpCat',cat.id,'up',idx===0)}
+            ${moveBtn('moveExpCat',cat.id,'down',idx===expCats.length-1)}
+            <input type="text" class="ts-inp" value="${cat.label}" style="flex:1;font-size:13px;padding:3px 8px"
+              onblur="renameExpCat('${cat.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+          </div>
         </td>
-        <td style="padding:6px 16px;text-align:right">
-          <button class="btn btn-sm" style="background:var(--err-l);color:var(--err);border:1px solid #FECACA;font-size:11px;padding:2px 8px"
-            onclick="removeExpCat('${cat.id}')">✕ Remove</button>
+        <td style="padding:5px 8px;font-size:11px;color:var(--txt2);white-space:nowrap" colspan="2">${feur((d.expenses||{})[cat.id]||0)} this month</td>
+        <td style="padding:5px 12px;text-align:right">
+          <button class="btn btn-sm" style="background:var(--err-l);color:var(--err);border:1px solid #FECACA;font-size:11px;padding:2px 6px"
+            onclick="removeExpCat('${cat.id}')">✕</button>
         </td>
       </tr>`).join('')+
     `<tr style="border-bottom:1px solid var(--bdr)">
@@ -5839,35 +5983,16 @@ function renderLedger(){
       </td>
     </tr>`;
     const expDetail=expCats.map(cat=>
-      detRow('exp', cat.label, cat.sub||'', '—',
-        inp('ldgx_'+cat.id, (d.expenses||{})[cat.id]),
-        '<span style="color:var(--txt2)">—</span>')
+      detRow('exp',cat.label,cat.sub||'','—',inp('ldgx_'+cat.id,(d.expenses||{})[cat.id]),'<span style="color:var(--txt2)">—</span>')
     ).join('');
     expRows=expHdr+expDetail;
   }
 
   el.innerHTML=
-    // Income section header
-    `<tr class="ldg-sec-hdr" onclick="toggleLdgSection('inc')" style="background:var(--bg2);cursor:pointer;user-select:none">
-      <td colspan="4" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
-        <span id="ldg-arr-inc" style="display:inline-block;transition:transform .2s;margin-right:6px">▶</span>Income
-        <span id="ldg-sum-inc" style="font-weight:400;font-size:11px;color:var(--txt2);margin-left:8px">${incSummary}</span>
-      </td>
-    </tr>`+
-    // Income detail rows
-    detRow('inc','Salary / Severance','net received',pf(planSalary),inp('ldg_salary',d.salary),diffInc(d.salary||0,planSalary,'ldgd_salary'))+
-    detRow('inc','UWV Benefit','net benefit received',pf(planUWV),inp('ldg_uwv',d.uwv),diffInc(d.uwv||0,planUWV,'ldgd_uwv'))+
-    detRow('inc','Other Income','freelance, one-off',pf(null),inp('ldg_other',d.other),'<span style="color:var(--txt2)">—</span>')+
-    detRow('inc','Dividends','net after WHT — auto',
-      divs>0?feur(divs):'<span style="color:var(--txt2)">—</span>',
-      `<span style="font-weight:600;color:${divs>0?'var(--ok)':'var(--txt2)'}">${divs>0?feur(divs):'—'}</span>`,
-      '<span style="color:var(--txt2)">auto</span>')+
-    totRow('Total Income',pf(planIncTotal),'ldg_totalIncome',feur(totalIncome),'ldgd_incTotal',diffInc(totalIncome,planIncTotal))+
-    // Expense section (normal or edit mode)
+    incSectionRows+
+    (_ldgIncEditMode?'':totRow('Total Income',pf(planIncTotal),'ldg_totalIncome',feur(totalIncome),'ldgd_incTotal',diffInc(totalIncome,planIncTotal)))+
     expRows+
-    // Total Expenses (only in normal mode)
     (_ldgExpEditMode?'':totRow('Total Expenses',pf(planExpTotal),'ldg_totalExp',feur(totalExp),'ldgd_expTotal',diffExp(totalExp,planExpTotal)))+
-    // Summary
     `<tr style="background:var(--bg2)"><td colspan="4" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">Summary</td></tr>`+
     `<tr style="border-bottom:1px solid var(--bdr);font-weight:700">
       <td style="padding:8px 16px">Net Cash Flow</td>
@@ -5887,9 +6012,30 @@ function renderLedger(){
 }
 
 
+
 function toggleExpEditMode(){
   _ldgExpEditMode=!_ldgExpEditMode;
   renderLedger();
+}
+function toggleIncEditMode(){
+  _ldgIncEditMode=!_ldgIncEditMode;
+  renderLedger();
+}
+function moveExpCat(id,dir){
+  const cats=DB.ledger.expenseCategories||DEFAULT_EXPENSE_CATS;
+  const idx=cats.findIndex(c=>c.id===id); if(idx<0) return;
+  const swapIdx=dir==='up'?idx-1:idx+1;
+  if(swapIdx<0||swapIdx>=cats.length) return;
+  [cats[idx],cats[swapIdx]]=[cats[swapIdx],cats[idx]];
+  saveDB(); renderLedger();
+}
+function moveIncCat(id,dir){
+  const order=DB.ledger.incomeCategories||[...DEFAULT_INCOME_ORDER];
+  const idx=order.indexOf(id); if(idx<0) return;
+  const swapIdx=dir==='up'?idx-1:idx+1;
+  if(swapIdx<0||swapIdx>=order.length) return;
+  [order[idx],order[swapIdx]]=[order[swapIdx],order[idx]];
+  saveDB(); renderLedger();
 }
 function addExpCat(){
   const label=prompt('New category name (e.g. Dining, Gym, Kids):');
@@ -6128,6 +6274,7 @@ function deleteBizEntry(bizId, entryId){
 // ── NET WORTH HISTORY ──
 function snapshotNetWorth(cats){
   if(!DB.netWorthHistory) DB.netWorthHistory=[];
+        if(!DB.notes) DB.notes=[];
   const today=new Date().toISOString().slice(0,10);
   const nw=cats.reduce((s,c)=>s+c.current,0)-getTotalLiabilities();
   if(nw<=0) return; // don't snapshot empty portfolio
@@ -6309,9 +6456,10 @@ async function gistFetch(){
     if(!DB.taxRecords[2025]||!('pvv' in (DB.taxRecords[2025]||{}))) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''};
     if(!DB.settings) DB.settings={currency:'€',country:''};
     if(!DB.netWorthHistory) DB.netWorthHistory=[];
+        if(!DB.notes) DB.notes=[];
     if(!DB.liabilities) DB.liabilities=[];
     if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
-    if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory'];
+    if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
     if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
     if(!DB.transition) DB.transition=JSON.parse(JSON.stringify(DEFAULT_TRANSITION));
     if(DB.transition.bizPlanIncome===undefined) DB.transition.bizPlanIncome=0;
@@ -6323,6 +6471,7 @@ async function gistFetch(){
     if(!DB.priceHistory) DB.priceHistory={};
     if(!DB.ledger) DB.ledger={months:{}};
     if(!DB.ledger.expenseCategories) DB.ledger.expenseCategories=[...DEFAULT_EXPENSE_CATS];
+    if(!DB.ledger.incomeCategories) DB.ledger.incomeCategories=[...DEFAULT_INCOME_ORDER];
     if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
     // Migrate: 4GLD Commodity → Stock (sector: Gold)
     const _4gldG=DB.instruments.find(i=>i.id==='i20');
