@@ -361,11 +361,9 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   <div class="hdr-top">
     <div class="brand">
       <h1>💼 Financial Dashboard</h1>
-      <span class="upd-badge" id="lastUpd">Last updated: 25 Mar 2026</span>
       <span id="syncStatusHdr" class="sync-pill sync-idle" title="Cloud sync status" style="cursor:pointer" onclick="openCloudSync()">☁ —</span>
     </div>
     <div class="hdr-right">
-      <button id="fetchPricesBtn" class="btn btn-o btn-sm" onclick="fetchLivePrices()">🌐 Fetch Live Prices</button>
     </div>
   </div>
   <div class="main-tabs">
@@ -377,7 +375,6 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       <button class="settings-btn" id="settingsMenuBtn" onclick="toggleSettingsMenu()">⚙️ Settings <span class="arrow">▾</span></button>
       <div class="settings-menu" id="settingsMenu">
         <button class="sm-item" onclick="openCloudSync()">☁️ Cloud Sync</button>
-        <button class="sm-item" onclick="openModal('priceSettingsModal');populatePriceSettings();closeSettingsMenu()">🌐 Price Settings</button>
         <button class="sm-item" onclick="openInstModal();closeSettingsMenu()">⚙ Manage Instruments</button>
         <button class="sm-item" onclick="openModal('historyModal');closeSettingsMenu()">📋 Transaction History</button>
         <label class="sm-item sm-sep" style="cursor:pointer">📥 Import<input type="file" accept=".json" onchange="importDB(event);closeSettingsMenu()" style="display:none"></label>
@@ -579,58 +576,6 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <div class="cat-top"><div class="cat-name">📊 Net Monthly</div></div>
         <div class="cat-val" id="netMon">—</div>
         <div class="cat-alloc">Income − Expenses</div>
-      </div>
-    </div>
-
-    <!-- FI Number & Progress -->
-    <div class="card" id="fiSection" style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div class="chart-ttl" style="margin-bottom:0">🎯 Financial Independence</div>
-        <button class="btn btn-sm" onclick="toggleFITargetEdit()" id="fiEditBtn" style="font-size:11px">✎ Edit Target</button>
-      </div>
-      <!-- Edit target row (hidden by default) -->
-      <div id="fiEditRow" style="display:none;margin-bottom:12px;background:var(--bg2);border-radius:8px;padding:10px 12px">
-        <div style="font-size:12px;color:var(--txt2);margin-bottom:6px">Custom FI target (€) — leave blank or 0 to auto-calculate as 25× annual expenses</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="number" id="fiTargetInput" class="ts-inp" placeholder="0 = auto (25× expenses)" style="flex:1;max-width:220px">
-          <button class="btn btn-sm" onclick="saveFITarget()" style="background:var(--ok);color:#fff">Save</button>
-          <button class="btn btn-sm btn-g" onclick="toggleFITargetEdit()">Cancel</button>
-        </div>
-      </div>
-      <!-- Main FI row: progress bar | years to FI | CAGR | annual spend -->
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:16px;align-items:start">
-        <!-- Progress bar + numbers -->
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
-            <div style="font-size:13px;font-weight:700;color:var(--txt)" id="fiTargetLabel">FI Target: —</div>
-            <div style="font-size:26px;font-weight:900;color:var(--ok)" id="fiProgressPct">—%</div>
-          </div>
-          <div style="height:10px;background:var(--bg2);border-radius:6px;overflow:hidden">
-            <div id="fiProgressBar" style="height:100%;background:var(--ok);border-radius:6px;transition:width .4s;width:0%"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt2);margin-top:4px">
-            <span id="fiCurrentLabel">Current: —</span>
-            <span id="fiGapLabel">Gap: —</span>
-          </div>
-        </div>
-        <!-- Years to FI -->
-        <div style="text-align:center">
-          <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Years to FI</div>
-          <div style="font-size:36px;font-weight:900;line-height:1;color:var(--txt)" id="fiYears">—</div>
-          <div style="font-size:10px;color:var(--txt2);margin-top:4px" id="fiFIYear">est. year —</div>
-        </div>
-        <!-- Portfolio CAGR -->
-        <div style="text-align:center">
-          <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Portfolio CAGR</div>
-          <div style="font-size:28px;font-weight:900;line-height:1;color:#8B5CF6" id="fiCAGR">—</div>
-          <div style="font-size:10px;color:var(--txt2);margin-top:4px" id="fiCAGRNote">annualised NW growth</div>
-        </div>
-        <!-- Annual spend -->
-        <div style="text-align:center">
-          <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Annual Spend</div>
-          <div style="font-size:24px;font-weight:900;line-height:1;color:var(--err)" id="fiAnnualExp">—</div>
-          <div style="font-size:10px;color:var(--txt2);margin-top:4px">× 25 = FI target</div>
-        </div>
       </div>
     </div>
 
@@ -859,8 +804,6 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#8B5CF6;border-radius:2px;display:inline-block"></span><span id="lgd3">Phase 3 income</span></span>
           <span id="lgd4" style="display:none"></span>
           <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#F59E0B55;border-radius:2px;border:1px solid #F59E0B;display:inline-block"></span>Expenses</span>
-          <span id="lgdActualIn" style="display:none;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#14B8A6;border-radius:2px;display:inline-block"></span>Actual In</span>
-          <span id="lgdActualOut" style="display:none;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#EF4444;border-radius:2px;display:inline-block"></span>Actual Out</span>
         </div>
       </div>
     </div>
@@ -922,35 +865,30 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <label class="ts-lbl">Wealth Tax Rate (%)</label>
           <input class="ts-inp" type="number" id="tax_cgRate" value="36" min="0" max="100" step="0.1"
             oninput="saveTaxSettings()" style="margin-top:6px">
-          <div class="t2" style="font-size:11px;margin-top:4px">Applied to voordeel uit sparen en beleggen. NL 2025: 36%.</div>
+          <div class="t2" style="font-size:11px;margin-top:4px">Applied to deemed return on savings and investments. NL 2025: 36%.</div>
         </div>
         <div>
           <label class="ts-lbl">Box 3 Savings Rate (%)</label>
           <input class="ts-inp" type="number" id="tax_savRate" value="1.37" min="0" max="100" step="0.01"
             oninput="saveTaxSettings()" style="margin-top:6px">
-          <div class="t2" style="font-size:11px;margin-top:4px">Deemed return on banktegoeden (savings). NL 2025: 1.37%.</div>
+          <div class="t2" style="font-size:11px;margin-top:4px">Deemed return on savings accounts. NL 2025: 1.37%.</div>
         </div>
         <div>
           <label class="ts-lbl">Box 3 Investments Rate (%)</label>
           <input class="ts-inp" type="number" id="tax_invRate" value="5.88" min="0" max="100" step="0.01"
             oninput="saveTaxSettings()" style="margin-top:6px">
-          <div class="t2" style="font-size:11px;margin-top:4px">Deemed return on beleggingen / overige bezittingen. NL 2025: 5.88%.</div>
+          <div class="t2" style="font-size:11px;margin-top:4px">Deemed return on investments / other assets. NL 2025: 5.88%.</div>
         </div>
-        <!-- Row 3: Allowance + Loonheffing + NL Dividendbelasting -->
+        <!-- Row 3: Allowance + NL Dividend Tax -->
         <div>
           <label class="ts-lbl">Wealth Tax Allowance (€)</label>
           <input class="ts-inp" type="number" id="tax_allowance" value="57684" min="0" step="1"
             oninput="saveTaxSettings()" style="margin-top:6px">
-          <div class="t2" style="font-size:11px;margin-top:4px">Heffingvrij vermogen per person. NL 2025: €57.684.</div>
+          <div class="t2" style="font-size:11px;margin-top:4px">Tax-free allowance per person. NL 2025: €57,684.</div>
         </div>
+
         <div>
-          <label class="ts-lbl" title="Loonheffing — payroll tax withheld monthly by your employer (from jaaropgaaf)">Loonheffing Paid (€/year)</label>
-          <input class="ts-inp" type="number" id="tax_loonheffing" value="0" min="0" step="100"
-            oninput="saveTaxSettings()" style="margin-top:6px">
-          <div class="t2" style="font-size:11px;margin-top:4px">From <span title="Jaaropgaaf — annual employer income statement" style="cursor:help;border-bottom:1px dotted var(--txt2)">jaaropgaaf</span>. Deducted from Box 1 as advance payment already made.</div>
-        </div>
-        <div>
-          <label class="ts-lbl" title="Dividendbelasting — Dutch WHT (15%) on NL company dividends. Verrekenbaar: credited against your IB bill.">NL Dividendbelasting (€/year)</label>
+          <label class="ts-lbl" title="Dutch 15% dividend withholding tax on NL company dividends — credited against your income tax bill.">NL Dividend Tax (€/year)</label>
           <input class="ts-inp" type="number" id="tax_nlDivBelasting" value="0" min="0" step="1"
             oninput="saveTaxSettings()" style="margin-top:6px">
           <div class="t2" style="font-size:11px;margin-top:4px">Dutch dividend <span title="Voorheffing — withholding tax deducted at source" style="cursor:help;border-bottom:1px dotted var(--txt2)">voorheffing</span> from ING statements. Separate from foreign WHT below.</div>
@@ -961,7 +899,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
           <div>
             <div class="ts-lbl" style="margin-bottom:2px">🧾 Entrepreneur Deductions (ZZP)</div>
-            <div class="t2" style="font-size:11px">Zelfstandigenaftrek · Startersaftrek · MKB-winstvrijstelling — applied to Box 1 business profit only</div>
+            <div class="t2" style="font-size:11px">Self-employed Deduction · Starter's Deduction · SME Profit Exemption — applied to Box 1 business profit only</div>
           </div>
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600">
             <input type="checkbox" id="tax_zzpEnabled" onchange="saveTaxSettings()" style="width:16px;height:16px;accent-color:var(--pri);cursor:pointer">
@@ -970,14 +908,14 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         </div>
         <div class="g" style="grid-template-columns:repeat(3,1fr);gap:16px;align-items:end" id="zzpDeductionFields">
           <div>
-            <label class="ts-lbl">Zelfstandigenaftrek (€)</label>
+            <label class="ts-lbl">Self-employed Deduction (€)</label>
             <input class="ts-inp" type="number" id="tax_zzpDed" value="2470" min="0" step="10"
               oninput="saveTaxSettings()" style="margin-top:6px">
-            <div class="t2" style="font-size:11px;margin-top:4px">Fixed deduction from business profit. NL 2025: €2,470. Decreasing yearly toward €900 (2027).</div>
+            <div class="t2" style="font-size:11px;margin-top:4px">Fixed deduction from business profit. NL 2025: €2,470. Decreasing yearly toward €900 (2027). Requires 1225+ billable hours/year.</div>
           </div>
           <div>
             <label class="ts-lbl" style="display:flex;align-items:center;gap:8px">
-              Startersaftrek (€)
+              Starter's Deduction (€)
               <label style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:400;cursor:pointer">
                 <input type="checkbox" id="tax_starterEnabled" onchange="saveTaxSettings()" style="width:13px;height:13px;accent-color:var(--pri)">
                 Apply
@@ -985,19 +923,19 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
             </label>
             <input class="ts-inp" type="number" id="tax_starterDed" value="2123" min="0" step="10"
               oninput="saveTaxSettings()" style="margin-top:6px">
-            <div class="t2" style="font-size:11px;margin-top:4px">Extra deduction in first 3 years as entrepreneur. NL 2025: €2,123.</div>
+            <div class="t2" style="font-size:11px;margin-top:4px">Extra deduction in first 3 years as entrepreneur. NL 2025: €2,123. Requires same 1225h criterion.</div>
           </div>
           <div>
-            <label class="ts-lbl">MKB-winstvrijstelling (%)</label>
+            <label class="ts-lbl">SME Profit Exemption (%)</label>
             <input class="ts-inp" type="number" id="tax_mkbPct" value="12.7" min="0" max="100" step="0.1"
               oninput="saveTaxSettings()" style="margin-top:6px">
-            <div class="t2" style="font-size:11px;margin-top:4px">% of remaining profit exempt from tax after ZZP deductions. NL 2025: 12.7%.</div>
+            <div class="t2" style="font-size:11px;margin-top:4px">% of remaining profit exempt from tax after self-employed deductions. NL 2025: 12.7%.</div>
           </div>
           <div>
             <label class="ts-lbl">KOR Threshold (€)</label>
             <input class="ts-inp" type="number" id="tax_korThreshold" value="20000" min="0" step="1000"
               oninput="saveTaxSettings()" style="margin-top:6px">
-            <div class="t2" style="font-size:11px;margin-top:4px">BTW exemption threshold. Below this you don't charge or remit VAT (Kleineondernemersregeling).</div>
+            <div class="t2" style="font-size:11px;margin-top:4px">VAT exemption threshold (KOR). Below this you don't charge or remit VAT.</div>
           </div>
         </div>
       </div>
@@ -1021,7 +959,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
               <div class="t2" style="font-size:11px;margin-top:4px">Standard: 21%. Reduced (9%) for food, books, some services.</div>
             </div>
             <div style="padding:12px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:11px;color:#92400E;line-height:1.6">
-              ⚠️ Once BTW-registered you must <strong>file quarterly</strong> (aangifte omzetbelasting). Enter all Business tab revenue &amp; costs <strong>excl. BTW</strong>. The BTW section below shows what you owe to the Belastingdienst each quarter.
+              ⚠️ Once VAT-registered you must <strong>file quarterly</strong> (VAT return). Enter all Business tab revenue &amp; costs <strong>excl. VAT</strong>. The VAT section below shows what you owe to the Tax Authority each quarter.
             </div>
           </div>
         </div>
@@ -1056,7 +994,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   <div class="section" id="taxBTWSection">
     <div class="sec-hdr">
       <div class="sec-ttl"><span class="sec-n">🧾</span>BTW / VAT</div>
-      <span class="t2" style="font-size:12px">Value Added Tax — quarterly remittance to Belastingdienst</span>
+      <span class="t2" style="font-size:12px">Value Added Tax — quarterly remittance to Tax Authority</span>
     </div>
     <div id="taxBTW"></div>
   </div>
@@ -1068,6 +1006,8 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     </div>
     <div id="taxYearSummary"></div>
   </div>
+  <!-- Filed vs Dashboard Estimate (rendered by JS, visible when year has filed ibBruto) -->
+  <div id="filedVsEstSection"></div>
   <!-- Zone C: How Dutch Tax Works guide -->
   <div class="section">
     <div class="card" style="max-width:900px;padding:0;overflow:hidden">
@@ -1081,32 +1021,32 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <div>
             <div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--acc)">Box 1 — Work &amp; Home</div>
             <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0 0 6px">Covers salary, freelance income, and business profit. <span title="Inkomstenbelasting — Dutch personal income tax (progressive brackets)">Income tax</span> is progressive: <strong>35.82%</strong> up to ~€38k, <strong>37.48%</strong> up to ~€76k, <strong>49.50%</strong> above.</p>
-            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0 0 6px">Two key credits reduce your bill: <span title="Arbeidskorting — earned income tax credit; phases in then phases out at higher incomes">arbeidskorting</span> (earned-income credit, up to ~€5,247 in 2025) and <span title="Algemene heffingskorting — general tax credit applied to all taxpayers">algemene heffingskorting</span> (general credit, up to ~€3,068).</p>
-            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0">If you are a <span title="Zelfstandige zonder personeel — self-employed without staff">ZZP</span> entrepreneur, the <span title="Zelfstandigenaftrek — self-employed deduction (€2,470 in 2025)">zelfstandigenaftrek</span> and <span title="MKB-winstvrijstelling — SME profit exemption (12.7%)">MKB-vrijstelling</span> further reduce taxable profit before brackets apply.</p>
+            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0 0 6px">Two key credits reduce your bill: the earned income credit (phases in then out at higher incomes, up to ~€5,247 in 2025) and the general tax credit (applied to all taxpayers, up to ~€3,068).</p>
+            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0">If you are a self-employed entrepreneur (ZZP), the self-employed deduction and SME profit exemption further reduce taxable profit before brackets apply.</p>
           </div>
           <!-- Box 3 -->
           <div>
             <div style="font-weight:600;font-size:13px;margin-bottom:6px;color:#f59e0b">Box 3 — Savings &amp; Investments</div>
-            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0 0 6px">Taxes <em>deemed</em> return on net wealth above the <span title="Heffingvrij vermogen — tax-free allowance (€57,684 in 2025)">allowance</span> (€57,684 in 2025). Savings are taxed at a flat ~1.37%; investments at ~5.88%. No tax on actual realised gains.</p>
-            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0 0 6px">The <span title="Peildatum — reference date for Box 3 wealth, always 1 January">peildatum</span> is always <strong>1 January</strong>. Wealth on that date determines your annual Box 3 bill — mid-year changes don't matter.</p>
-            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0">Foreign <span title="Dividendbelasting — Dutch word for dividend withholding tax">dividendbelasting</span> withheld abroad (shown in Dividend Withholding below) is credited against Box 3 liability, often reducing it to zero.</p>
+            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0 0 6px">Taxes a <em>deemed</em> return on net wealth above the tax-free allowance (€57,684 in 2025). Savings accounts are taxed at a flat ~1.37%; investments at ~5.88%. No tax on actual realised gains.</p>
+            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0 0 6px">The reference date (peildatum) is always <strong>1 January</strong>. Wealth on that date determines your annual Box 3 bill — mid-year changes don't matter.</p>
+            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0">Foreign dividend withholding tax withheld abroad (shown in Dividend Withholding below) is credited against Box 3 liability, often reducing it to zero.</p>
           </div>
           <!-- Dividends -->
           <div>
             <div style="font-weight:600;font-size:13px;margin-bottom:6px;color:#10b981">Dividend Withholding</div>
-            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0 0 6px"><strong>NL dividends</strong>: Dutch companies withhold 15% <span title="Dividendbelasting — statutory Dutch dividend tax withheld at source by the paying company">dividendbelasting</span> at source. This is <span title="Verrekenbaar — creditable; can be offset against your total income tax bill">verrekenbaar</span> (fully creditable) against your IB bill in Box 1.</p>
+            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0 0 6px"><strong>NL dividends</strong>: Dutch companies withhold 15% dividend tax at source. This is fully creditable against your income tax bill in Box 1.</p>
             <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0 0 6px"><strong>Foreign dividends</strong>: rate depends on tax treaty. US ETFs typically withhold 15% (or 30% without treaty). Excess WHT beyond what you owe in Box 3 may be partially refundable.</p>
-            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0">Enter NL dividendbelasting amounts in Tax Settings → the dashboard credits it against your Box 1 summary automatically.</p>
+            <p style="font-size:12px;color:var(--txt2);line-height:1.6;margin:0">Enter NL dividend tax amounts via ✏️ Edit record → the dashboard credits it against your Box 1 summary automatically.</p>
           </div>
           <!-- Filing tips -->
           <div>
             <div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--txt2)">📋 How to use this sheet</div>
             <ol style="font-size:12px;color:var(--txt2);line-height:1.8;margin:0;padding-left:16px">
               <li>Set your income + deductions in <strong>Tax Settings</strong>.</li>
-              <li>After filing, click <strong>✏️ Edit record</strong> on the year pill to store actual <span title="Jaaropgaaf — annual income statement from your employer">jaaropgaaf</span> data.</li>
-              <li>The <strong>Tax Year Summary</strong> shows estimated vs filed side by side once a record exists.</li>
+              <li>After filing, click <strong>✏️ Edit record</strong> on the year pill to store actual numbers from your employer statement and tax assessment.</li>
+              <li>The <strong>Tax Year Summary</strong> shows the current estimate. The <strong>Filed vs Dashboard</strong> card (below Tax Year Summary) compares it against your actual filed numbers.</li>
               <li>Box 3 wealth is assessed on <strong>1 Jan</strong> — update prices before that date for an accurate snapshot.</li>
-              <li>Use the ✏️ edit to record your <span title="Voorlopige aanslag — provisional tax assessment issued by Belastingdienst">voorlopige aanslag</span> amount in notes for reference.</li>
+              <li>Use ✏️ Edit record to note your provisional assessment amount and payment date.</li>
             </ol>
           </div>
         </div>
@@ -1154,14 +1094,14 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
 </div><!-- /main -->
 
 <!-- MODAL: TAX RECORD -->
-<div class="overlay" id="taxRecordModal" style="display:none">
+<div class="overlay" id="taxRecordModal">
   <div class="modal" style="max-width:520px;width:95%">
     <div class="modal-hdr">
       <span id="taxRecordModalTitle">Edit Tax Record</span>
       <button class="xbtn" onclick="closeModal('taxRecordModal')">✕</button>
     </div>
     <div style="padding:16px 20px 20px">
-      <div style="font-size:12px;color:var(--txt2);margin-bottom:14px">Store your actual filed (<span title="Aangifte — filed tax return submitted to Belastingdienst">aangifte</span>) numbers. The dashboard estimate is shown alongside for comparison.</div>
+      <div style="font-size:12px;color:var(--txt2);margin-bottom:14px">Store your actual filed numbers from your tax return and assessment. The dashboard estimate is shown alongside for comparison.</div>
       <!-- Estimate banner -->
       <div id="taxRecEstBanner" style="background:var(--bg);border:1px solid var(--bdr);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--txt2);margin-bottom:16px;display:none"></div>
       <!-- Fields grid -->
@@ -1171,35 +1111,35 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <input type="number" id="trIncome" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="e.g. 91063">
         </div>
         <div>
-          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="Loonheffing — payroll tax withheld by employer; creditable against IB">Loonheffing withheld (€)</label>
-          <input type="number" id="trLoonheffing" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="from jaaropgaaf">
+          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="Payroll tax withheld monthly by your employer — from annual employer statement">Payroll Tax Withheld (€)</label>
+          <input type="number" id="trLoonheffing" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="from employer statement">
         </div>
         <div>
-          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="NL dividendbelasting — Dutch 15% WHT on NL dividends, creditable against IB">NL Dividendbelasting (€)</label>
+          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="Dutch 15% dividend withholding tax on NL company dividends — creditable against income tax">NL Dividend Tax Withheld (€)</label>
           <input type="number" id="trNlDiv" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="e.g. 236">
         </div>
         <div>
-          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="Inkomstenbelasting bruto — gross IB before credits">IB Bruto (€)</label>
-          <input type="number" id="trIbBruto" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="from aangifte">
+          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="Gross income tax before applying earned income credit and general tax credit">Gross Income Tax (€)</label>
+          <input type="number" id="trIbBruto" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="from tax return">
         </div>
         <div>
-          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="Arbeidskorting — earned income credit applied to IB">Arbeidskorting (€)</label>
-          <input type="number" id="trArbeidskorting" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="from aangifte">
+          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="Earned income credit — phases in then out at higher incomes">Earned Income Credit (€)</label>
+          <input type="number" id="trArbeidskorting" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="from tax return">
         </div>
         <div>
-          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="Algemene heffingskorting — general tax credit">Alg. Heffingskorting (€)</label>
-          <input type="number" id="trAhk" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="from aangifte">
+          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="General tax credit applied to all taxpayers">General Tax Credit (€)</label>
+          <input type="number" id="trAhk" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="from tax return">
         </div>
         <div>
-          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="Premie volksverzekeringen — national insurance premiums (AOW/ANW/WLZ) withheld alongside income tax">PVV — Nat. Insurance (€)</label>
-          <input type="number" id="trPvv" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="from aanslag">
+          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="National insurance premiums (AOW/ANW/WLZ) withheld alongside income tax">Nat. Insurance Premiums (€)</label>
+          <input type="number" id="trPvv" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="from tax assessment">
         </div>
         <div>
-          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="IB Box 3 — actual income tax on savings and investments from aanslag">IB Box 3 Filed (€)</label>
-          <input type="number" id="trBox3Filed" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="from aanslag">
+          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="Actual wealth tax on savings and investments from your tax assessment">Wealth Tax Filed (€)</label>
+          <input type="number" id="trBox3Filed" class="ts-inp" style="width:100%;box-sizing:border-box" min="0" step="1" placeholder="from tax assessment">
         </div>
         <div>
-          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="Te betalen / terug te ontvangen — net tax due (positive) or refund (negative)">Te Betalen / Refund (€)</label>
+          <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px" title="Net tax due (positive) or refund (negative) from your final assessment">Tax Due / Refund (€)</label>
           <input type="number" id="trTeBetalen" class="ts-inp" style="width:100%;box-sizing:border-box" step="1" placeholder="positive=due, negative=refund">
         </div>
         <div>
@@ -1214,7 +1154,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       </div>
       <div style="margin-top:10px">
         <label style="font-size:12px;color:var(--txt2);display:block;margin-bottom:4px">Notes</label>
-        <textarea id="trNotes" class="ts-inp" rows="2" style="width:100%;box-sizing:border-box;resize:vertical;font-family:inherit;font-size:13px" placeholder="e.g. voorlopige aanslag amount, payment date…"></textarea>
+        <textarea id="trNotes" class="ts-inp" rows="2" style="width:100%;box-sizing:border-box;resize:vertical;font-family:inherit;font-size:13px" placeholder="e.g. provisional assessment amount, payment date…"></textarea>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
         <button class="btn-ghost" onclick="closeModal('taxRecordModal')">Cancel</button>
@@ -1281,42 +1221,6 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <button class="btn btn-sm" style="background:var(--err-l);color:var(--err);border:1.5px solid #FECACA;font-size:12px" onclick="hardReset()">↺ Factory Reset</button>
         <div style="font-size:11px;color:var(--txt2);margin-top:6px">Clears all data and restarts the setup wizard. Cannot be undone.</div>
       </div>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="priceSettingsModal">
-  <div class="modal" style="max-width:600px;width:95%">
-    <div class="mhdr">
-      <span class="mtitle">🌐 Price Fetching Settings</span>
-      <button class="xbtn" onclick="closeModal('priceSettingsModal')">✕</button>
-    </div>
-    <div style="padding:20px 24px 24px">
-      <div style="margin-bottom:20px">
-        <label class="ts-lbl" style="display:block;margin-bottom:8px">API Key for Stock Prices (Tiingo Recommended)</label>
-        <input class="ts-inp" type="password" id="priceSettings_apiKey" placeholder="Paste your API key"
-          style="margin-bottom:8px;font-family:monospace;font-size:12px">
-        <div class="t2" style="font-size:11px;line-height:1.6">
-          <strong>Recommended:</strong> <a href="https://tiingo.com/account/api/token" target="_blank" style="color:var(--link)"><strong>Tiingo</strong></a> (5000 requests/day, instant signup)<br>
-          <strong>Alternative:</strong> <a href="https://www.alphavantage.co/support/#api-key" target="_blank" style="color:var(--link)">Alpha Vantage</a> (25 requests/day, email delivery)<br>
-          <br>
-          The system will try Tiingo first (much higher limit), then Alpha Vantage as fallback.
-        </div>
-      </div>
-      <div style="border-top:1px solid var(--bdr);padding-top:16px;margin-top:16px">
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px">
-          <input type="checkbox" id="priceSettings_autoFetch" checked>
-          <span>Auto-fetch prices if older than 6 hours</span>
-        </label>
-        <div class="t2" style="font-size:11px;margin-top:8px;margin-left:28px">
-          On page load, if any price hasn't been updated in 6+ hours, automatically fetch fresh prices.
-        </div>
-      </div>
-      <div style="border-top:1px solid var(--bdr);padding-top:16px;margin-top:16px;display:flex;gap:10px">
-        <button class="btn btn-g" onclick="savePriceApiSettings()">💾 Save Settings</button>
-        <button class="btn btn-o btn-sm" onclick="testAlphaVantageKey()">🧪 Test Connection</button>
-      </div>
-      <div id="priceSettings_status" style="font-size:12px;margin-top:12px;display:none;padding:10px;border-radius:var(--rs);background:var(--ok-l);color:var(--ok)"></div>
     </div>
   </div>
 </div>
@@ -2002,7 +1906,7 @@ const DEFAULT_BUSINESSES=[
   {id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]}
 ];
 let activeBiz='biz1';
-let DB = {instruments:[],transactions:[],prices:{},priceHistory:{},taxSettings:{},lastPriceUpdateDate:{},transition:{}};
+let DB = {instruments:[],transactions:[],prices:{},priceHistory:{},taxSettings:{},transition:{}};
 let activeCategory = 'ETF';
 let activeSectorFilter = null;
 let activeRegionFilter = null;
@@ -2014,10 +1918,9 @@ function getDefaults(){
     transactions:[],
     prices:{},
     priceHistory:{},
-    taxSettings:{dividendWithholdingRate:15,capitalGainsRate:36,box3SavingsRate:1.37,box3InvRate:5.88,box3Allowance:57684,box1EffectiveRate:0,box2Rate:26.9,loonheffing:0,entrepreneurDeductionsEnabled:false,zelfstandigenaftrek:2470,startersaftrekEnabled:false,startersaftrek:2123,mkbVrijstelling:12.7,korThreshold:20000,btwEnabled:false,btwRate:21,alphaVantageKey:''},
-    lastPriceUpdateDate:{},
+    taxSettings:{dividendWithholdingRate:15,capitalGainsRate:36,box3SavingsRate:1.37,box3InvRate:5.88,box3Allowance:57684,box1EffectiveRate:0,box2Rate:26.9,entrepreneurDeductionsEnabled:false,zelfstandigenaftrek:2470,startersaftrekEnabled:false,startersaftrek:2123,mkbVrijstelling:12.7,korThreshold:20000,btwEnabled:false,btwRate:21},
     transition:JSON.parse(JSON.stringify(DEFAULT_TRANSITION)),
-    settings:{currency:'€',country:'',fiTarget:0,actualsStartDate:new Date().toISOString().slice(0,10),autoFetchStale:true},
+    settings:{currency:'€',country:''},
     netWorthHistory:[],
     liabilities:[],
     businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES)),
@@ -2028,15 +1931,6 @@ function getDefaults(){
       2023:{income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'},
       2024:{income:82744,loonheffing:28761,nlDividendbelasting:67,ibBruto:20960,arbeidskorting:2747,algHeffingskorting:0,pvv:10534,box3TaxFiled:298,teBetalen:217,status:'pending',notes:'Provisional assessment 13 Jun 2025 — definitive assessment still pending.'},
       2025:{income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''}
-    },
-    priceTickers:{
-      i01:'IUKS.DE', i02:'IESE.AS', i03:'ICMB.DE', i04:'IIND.DE',
-      i05:'DFNS.DE', i06:'NUKL.DE', i07:'WTNC.DE', i08:'WTDE.DE',
-      i09:'AMRS.DE', i10:'REMX',
-      i11:'INGA.AS', i12:'PHIA.AS', i13:'ACOMO.AS',
-      i14:'ACS.MC',  i15:'HOT.DE',  i16:'ASY.PA',  i24:'AF.PA',
-      i17:'BTC',     i18:'ETH',     i19:'SOL',
-      i20:'4GLD.DE', i21:'XAU'
     }
   };
 }
@@ -2056,7 +1950,6 @@ function loadDB(){
         if(DB.taxSettings.box3Allowance===undefined||DB.taxSettings.box3Allowance===57000) DB.taxSettings.box3Allowance=57684;
         if(DB.taxSettings.box1EffectiveRate===undefined) DB.taxSettings.box1EffectiveRate=0;
         if(DB.taxSettings.box2Rate===undefined) DB.taxSettings.box2Rate=26.9;
-        if(DB.taxSettings.loonheffing===undefined) DB.taxSettings.loonheffing=0;
         if(DB.taxSettings.entrepreneurDeductionsEnabled===undefined) DB.taxSettings.entrepreneurDeductionsEnabled=false;
         if(DB.taxSettings.zelfstandigenaftrek===undefined) DB.taxSettings.zelfstandigenaftrek=2470;
         if(DB.taxSettings.startersaftrekEnabled===undefined) DB.taxSettings.startersaftrekEnabled=false;
@@ -2066,12 +1959,10 @@ function loadDB(){
         if(DB.taxSettings.btwEnabled===undefined) DB.taxSettings.btwEnabled=false;
         if(DB.taxSettings.btwRate===undefined) DB.taxSettings.btwRate=21;
         if(DB.taxSettings.nlDividendbelasting===undefined) DB.taxSettings.nlDividendbelasting=0;
-        if(DB.taxSettings.alphaVantageKey===undefined) DB.taxSettings.alphaVantageKey='';
         if(!DB.taxRecords) DB.taxRecords={};
         if(!DB.taxRecords[2023]||DB.taxRecords[2023].income===0) DB.taxRecords[2023]={income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'};
         if(!DB.taxRecords[2024]||DB.taxRecords[2024].income===0) DB.taxRecords[2024]={income:82744,loonheffing:28761,nlDividendbelasting:67,ibBruto:20960,arbeidskorting:2747,algHeffingskorting:0,pvv:10534,box3TaxFiled:298,teBetalen:217,status:'pending',notes:'Provisional assessment 13 Jun 2025 — definitive assessment still pending.'};
         if(!DB.taxRecords[2025]||!('pvv' in (DB.taxRecords[2025]||{}))) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''};
-        if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.AS',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
         // Migrate phase names
         if(!DB.transition) DB.transition={};
         if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
@@ -2086,9 +1977,6 @@ function loadDB(){
         if(!DB.transition._cashV2){ DB.transition.cashTxDelta=0; DB.transition._cashV2=true; }
         // Migrate settings
         if(!DB.settings) DB.settings={currency:'€',country:''};
-        if(DB.settings.fiTarget===undefined) DB.settings.fiTarget=0;
-        if(!DB.settings.actualsStartDate) DB.settings.actualsStartDate=new Date().toISOString().slice(0,10);
-        if(DB.settings.autoFetchStale===undefined) DB.settings.autoFetchStale=true;
         if(!DB.netWorthHistory) DB.netWorthHistory=[];
         if(!DB.liabilities) DB.liabilities=[];
         if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
@@ -2100,12 +1988,6 @@ function loadDB(){
         if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
         if(!DB.ledger) DB.ledger={months:{}};
         if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
-        if(!DB.lastPriceUpdateDate){
-          // First-time migration: initialise tracking dates to today so no immediate stale warnings
-          DB.lastPriceUpdateDate={};
-          const today=new Date().toISOString().slice(0,10);
-          DB.instruments.forEach(i=>{ DB.lastPriceUpdateDate[i.id]=today; });
-        }
         // Migrate Cash/Savings instrument names (one-time rename)
         const _c=DB.instruments.find(i=>i.id==='i22');
         if(_c&&_c.name==='Cash — Trading 212') _c.name='Cash';
@@ -2216,8 +2098,6 @@ function wizNext(){
       if(iid&&!isNaN(val)&&val>0){
         DB.prices[iid]=val;
         snapshotPrice(iid,val);
-        const today=new Date().toISOString().slice(0,10);
-        DB.lastPriceUpdateDate[iid]=today;
       }
     });
     saveDB();
@@ -2459,7 +2339,6 @@ function importDB(event){
       if(DB.taxSettings.box3Allowance===undefined||DB.taxSettings.box3Allowance===57000) DB.taxSettings.box3Allowance=57684;
       if(DB.taxSettings.box1EffectiveRate===undefined) DB.taxSettings.box1EffectiveRate=0;
       if(DB.taxSettings.box2Rate===undefined) DB.taxSettings.box2Rate=26.9;
-      if(DB.taxSettings.loonheffing===undefined) DB.taxSettings.loonheffing=0;
       if(DB.taxSettings.entrepreneurDeductionsEnabled===undefined) DB.taxSettings.entrepreneurDeductionsEnabled=false;
       if(DB.taxSettings.zelfstandigenaftrek===undefined) DB.taxSettings.zelfstandigenaftrek=2470;
       if(DB.taxSettings.startersaftrekEnabled===undefined) DB.taxSettings.startersaftrekEnabled=false;
@@ -2469,12 +2348,10 @@ function importDB(event){
       if(DB.taxSettings.btwEnabled===undefined) DB.taxSettings.btwEnabled=false;
       if(DB.taxSettings.btwRate===undefined) DB.taxSettings.btwRate=21;
       if(DB.taxSettings.nlDividendbelasting===undefined) DB.taxSettings.nlDividendbelasting=0;
-      if(DB.taxSettings.alphaVantageKey===undefined) DB.taxSettings.alphaVantageKey='';
       if(!DB.taxRecords) DB.taxRecords={};
       if(!DB.taxRecords[2023]||DB.taxRecords[2023].income===0) DB.taxRecords[2023]={income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'};
       if(!DB.taxRecords[2024]||DB.taxRecords[2024].income===0) DB.taxRecords[2024]={income:82744,loonheffing:28761,nlDividendbelasting:67,ibBruto:20960,arbeidskorting:2747,algHeffingskorting:0,pvv:10534,box3TaxFiled:298,teBetalen:217,status:'pending',notes:'Provisional assessment 13 Jun 2025 — definitive assessment still pending.'};
       if(!DB.taxRecords[2025]||!('pvv' in (DB.taxRecords[2025]||{}))) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''};
-      if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.AS',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
       if(!DB.transition) DB.transition={};
       if(!DB.transition.phaseName1) DB.transition.phaseName1='Employment Phase';
       if(!DB.transition.phaseName2) DB.transition.phaseName2='Career Gap';
@@ -2486,9 +2363,6 @@ function importDB(event){
       if(DB.transition.savTxDelta===undefined) DB.transition.savTxDelta=0;
       if(!DB.transition._cashV2){ DB.transition.cashTxDelta=0; DB.transition._cashV2=true; }
       if(!DB.settings) DB.settings={currency:'€',country:''};
-      if(DB.settings.fiTarget===undefined) DB.settings.fiTarget=0;
-      if(!DB.settings.actualsStartDate) DB.settings.actualsStartDate=new Date().toISOString().slice(0,10);
-      if(DB.settings.autoFetchStale===undefined) DB.settings.autoFetchStale=true;
       if(!DB.netWorthHistory) DB.netWorthHistory=[];
       if(!DB.liabilities) DB.liabilities=[];
       if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
@@ -2496,7 +2370,6 @@ function importDB(event){
       DB.sectionOrder=DB.sectionOrder.filter(id=>!['s-biz-income','s-sectors','s-kpis'].includes(id));
       if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory'];
       if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
-      if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
       if(!DB.ledger) DB.ledger={months:{}};
       if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
       // Migrate: 4GLD Commodity → Stock (sector: Gold)
@@ -2795,20 +2668,22 @@ function renderAlloc(cats){
       }
     });
   } else if(ovwAllocMode==='pnl'){
-    const labels=cats.map(c=>c.label);
-    const colors=cats.map(c=>c.pnl>=0?'rgba(16,185,129,.75)':'rgba(239,68,68,.75)');
-    if(dtEl) dtEl.textContent='P&L by Category';
+    // Cash has no meaningful P&L (its "cost" = total deposits; "value" = remaining cash after investments)
+    const pnlCats=cats.filter(c=>c.label!=='Cash');
+    const labels=pnlCats.map(c=>c.label);
+    const colors=pnlCats.map(c=>c.pnl>=0?'rgba(16,185,129,.75)':'rgba(239,68,68,.75)');
+    if(dtEl) dtEl.textContent='P&L by Category (investments only)';
     if(btEl) btEl.textContent='Profit & Loss per Category (€)';
     if(dhEl) dhEl.textContent='👆 Click a slice to drill into that category';
     if(bhEl) bhEl.textContent='👆 Click a bar to drill into that category';
     safeDestroy('donutChart');
     charts.donut=new Chart(document.getElementById('donutChart'),{
       type:'doughnut',
-      data:{labels,datasets:[{data:cats.map(c=>+Math.abs(c.pnl).toFixed(0)),backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverBorderWidth:3}]},
+      data:{labels,datasets:[{data:pnlCats.map(c=>+Math.abs(c.pnl).toFixed(0)),backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverBorderWidth:3}]},
       options:{cutout:'65%',responsive:true,maintainAspectRatio:false,
         layout:{padding:{top:36,right:80,bottom:36,left:80}},
         plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
-          const cat=cats[ctx.dataIndex];
+          const cat=pnlCats[ctx.dataIndex];
           const sign=cat.pnl>=0?'+':'-';
           const retPct=cat.invested>0?(cat.pnl/cat.invested*100).toFixed(1):null;
           return [` ${ctx.label}: ${sign}${feur(Math.abs(cat.pnl))}`,retPct!==null?` Return: ${+retPct>=0?'+':''}${retPct}%`:''];
@@ -2819,11 +2694,11 @@ function renderAlloc(cats){
     safeDestroy('allocBar');
     charts.allocBar=new Chart(document.getElementById('allocBar'),{
       type:'bar',
-      data:{labels,datasets:[{label:'P&L',data:cats.map(c=>+c.pnl.toFixed(0)),backgroundColor:colors,borderRadius:4}]},
+      data:{labels,datasets:[{label:'P&L',data:pnlCats.map(c=>+c.pnl.toFixed(0)),backgroundColor:colors,borderRadius:4}]},
       options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
         plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,pointStyleWidth:8}},
           tooltip:{callbacks:{label:ctx=>{
-            const cat=cats[ctx.dataIndex];
+            const cat=pnlCats[ctx.dataIndex];
             const ret=cat.invested>0?(cat.pnl/cat.invested*100).toFixed(1):null;
             return [` P&L: ${cat.pnl>=0?'+':''}${feur(cat.pnl)}`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
           }}}},
@@ -2835,7 +2710,11 @@ function renderAlloc(cats){
   } else {
     // allocation (default) — by category
     const labels=cats.map(c=>c.label), colors=cats.map(c=>CAT_COLOR[c.label]||'#6B7280');
-    const nw=cats.reduce((s,c)=>s+c.current,0);
+    // For Cash: use true liquid value (cashVal+savVal) so bar shows no artificial loss
+    const cashDisplay=(window._cashVal||0)+(window._savVal||0);
+    const catDisplayVal=c=>c.label==='Cash'?cashDisplay:c.current;
+    const catInvestedVal=c=>c.label==='Cash'?cashDisplay:c.invested;
+    const nw=cats.reduce((s,c)=>s+catDisplayVal(c),0);
     if(dtEl) dtEl.textContent='Portfolio Composition';
     if(btEl) btEl.textContent='Invested vs Current Value (€)';
     if(dhEl) dhEl.textContent='👆 Click a slice to drill into that category';
@@ -2843,13 +2722,14 @@ function renderAlloc(cats){
     safeDestroy('donutChart');
     charts.donut=new Chart(document.getElementById('donutChart'),{
       type:'doughnut',
-      data:{labels,datasets:[{data:cats.map(c=>+c.current.toFixed(0)),backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverBorderWidth:3}]},
+      data:{labels,datasets:[{data:cats.map(c=>+catDisplayVal(c).toFixed(0)),backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverBorderWidth:3}]},
       options:{cutout:'65%',responsive:true,maintainAspectRatio:false,
         layout:{padding:{top:36,right:80,bottom:36,left:80}},
         plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
           const p=(ctx.raw/nw*100).toFixed(1);
           const cat=cats[ctx.dataIndex];
-          const ret=cat&&cat.invested>0?((cat.pnl/cat.invested)*100).toFixed(1):null;
+          // Cash has no meaningful return — it's a store of value, not an investment
+          const ret=cat&&cat.label!=='Cash'&&cat.invested>0?((cat.pnl/cat.invested)*100).toFixed(1):null;
           return [` ${ctx.label}: ${feur(ctx.raw)}`,` Alloc: ${p}% of portfolio`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
         }}}},
         onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
@@ -2859,8 +2739,8 @@ function renderAlloc(cats){
     charts.allocBar=new Chart(document.getElementById('allocBar'),{
       type:'bar',
       data:{labels,datasets:[
-        {label:'Invested',data:cats.map(c=>+c.invested.toFixed(0)),backgroundColor:colors.map(c=>c+'44'),borderColor:colors,borderWidth:1.5,borderRadius:4},
-        {label:'Current Value',data:cats.map(c=>+c.current.toFixed(0)),backgroundColor:colors,borderRadius:4}
+        {label:'Invested',data:cats.map(c=>+catInvestedVal(c).toFixed(0)),backgroundColor:colors.map(c=>c+'44'),borderColor:colors,borderWidth:1.5,borderRadius:4},
+        {label:'Current Value',data:cats.map(c=>+catDisplayVal(c).toFixed(0)),backgroundColor:colors,borderRadius:4}
       ]},
       options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
         plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,pointStyleWidth:8}},
@@ -2868,9 +2748,10 @@ function renderAlloc(cats){
             if(ctx.dataset.label==='Current Value'){
               const totalCur=ctx.dataset.data.reduce((s,v)=>s+(+v||0),0);
               const allocPct=totalCur>0?(ctx.raw/totalCur*100).toFixed(1):'0.0';
-              const invested=ctx.chart.data.datasets[0].data[ctx.dataIndex]||0;
-              const ret=invested>0?(((ctx.raw-invested)/invested)*100).toFixed(1):null;
-              return [` Current Value: ${feur(ctx.raw)}`,` Alloc: ${allocPct}% of category total`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
+              const cat=cats[ctx.dataIndex];
+              // No return % for Cash — not an investment
+              const ret=cat&&cat.label!=='Cash'&&cat.invested>0?(((cat.current-cat.invested)/cat.invested)*100).toFixed(1):null;
+              return [` Current Value: ${feur(ctx.raw)}`,` Alloc: ${allocPct}% of portfolio`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
             }
             return ` ${ctx.dataset.label}: ${feur(ctx.raw)}`;
           }}}},
@@ -3080,14 +2961,6 @@ function renderHoldingsTable(cats){
     <th class="num" title="Click to edit inline">Price ✏️</th>
   </tr>`;
   document.getElementById('holdTbody').innerHTML=holdings.map(h=>{
-    let staleIcon='';
-    if(h.inst.category!=='Cash'){
-      const lastUpd=(DB.lastPriceUpdateDate||{})[h.inst.id];
-      const today=new Date().toISOString().slice(0,10);
-      const isToday=lastUpd===today;
-      const hint=isToday?'Price updated today':lastUpd?`Last updated ${lastUpd}`:'Price never fetched';
-      staleIcon=`<span class="price-dot ${isToday?'ok':'err'}" title="${hint}"></span>`;
-    }
     const pnlPct=h.pos.cost>0?h.pnl/h.pos.cost:0;
     const periodRet=computeInstPeriodReturn(h.inst.id);
     const periodBadge=periodRet!==null?`<div style="font-size:10px;margin-top:2px;color:${periodRet>=0?'var(--ok)':'var(--err)'}">🕐${currentPeriod.toUpperCase()} ${periodRet>=0?'+':''}${periodRet.toFixed(1)}%</div>`:'';
@@ -3095,7 +2968,7 @@ function renderHoldingsTable(cats){
     const xirrCell=iXirr===null?'<span style="color:var(--txt2);font-size:11px">—</span>':`<span style="font-weight:600;color:${iXirr>=0?'var(--ok)':'var(--err)'}">${iXirr>=0?'+':''}${(iXirr*100).toFixed(1)}%</span><div style="font-size:10px;color:var(--txt2)">ann.</div>`;
     return`<tr>
       <td>
-        <div style="font-weight:700;font-size:13px">${h.inst.ticker}${staleIcon}</div>
+        <div style="font-weight:700;font-size:13px">${h.inst.ticker}</div>
         <div style="font-size:11px;color:var(--txt2);margin-top:1px">${h.inst.name} <span style="opacity:.6;font-size:10px">· ${fmt(h.pos.qty,h.pos.qty<10?4:2)} units</span></div>
       </td>
       <td class="num" style="font-size:13px">${feur(h.pos.cost,1)}</td>
@@ -3466,28 +3339,6 @@ function rebuildCashFlow(){
   const rd=document.getElementById('rwyDurLabel'); if(rd) rd.textContent='⏱ '+ph3+' Duration';
 
   const cfData=buildCFData(0);
-  // Compute actual inflows/outflows per month — only transactions on/after actualsStartDate
-  const _actualsStart=DB.settings.actualsStartDate||new Date().toISOString().slice(0,10);
-  const _actualByMonth={};
-  (DB.transactions||[]).forEach(tx=>{
-    const m=tx.date?tx.date.slice(0,7):null; if(!m) return;
-    if(tx.date<_actualsStart) return;
-    if(!_actualByMonth[m]) _actualByMonth[m]={inflow:0,outflow:0};
-    if(tx.type==='dividend')          _actualByMonth[m].inflow+=(tx.price||0);
-    else if(tx.type==='deposit')      _actualByMonth[m].inflow+=(tx.price||0);
-    else if(tx.type==='savings_add')  _actualByMonth[m].inflow+=(tx.price||0);
-    else if(tx.type==='savings_withdraw') _actualByMonth[m].outflow+=(tx.price||0);
-    else if(tx.type==='sell')         _actualByMonth[m].inflow+=(tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0);
-    else if(tx.type==='buy')          _actualByMonth[m].outflow+=(tx.qty||0)*(tx.price||0)+(tx.fees||0)+(tx.taxPaid||0);
-  });
-  // Read ledger salary/expenses for current month only (read-only — no side effect)
-  cfData.filter(d=>d.isCurrent).forEach(d=>{
-    const ym=d.mRaw, ldg=(DB.ledger?.months||{})[ym]; if(!ldg) return;
-    if(!_actualByMonth[ym]) _actualByMonth[ym]={inflow:0,outflow:0};
-    _actualByMonth[ym].inflow+=(ldg.salary||0)+(ldg.uwv||0)+(ldg.other||0)+(ldg.portfolioWithdrawal||0);
-    _actualByMonth[ym].outflow+=Object.values(ldg.expenses||{}).reduce((s,v)=>s+(v||0),0);
-  });
-  const hasActuals=cfData.some(d=>d.isCurrent&&_actualByMonth[d.mRaw]&&(_actualByMonth[d.mRaw].inflow>0||_actualByMonth[d.mRaw].outflow>0));
   const phaseColor=d=>d.phase==='employed'?'#3B82F6':d.phase==='gap'?'#EF4444':d.phase==='ww'?'#8B5CF6':'#94A3B8';
   // Past months always gray; current and future use phase color
   const incColors=cfData.map(d=>d.isPast?'#94A3B8':phaseColor(d));
@@ -3505,16 +3356,12 @@ function rebuildCashFlow(){
   charts.cf=new Chart(document.getElementById('cfChart'),{
     type:'bar',
     data:{labels:cfData.map(d=>d.isCurrent?'▶ '+d.m:d.m),datasets:[
-      {label:'Income',data:cfData.map(d=>d.income),yAxisID:'y',
+      {label:'Income',data:cfData.map(d=>d.income),
        backgroundColor:cfData.map((d,i)=>d.isPast?incColors[i]+'44':d.isCurrent?incColors[i]:incColors[i]+'99'),
        borderColor:incColors,borderWidth:1,borderRadius:3},
-      {label:'Expenses',data:cfData.map(d=>Math.abs(d.exp)),yAxisID:'y',
+      {label:'Expenses',data:cfData.map(d=>Math.abs(d.exp)),
        backgroundColor:cfData.map(d=>d.isPast?'#94A3B822':d.isCurrent?'#F59E0B':'#F59E0B55'),
-       borderColor:cfData.map(d=>d.isPast?'#94A3B8':'#F59E0B'),borderWidth:1,borderRadius:3},
-      {label:'Actual In',data:cfData.map(d=>d.isCurrent&&_actualByMonth[d.mRaw]?_actualByMonth[d.mRaw].inflow:null),
-       yAxisID:'y2',backgroundColor:'#14B8A699',borderColor:'#14B8A6',borderWidth:2,borderRadius:3,order:1},
-      {label:'Actual Out',data:cfData.map(d=>d.isCurrent&&_actualByMonth[d.mRaw]?_actualByMonth[d.mRaw].outflow:null),
-       yAxisID:'y2',backgroundColor:'#EF444499',borderColor:'#EF4444',borderWidth:2,borderRadius:3,order:1}
+       borderColor:cfData.map(d=>d.isPast?'#94A3B8':'#F59E0B'),borderWidth:1,borderRadius:3}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{
@@ -3523,16 +3370,10 @@ function rebuildCashFlow(){
       },
       scales:{
         x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},
-        y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v),font:{size:9}}},
-        y2:{type:'linear',position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:8}},title:{display:true,text:'Actual (€)',font:{size:8},color:'#6B7280'}}
+        y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v),font:{size:9}}}
       }
     }
   });
-  // Show actual legend items only when transaction/ledger data exists for past months
-  const lgdActIn=document.getElementById('lgdActualIn');
-  const lgdActOut=document.getElementById('lgdActualOut');
-  if(lgdActIn) lgdActIn.style.display=hasActuals?'flex':'none';
-  if(lgdActOut) lgdActOut.style.display=hasActuals?'flex':'none';
 
   // Investment Activity YTD — flows into projection
   const invYr=new Date().getFullYear();
@@ -3545,7 +3386,7 @@ function rebuildCashFlow(){
   const ytdDeposits=getYTDDeposits(invYr);
   const invIncome=ytdDivs+Math.max(0,tpl.realizedNet);
   const invOutflow=ytdBuys+ytdSellTax;
-  // cashInst + savInst declared here; also consumed by _actualByMonth computation above
+  // cashInst/savInst declared early — used in cashInstVal + savTradeDelta blocks below
   // Cash = CASH instrument position (anchor) + net trade impacts (all non-CASH/SAV tx) + cash↔savings transfers
   const cashInstVal=(()=>{
     if(!cashInst) return 0;
@@ -3667,7 +3508,6 @@ function rebuildCashFlow(){
     }
   });
   renderDivForecast();
-  renderFISection();
 }
 function renderDivForecast(){
   const canvas=document.getElementById('divForecastChart');
@@ -3712,179 +3552,6 @@ function renderDivForecast(){
   });
 }
 
-// ── FINANCIAL INDEPENDENCE ──
-function computePortfolioCAGR(){
-  const hist=DB.netWorthHistory||[];
-  if(hist.length<2) return null;
-  const sorted=[...hist].sort((a,b)=>a.date>b.date?1:-1);
-  const first=sorted[0], last=sorted[sorted.length-1];
-  if(!first.value||first.value<=0) return null;
-  const years=(new Date(last.date)-new Date(first.date))/(365.25*24*3600*1000);
-  if(years<0.08) return null; // need at least ~1 month of history
-  return Math.pow(last.value/first.value,1/years)-1;
-}
-// ── XIRR / MONEY-WEIGHTED RETURN ──
-function computeXIRR(flows, guess=0.1){
-  // flows: [{date:'YYYY-MM-DD', amount:number}] — negative=cash out, positive=cash in
-  if(!flows||flows.length<2) return null;
-  const sorted=[...flows].sort((a,b)=>a.date.localeCompare(b.date));
-  if(!sorted.some(f=>f.amount<0)||!sorted.some(f=>f.amount>0)) return null;
-  const t0=new Date(sorted[0].date).getTime();
-  const yrs=sorted.map(f=>(new Date(f.date).getTime()-t0)/(365.25*24*3600*1000));
-  let r=guess;
-  for(let i=0;i<200;i++){
-    let npv=0,dnpv=0;
-    for(let j=0;j<sorted.length;j++){
-      const t=yrs[j],cf=sorted[j].amount;
-      const base=1+r; if(base<=0) { r=0.1; break; }
-      const d=Math.pow(base,t);
-      npv+=cf/d;
-      if(t>0) dnpv+=-cf*t/Math.pow(base,t+1);
-    }
-    if(Math.abs(dnpv)<1e-12) break;
-    const rNew=r-npv/dnpv;
-    if(Math.abs(rNew-r)<1e-8){ r=rNew; break; }
-    r=rNew;
-    if(r<-0.9999) r=-0.9999;
-    if(r>100) r=100;
-  }
-  return isFinite(r)&&Math.abs(r)<=50?r:null; // discard >5000% as noise
-}
-function computePortfolioXIRR(cats){
-  const tc=new Set(['ETF','Stock','Crypto','Commodity']);
-  const ic={}; DB.instruments.forEach(i=>{ ic[i.id]=i.category; });
-  const flows=[];
-  (DB.transactions||[]).forEach(tx=>{
-    if(!tc.has(ic[tx.iid])) return;
-    if(tx.type==='buy')           flows.push({date:tx.date,amount:-((tx.qty||0)*(tx.price||0)+(tx.fees||0))});
-    else if(tx.type==='sell')     flows.push({date:tx.date,amount:(tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0)});
-    else if(tx.type==='dividend') flows.push({date:tx.date,amount:(tx.price||0)});
-  });
-  if(!flows.length) return null;
-  const today=new Date().toISOString().slice(0,10);
-  const portVal=cats.filter(c=>tc.has(c.label)).reduce((s,c)=>s+c.current,0);
-  if(portVal<=0) return null;
-  flows.push({date:today,amount:portVal});
-  return computeXIRR(flows);
-}
-function computePortfolioPeriodXIRR(daysAgo,cats){
-  const tc=new Set(['ETF','Stock','Crypto','Commodity']);
-  const ic={}; DB.instruments.forEach(i=>{ ic[i.id]=i.category; });
-  const todayD=new Date(), todayStr=todayD.toISOString().slice(0,10);
-  const startD=new Date(todayD); startD.setDate(todayD.getDate()-daysAgo);
-  const startStr=startD.toISOString().slice(0,10);
-  // Position qty at period start
-  const qtyAt={};
-  (DB.transactions||[]).filter(tx=>tx.date<startStr&&tc.has(ic[tx.iid])).forEach(tx=>{
-    if(!qtyAt[tx.iid]) qtyAt[tx.iid]=0;
-    if(tx.type==='buy') qtyAt[tx.iid]+=(tx.qty||0);
-    else if(tx.type==='sell') qtyAt[tx.iid]-=(tx.qty||0);
-  });
-  let startVal=0;
-  Object.entries(qtyAt).forEach(([iid,qty])=>{
-    if(qty<=0) return;
-    const p=getPriceAt(iid,daysAgo); if(!p) return;
-    startVal+=qty*p;
-  });
-  if(startVal<=0) return null;
-  const flows=[{date:startStr,amount:-startVal}];
-  (DB.transactions||[]).filter(tx=>tx.date>=startStr&&tc.has(ic[tx.iid])).forEach(tx=>{
-    if(tx.type==='buy')           flows.push({date:tx.date,amount:-((tx.qty||0)*(tx.price||0)+(tx.fees||0))});
-    else if(tx.type==='sell')     flows.push({date:tx.date,amount:(tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0)});
-    else if(tx.type==='dividend') flows.push({date:tx.date,amount:(tx.price||0)});
-  });
-  const portVal=cats.filter(c=>tc.has(c.label)).reduce((s,c)=>s+c.current,0);
-  if(portVal<=0) return null;
-  flows.push({date:todayStr,amount:portVal});
-  return computeXIRR(flows);
-}
-function computeInstXIRR(instId){
-  const inst=DB.instruments.find(i=>i.id===instId);
-  if(!inst||inst.category==='Cash') return null;
-  const flows=[];
-  let qty=0;
-  (DB.transactions||[]).filter(tx=>tx.iid===instId).forEach(tx=>{
-    if(tx.type==='buy'){      flows.push({date:tx.date,amount:-((tx.qty||0)*(tx.price||0)+(tx.fees||0))}); qty+=(tx.qty||0); }
-    else if(tx.type==='sell'){ flows.push({date:tx.date,amount:(tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0)}); qty-=(tx.qty||0); }
-    else if(tx.type==='dividend') flows.push({date:tx.date,amount:(tx.price||0)});
-  });
-  if(!flows.length) return null;
-  const curVal=qty*(DB.prices[instId]||0);
-  if(curVal<=0) return null;
-  flows.push({date:new Date().toISOString().slice(0,10),amount:curVal});
-  return computeXIRR(flows);
-}
-function computeFIData(){
-  const cats=computeCategories();
-  const t=DB.transition||{};
-  const nw=cats.reduce((s,c)=>s+c.value,0)-(DB.liabilities||[]).reduce((s,l)=>s+(l.amount||0),0);
-  const monthlyExp=t.exp1||0;
-  const annualExp=monthlyExp*12;
-  const rawTarget=DB.settings.fiTarget||0;
-  const fiTarget=rawTarget>0?rawTarget:(annualExp>0?annualExp*25:0);
-  const cagr=computePortfolioCAGR();
-  let years=null, fiYear=null;
-  if(fiTarget>0&&nw>=fiTarget){
-    years=0; fiYear=new Date().getFullYear(); // already at FI
-  } else if(cagr&&cagr>0&&fiTarget>0&&nw>0){
-    years=Math.log(fiTarget/nw)/Math.log(1+cagr);
-    fiYear=new Date().getFullYear()+Math.ceil(years);
-  }
-  const progress=fiTarget>0?Math.min(100,Math.max(0,nw/fiTarget*100)):0;
-  return {nw,annualExp,fiTarget,cagr,years,fiYear,progress};
-}
-function renderFISection(){
-  const d=computeFIData();
-  const setEl=(id,txt)=>{const e=document.getElementById(id);if(e)e.textContent=txt;};
-  // Target label
-  setEl('fiTargetLabel',d.fiTarget>0?`FI Target: ${feur(d.fiTarget,0)}`:'FI Target: — (set monthly expenses)');
-  // Progress %
-  setEl('fiProgressPct',d.fiTarget>0?fmt(d.progress,1)+'%':'—');
-  const bar=document.getElementById('fiProgressBar');
-  if(bar) bar.style.width=(d.fiTarget>0?d.progress:0)+'%';
-  // Current / gap
-  setEl('fiCurrentLabel',`Current: ${feur(d.nw,0)}`);
-  const gap=d.fiTarget>0?Math.max(0,d.fiTarget-d.nw):0;
-  setEl('fiGapLabel',gap>0?`Gap: ${feur(gap,0)}`:(d.fiTarget>0?'🎉 FI achieved!':''));
-  // Years to FI
-  if(d.years===null){
-    setEl('fiYears','—'); setEl('fiFIYear','need more history');
-  } else if(d.years===0){
-    setEl('fiYears','0'); setEl('fiFIYear','🎉 You are FI now!');
-  } else {
-    setEl('fiYears',fmt(d.years,1)); setEl('fiFIYear','est. '+d.fiYear);
-  }
-  // CAGR
-  const cagrEl=document.getElementById('fiCAGR');
-  const cagrNote=document.getElementById('fiCAGRNote');
-  if(d.cagr!==null){
-    if(cagrEl){ cagrEl.textContent=fmt(d.cagr*100,1)+'%'; cagrEl.style.color=d.cagr>=0?'#8B5CF6':'var(--err)'; }
-    if(cagrNote) cagrNote.textContent='annualised NW growth';
-  } else {
-    if(cagrEl){ cagrEl.textContent='—'; cagrEl.style.color='#8B5CF6'; }
-    if(cagrNote) cagrNote.textContent='need price history';
-  }
-  // Annual spend
-  setEl('fiAnnualExp',d.annualExp>0?feur(d.annualExp,0):'—');
-}
-function toggleFITargetEdit(){
-  const row=document.getElementById('fiEditRow');
-  const inp=document.getElementById('fiTargetInput');
-  if(!row) return;
-  const open=row.style.display!=='none';
-  row.style.display=open?'none':'block';
-  if(!open&&inp) inp.value=DB.settings.fiTarget>0?DB.settings.fiTarget:'';
-}
-function saveFITarget(){
-  const inp=document.getElementById('fiTargetInput');
-  if(!inp) return;
-  const val=parseFloat(inp.value)||0;
-  DB.settings.fiTarget=Math.max(0,val);
-  saveDB();
-  toggleFITargetEdit();
-  renderFISection();
-}
-
 // ── NAVIGATION ──
 function switchTab(name, btn){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
@@ -3926,101 +3593,6 @@ function openCloudSync(){
   closeSettingsMenu();
   openModal('cloudSyncModal');
   updateSyncUI();
-}
-function populatePriceSettings(){
-  const keyEl=document.getElementById('priceSettings_apiKey');
-  const autoEl=document.getElementById('priceSettings_autoFetch');
-  if(keyEl) keyEl.value=DB.taxSettings?.alphaVantageKey||'';
-  if(autoEl) autoEl.checked=DB.settings?.autoFetchStale!==false;
-}
-function savePriceApiSettings(){
-  const keyEl=document.getElementById('priceSettings_apiKey');
-  const autoEl=document.getElementById('priceSettings_autoFetch');
-  const statusEl=document.getElementById('priceSettings_status');
-  const key=(keyEl?.value||'').trim();
-  const autoFetch=autoEl?.checked??true;
-  DB.taxSettings.alphaVantageKey=key;
-  DB.settings.autoFetchStale=autoFetch;
-  saveDB();
-  if(statusEl){
-    statusEl.textContent='✅ Settings saved!';
-    statusEl.style.display='block';
-    setTimeout(()=>statusEl.style.display='none',3000);
-  }
-}
-async function testAlphaVantageKey(){
-  const keyEl=document.getElementById('priceSettings_apiKey');
-  const statusEl=document.getElementById('priceSettings_status');
-  const key=(keyEl?.value||'').trim();
-  if(!key){
-    if(statusEl){
-      statusEl.textContent='⚠️ Please enter an API key first';
-      statusEl.style.display='block';
-      statusEl.style.background='var(--wrn-l)'; statusEl.style.color='var(--wrn)';
-    }
-    return;
-  }
-  if(statusEl){
-    statusEl.textContent='🔄 Testing Tiingo...';
-    statusEl.style.display='block';
-    statusEl.style.background='var(--pri-l)'; statusEl.style.color='var(--pri)';
-  }
-  try{
-    // Try Tiingo first (5000/day, much better than Alpha Vantage 25/day)
-    console.log('Testing Tiingo with key:', key.substring(0,4)+'...');
-    const tiingoUrl=`https://api.tiingo.com/tiingo/daily/AAPL/prices?token=${encodeURIComponent(key)}&limit=1`;
-    console.log('Tiingo URL:', tiingoUrl);
-    const rTiingo=await fetch(tiingoUrl);
-    console.log('Tiingo response status:', rTiingo.status);
-
-    if(rTiingo.ok){
-      const dTiingo=await rTiingo.json();
-      console.log('Tiingo response:', dTiingo);
-      if(Array.isArray(dTiingo)&&dTiingo.length>0){
-        const p=parseFloat(dTiingo[0]?.close||0);
-        if(p&&p>0){
-          if(statusEl){
-            statusEl.textContent=`✅ Tiingo OK: AAPL $${p} (5000/day)`;
-            statusEl.style.display='block';
-            statusEl.style.background='var(--ok-l)'; statusEl.style.color='var(--ok)';
-          }
-          return;
-        }
-      }
-    }
-
-    // Fallback: Try Alpha Vantage
-    console.log('Tiingo failed, trying Alpha Vantage...');
-    const avUrl=`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=${encodeURIComponent(key)}`;
-    const rAV=await fetch(avUrl);
-    const dAV=await rAV.json();
-    console.log('Alpha Vantage response:', dAV);
-
-    if(dAV?.['Note']) throw new Error('Rate limited: '+dAV['Note']);
-    if(dAV?.['Error Message']) throw new Error(dAV['Error Message']);
-    if(dAV?.['Information']) throw new Error(dAV['Information']);
-
-    const quote=dAV?.['Global Quote'];
-    if(!quote) throw new Error('Neither API returned valid price');
-
-    const p=parseFloat(quote['05. price']||0);
-    if(p&&p>0){
-      if(statusEl){
-        statusEl.textContent=`✅ Alpha Vantage OK: AAPL $${p} (25/day)`;
-        statusEl.style.display='block';
-        statusEl.style.background='var(--ok-l)'; statusEl.style.color='var(--ok)';
-      }
-      return;
-    }
-    throw new Error('Invalid price');
-  } catch(e){
-    console.error('❌ Test failed:', e.message);
-    if(statusEl){
-      statusEl.textContent='❌ '+e.message;
-      statusEl.style.display='block';
-      statusEl.style.background='var(--err-l)'; statusEl.style.color='var(--err)';
-    }
-  }
 }
 function jumpToHoldings(cat){
   activeCategory=cat; activeSectorFilter=null; activeRegionFilter=null;
@@ -4093,6 +3665,86 @@ function computeCatPeriodPnl(cat){
   });
   if(!anyData||startVal===0) return null;
   return {pnl:curVal-startVal, pct:(curVal-startVal)/startVal*100};
+}
+// ── XIRR ──
+// Newton-Raphson solver — flows: [{date:'YYYY-MM-DD', amount:number}], negative=outflow, positive=inflow
+function computeXIRR(flows){
+  if(!flows||flows.length<2) return null;
+  const t0=new Date(flows[0].date).getTime();
+  const yrs=flows.map(f=>(new Date(f.date).getTime()-t0)/(365.25*24*3600*1000));
+  const amt=flows.map(f=>f.amount);
+  let rate=0.1;
+  for(let iter=0;iter<200;iter++){
+    let fx=0, dfx=0;
+    for(let j=0;j<amt.length;j++){
+      const pow=Math.pow(1+rate,yrs[j]);
+      fx+=amt[j]/pow;
+      if(yrs[j]!==0) dfx-=yrs[j]*amt[j]/((1+rate)*pow);
+    }
+    if(Math.abs(fx)<1e-8) break;
+    if(dfx===0||!isFinite(dfx)) return null;
+    const step=fx/dfx;
+    rate-=step;
+    if(rate<=-1) return null;
+    if(Math.abs(step)<1e-10) break;
+  }
+  return isFinite(rate)&&rate>-1?rate:null;
+}
+// All-time portfolio XIRR (investments only, excludes Cash/SAV)
+function computePortfolioXIRR(cats){
+  const flows=[];
+  const pos=getPositions();
+  (DB.transactions||[]).forEach(tx=>{
+    const inst=DB.instruments.find(i=>i.id===tx.iid);
+    if(!inst||inst.category==='Cash') return;
+    if(tx.type==='buy')      flows.push({date:tx.date,amount:-((tx.qty||0)*(tx.price||0)+(tx.fees||0)+(tx.taxPaid||0))});
+    else if(tx.type==='sell')    flows.push({date:tx.date,amount:(tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0)});
+    else if(tx.type==='dividend') flows.push({date:tx.date,amount:(tx.price||0)});
+  });
+  const invCats=cats.filter(c=>c.label!=='Cash');
+  const totalCur=invCats.reduce((s,c)=>s+c.current,0);
+  if(totalCur<=0||flows.filter(f=>f.amount<0).length===0) return null;
+  flows.push({date:new Date().toISOString().slice(0,10),amount:totalCur});
+  flows.sort((a,b)=>a.date>b.date?1:-1);
+  return computeXIRR(flows);
+}
+// Period XIRR (only transactions within last daysAgo days)
+function computePortfolioPeriodXIRR(daysAgo,cats){
+  const cutDate=new Date(); cutDate.setDate(cutDate.getDate()-daysAgo);
+  const cutStr=cutDate.toISOString().slice(0,10);
+  const flows=[];
+  (DB.transactions||[]).forEach(tx=>{
+    if(!tx.date||tx.date<cutStr) return;
+    const inst=DB.instruments.find(i=>i.id===tx.iid);
+    if(!inst||inst.category==='Cash') return;
+    if(tx.type==='buy')      flows.push({date:tx.date,amount:-((tx.qty||0)*(tx.price||0)+(tx.fees||0)+(tx.taxPaid||0))});
+    else if(tx.type==='sell')    flows.push({date:tx.date,amount:(tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0)});
+    else if(tx.type==='dividend') flows.push({date:tx.date,amount:(tx.price||0)});
+  });
+  if(flows.length===0) return null;
+  const invCats=cats.filter(c=>c.label!=='Cash');
+  const totalCur=invCats.reduce((s,c)=>s+c.current,0);
+  if(totalCur<=0) return null;
+  flows.push({date:new Date().toISOString().slice(0,10),amount:totalCur});
+  flows.sort((a,b)=>a.date>b.date?1:-1);
+  return computeXIRR(flows);
+}
+// Per-instrument XIRR
+function computeInstXIRR(instId){
+  const flows=[];
+  (DB.transactions||[]).forEach(tx=>{
+    if(tx.iid!==instId) return;
+    if(tx.type==='buy')      flows.push({date:tx.date,amount:-((tx.qty||0)*(tx.price||0)+(tx.fees||0)+(tx.taxPaid||0))});
+    else if(tx.type==='sell')    flows.push({date:tx.date,amount:(tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0)});
+    else if(tx.type==='dividend') flows.push({date:tx.date,amount:(tx.price||0)});
+  });
+  const p=getPositions()[instId];
+  if(!p||p.qty<=0) return null;
+  const curVal=(DB.prices[instId]||0)*p.qty;
+  if(curVal<=0||flows.filter(f=>f.amount<0).length===0) return null;
+  flows.push({date:new Date().toISOString().slice(0,10),amount:curVal});
+  flows.sort((a,b)=>a.date>b.date?1:-1);
+  return computeXIRR(flows);
 }
 function updatePeriodMenuLocks(){
   // Compute date span from priceHistory of non-Cash instruments only
@@ -4339,8 +3991,6 @@ function updatePriceInline(instId, rawVal){
   snapshotPrice(instId, DB.prices[instId]||v);
   DB.prices[instId]=v;
   snapshotPrice(instId, v);
-  if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
-  DB.lastPriceUpdateDate[instId]=new Date().toISOString().slice(0,10);
   saveDB();
   refreshAll();
   notify('✅ Price updated.');
@@ -4607,8 +4257,6 @@ function saveInstForm(){
     obj.id='i'+Date.now();
     DB.instruments.push(obj);
     DB.prices[obj.id]=0;
-    const today=new Date().toISOString().slice(0,10);
-    DB.lastPriceUpdateDate[obj.id]=today;
   }
   saveDB(); refreshAll();
   notify('✅ Instrument saved.');
@@ -4624,232 +4272,10 @@ function deleteInst(id){
   if(!confirm(msg)) return;
   DB.instruments=DB.instruments.filter(i=>i.id!==id);
   DB.transactions=DB.transactions.filter(t=>t.iid!==id);
-  delete DB.prices[id]; delete DB.priceHistory[id]; delete DB.lastPriceUpdateDate[id];
+  delete DB.prices[id]; delete DB.priceHistory[id];
   saveDB(); refreshAll();
   notify('🗑 Instrument deleted.');
   showInstList();
-}
-
-// ── LIVE PRICE FETCH ──
-// ── PRICE SOURCES ──
-// Stooq.com: free, CORS-enabled, no proxy needed — primary for ETFs & stocks
-// Yahoo Finance v8: via CORS proxies — fallback
-// CoinGecko: CORS-enabled — for crypto
-// Tickers: Stooq uses lowercase, European exchange suffixes differ from Yahoo:
-//   AEX (.AS Yahoo) → .nl Stooq | Paris (.PA) → .fr | Madrid (.MC) → .es
-// ── STOOQ PRIMARY SOURCE ──
-// These are tried first (instant if available, fails fast otherwise)
-// Maps instrument ID → Stooq-compatible ticker format
-const STOOQ_TICKERS={
-  // German-listed (low probability on Stooq, but try)
-  i01:'IUKS.DE', i02:'IESE.DE', i03:'ICMB.DE', i04:'IIND.DE',
-  i05:'DFNS.DE', i06:'NUKL.DE', i07:'WTNC.DE', i08:'WTDE.DE',
-  i09:'AMRS.DE', i10:'REMX',
-  // Amsterdam-listed (higher probability)
-  i11:'INGA.AS', i12:'PHIA.AS', i13:'ACOMO.AS',
-  // Spain/France (moderate probability)
-  i14:'ACS.MC',  i15:'HOT.DE',  i16:'ASY.PA',  i24:'AF.PA',
-  // Gold ETF
-  i20:'4GLD.DE'
-  // XAU handled separately (Stooq xauusd); crypto via CoinGecko
-};
-
-// ══ OPTION A: FAST & SIMPLE ══
-// Stooq.com direct only (instant, fails fast) + optional Alpha Vantage fallback
-// User can add free Alpha Vantage API key in Settings for better coverage
-
-// Direct Stooq fetch — instant for EU instruments, fails fast (< 1s)
-async function _stooqPrice(ticker){
-  const r=await fetch(`https://stooq.com/q/l/?s=${encodeURIComponent(ticker)}&f=sd2t2ohlcv&h&e=csv`);
-  if(!r.ok) throw new Error(`HTTP ${r.status}`);
-  const rows=(await r.text()).trim().split('\n');
-  if(rows.length<2) throw new Error('No rows');
-  const close=parseFloat(rows[1].split(',')[6]);
-  if(!close||close<=0) throw new Error('N/A');
-  return close;
-}
-
-// Alpha Vantage (primary): 5 calls/min, free tier. Get key: alphavantage.co
-async function _alphaVantagePrice(ticker,apiKey){
-  const r=await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${apiKey}`);
-  if(!r.ok) throw new Error(`HTTP ${r.status}`);
-  const d=await r.json();
-  if(d?.['Note']) throw new Error('Rate limited: '+d['Note']);
-  if(d?.['Error Message']) throw new Error(d['Error Message']);
-  const p=parseFloat(d?.['Global Quote']?.['05. price']||0);
-  if(!p||p<=0) throw new Error('No price in response');
-  return p;
-}
-
-// Tiingo (fallback): 5000 calls/day, free tier. Get key: tiingo.com/account/api/token
-async function _tiingoPrice(ticker,apiKey){
-  const r=await fetch(`https://api.tiingo.com/tiingo/daily/${encodeURIComponent(ticker)}/prices?token=${apiKey}&limit=1`);
-  if(!r.ok) throw new Error(`HTTP ${r.status}`);
-  const d=await r.json();
-  if(!Array.isArray(d)||d.length===0) throw new Error('No price data');
-  const p=parseFloat(d[0]?.close||0);
-  if(!p||p<=0) throw new Error('No close price');
-  return p;
-}
-
-// Try multiple sources: Tiingo (primary, 5000/day) → Alpha Vantage (fallback, 25/day) → Stooq (last resort)
-async function _fetchInstPrice(instId){
-  const apiKey=(DB.taxSettings||{}).alphaVantageKey;
-  const yahooT=(DB.priceTickers||{})[instId];
-  const stooqT=STOOQ_TICKERS[instId];
-  const errors=[];
-
-  // 1. PRIMARY: Tiingo (5000 calls/day free, CORS-enabled, no rate limit issues)
-  if(apiKey&&yahooT&&yahooT!=='XAU'){
-    try{ return await _tiingoPrice(yahooT,apiKey); }
-    catch(e){ errors.push('Tiingo: '+e.message); }
-  }
-
-  // 2. FALLBACK: Alpha Vantage (25 calls/day free, CORS-enabled)
-  if(apiKey&&yahooT&&yahooT!=='XAU'){
-    try{ return await _alphaVantagePrice(yahooT,apiKey); }
-    catch(e){ errors.push('Alpha V: '+e.message); }
-  }
-
-  // 3. LAST RESORT: Stooq (for commodities or no API key)
-  if(stooqT){
-    try{ return await _stooqPrice(stooqT); }
-    catch(e){ errors.push('Stooq: '+e.message); }
-  }
-
-  throw new Error(`All sources failed: ${errors.join(' | ')}`);
-}
-
-async function _geckoPrice(coinId){
-  const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=eur`);
-  if(!r.ok) throw new Error(`HTTP ${r.status}`);
-  const d=await r.json();
-  const p=d?.[coinId]?.eur;
-  if(!p) throw new Error('No price');
-  return p;
-}
-
-const GECKO_IDS={BTC:'bitcoin',ETH:'ethereum',SOL:'solana'};
-
-async function fetchLivePrices(silent=false){
-  const btn=document.getElementById('fetchPricesBtn');
-  const apiKey=DB.taxSettings?.alphaVantageKey;
-  if(!apiKey&&!silent){
-    notify('⚠️ Alpha Vantage API key not configured — see Settings → Price Settings');
-    return;
-  }
-
-  if(btn) btn.disabled=true;
-  const pos=getPositions();
-  const today=new Date().toISOString().slice(0,10);
-  if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
-
-  // All non-Cash instruments with a position
-  const targets=DB.instruments.filter(i=>pos[i.id]&&i.category!=='Cash');
-  const failDetails=[];
-  let updated=0;
-
-  // ── 1. Batch CoinGecko for crypto (one request) ──
-  const cryptoInsts=targets.filter(i=>GECKO_IDS[(DB.priceTickers||{})[i.id]]);
-  let geckoData={};
-  if(cryptoInsts.length){
-    const ids=[...new Set(cryptoInsts.map(i=>GECKO_IDS[DB.priceTickers[i.id]]))].join(',');
-    try{
-      if(btn) btn.textContent='🌐 Fetching crypto…';
-      const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=eur`);
-      if(r.ok) geckoData=await r.json();
-    }catch(e){ console.warn('CoinGecko failed',e); }
-  }
-
-  // ── 2. Non-crypto, non-gold: Alpha Vantage with rate limiting (5 calls/min) ──
-  const nonCryptoNonGold=targets.filter(i=>!GECKO_IDS[(DB.priceTickers||{})[i.id]]&&(DB.priceTickers||{})[i.id]!=='XAU');
-  const instResults=new Map(); // instId -> {status, value, reason}
-  const RATE_LIMIT_MS=200; // 5 calls/min ≈ 1 call per 200ms
-  const BATCH_SIZE=1;
-
-  for(let i=0;i<nonCryptoNonGold.length;i++){
-    const inst=nonCryptoNonGold[i];
-    const current=i+1;
-    const total=nonCryptoNonGold.length;
-    if(btn) btn.textContent=`🌐 Fetching ${current}/${total}…`;
-
-    try{
-      const price=await _fetchInstPrice(inst.id);
-      instResults.set(inst.id,{status:'fulfilled',value:price});
-      console.log(`✅ ${inst.ticker} (${inst.name}): €${price.toFixed(2)}`);
-    } catch(e){
-      const reason=e.message||'unknown error';
-      instResults.set(inst.id,{status:'rejected',reason});
-      console.warn(`❌ ${inst.ticker} (${inst.name}): ${reason}`);
-      failDetails.push({ticker:inst.ticker, name:inst.name, reason});
-    }
-
-    // Rate limiting: wait between requests
-    if(i<nonCryptoNonGold.length-1){
-      if(btn) btn.textContent=`⏸ Waiting… ${current}/${total} (rate limit)`;
-      await new Promise(r=>setTimeout(r,RATE_LIMIT_MS));
-    }
-  }
-
-  // ── Apply stock/ETF results ──
-  nonCryptoNonGold.forEach(inst=>{
-    const res=instResults.get(inst.id);
-    if(res?.status==='fulfilled'&&res.value>0){
-      snapshotPrice(inst.id, DB.prices[inst.id]||res.value);
-      DB.prices[inst.id]=res.value;
-      DB.lastPriceUpdateDate[inst.id]=today;
-      updated++;
-    }
-  });
-
-  // ── 3. Crypto: apply CoinGecko results ──
-  cryptoInsts.forEach(inst=>{
-    const p=geckoData?.[GECKO_IDS[DB.priceTickers[inst.id]]]?.eur;
-    if(p){
-      snapshotPrice(inst.id, DB.prices[inst.id]||p);
-      DB.prices[inst.id]=p; DB.lastPriceUpdateDate[inst.id]=today; updated++;
-      console.log(`✅ ${inst.ticker} (${inst.name}): €${p.toFixed(2)}`);
-    } else {
-      console.warn(`❌ ${inst.ticker} (${inst.name}): CoinGecko no data`);
-      failDetails.push({ticker:inst.ticker, name:inst.name, reason:'CoinGecko returned no price'});
-    }
-  });
-
-  // ── 4. Gold: manual update only ──
-  const xauInst=targets.find(i=>(DB.priceTickers||{})[i.id]==='XAU');
-  if(xauInst){
-    if(!silent) failDetails.push({ticker:'XAU', name:'Physical Gold Coins', reason:'Manual update — edit holdings table'});
-  }
-
-  const now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-  document.getElementById('lastUpd').textContent='Last updated: '+now;
-  saveDB(); refreshAll();
-  if(btn){ btn.disabled=false; btn.textContent='🌐 Fetch Live Prices'; }
-
-  if(!silent){
-    if(failDetails.length){
-      console.group(`📊 Fetch Results: ${updated} updated`);
-      failDetails.forEach(f=>console.info(` • ${f.ticker} — ${f.name}\n   ${f.reason}`));
-      console.groupEnd();
-      notify(`✅ ${updated} updated · ℹ️ ${failDetails.length} skipped/failed`);
-    } else {
-      notify(`✅ All ${updated} prices updated`);
-    }
-  }
-}
-
-// Auto-fetch on load if any price is older than 6 hours
-function autoFetchPricesIfStale(){
-  if(!DB.lastPriceUpdateDate||DB.settings?.autoFetchStale===false) return;
-  const SIX_HOURS=6*60*60*1000;
-  const now=Date.now();
-  const hasStale=DB.instruments.some(i=>{
-    if(i.category==='Cash') return false;
-    const t=DB.lastPriceUpdateDate[i.id];
-    if(!t) return true;
-    return (now-new Date(t).getTime())>SIX_HOURS;
-  });
-  if(hasStale) fetchLivePrices(true);
 }
 
 // ── MODAL HELPERS ──
@@ -4992,7 +4418,6 @@ function saveTaxSettings(){
   const al=parseFloat(document.getElementById('tax_allowance').value)||57684;
   const b1=parseFloat(document.getElementById('tax_box1Rate')?.value)||0;
   const b2=parseFloat(document.getElementById('tax_box2Rate')?.value)||26.9;
-  const loonheffing=parseFloat(document.getElementById('tax_loonheffing')?.value)||0;
   const zzpEnabled=document.getElementById('tax_zzpEnabled')?.checked||false;
   const zzpDed=parseFloat(document.getElementById('tax_zzpDed')?.value)||2470;
   const starterEnabled=document.getElementById('tax_starterEnabled')?.checked||false;
@@ -5003,8 +4428,7 @@ function saveTaxSettings(){
   const btwRate=parseFloat(document.getElementById('tax_btwRate')?.value)||21;
   const nlDivBelasting=parseFloat(document.getElementById('tax_nlDivBelasting')?.value)||0;
   const prevSelectedYear=DB.taxSettings?.selectedYear;
-  const prevAlphaKey=DB.taxSettings?.alphaVantageKey||'';
-  DB.taxSettings={selectedYear:prevSelectedYear,dividendWithholdingRate:dr,capitalGainsRate:cr,box3SavingsRate:savRate,box3InvRate:invRate,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2,loonheffing,nlDividendbelasting:nlDivBelasting,entrepreneurDeductionsEnabled:zzpEnabled,zelfstandigenaftrek:zzpDed,startersaftrekEnabled:starterEnabled,startersaftrek:starterDed,mkbVrijstelling:mkbPct,korThreshold:korThr,btwEnabled,btwRate,alphaVantageKey:prevAlphaKey};
+  DB.taxSettings={selectedYear:prevSelectedYear,dividendWithholdingRate:dr,capitalGainsRate:cr,box3SavingsRate:savRate,box3InvRate:invRate,box3Allowance:al,box1EffectiveRate:b1,box2Rate:b2,nlDividendbelasting:nlDivBelasting,entrepreneurDeductionsEnabled:zzpEnabled,zelfstandigenaftrek:zzpDed,startersaftrekEnabled:starterEnabled,startersaftrek:starterDed,mkbVrijstelling:mkbPct,korThreshold:korThr,btwEnabled,btwRate};
   saveDB(); renderTaxTab(); refreshAll();
 }
 function toggleTaxGuide(){
@@ -5042,6 +4466,99 @@ function renderTaxHistoryCards(){
   }).join('');
 }
 
+function renderFiledVsEst(year,est){
+  const el=document.getElementById('filedVsEstSection');
+  if(!el) return;
+  const rec=(DB.taxRecords||{})[year]||{};
+  // Show for any year with income set; unfiled years show estimate-only (Filed col = —)
+  if(!rec.income||rec.income===0){ el.innerHTML=''; return; }
+
+  const status=rec.status||'';
+  const badgeMap={filed:'✓ Filed',estimated:'~ Est.',pending:'⏳ Pending','':`Not Filed`};
+  const badgeColors={filed:'#10b981',estimated:'#f59e0b',pending:'#3b82f6','':'var(--txt2)'};
+  const badge=`<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:${badgeColors[status]}20;color:${badgeColors[status]}">${badgeMap[status]||'Not Filed'}</span>`;
+
+  // Diff helper — positive means estimate is HIGHER than filed (over-estimated)
+  function diffCell(filed,estimate){
+    if(filed==null||filed===''||estimate==null) return '<td style="padding:4px 8px;text-align:right;color:var(--txt2)">—</td>';
+    const d=Math.round(estimate-filed);
+    if(Math.abs(d)<10) return `<td style="padding:4px 8px;text-align:right;color:var(--ok)">≈ match</td>`;
+    const sign=d>0?'+':'';
+    const col=Math.abs(d)<100?'var(--wrn)':Math.abs(d)<500?'#f97316':'var(--err)';
+    return `<td style="padding:4px 8px;text-align:right;color:${col};font-weight:600">${sign}€${Math.abs(d).toLocaleString()}</td>`;
+  }
+  function filed(v){ return (v==null||v===''||v===0)?'<td style="padding:4px 8px;text-align:right;color:var(--txt2)">—</td>':`<td style="padding:4px 8px;text-align:right">€${Math.round(v).toLocaleString()}</td>`; }
+  function estCell(v){ return v==null?'<td style="padding:4px 8px;text-align:right;color:var(--txt2)">—</td>':`<td style="padding:4px 8px;text-align:right;color:var(--txt2)">€${Math.round(v).toLocaleString()}</td>`; }
+
+  // Computed filed net IB (ibBruto - arbeidskorting - algHeffingskorting)
+  const filNetIb=(rec.ibBruto||0)-(rec.arbeidskorting||0)-(rec.algHeffingskorting||0);
+  const estNetIb=est.box1AfterCredits;
+
+  const rows=[
+    ['Box 1 income',              rec.income,                   est.box1Income],
+    ['IB gross (brackets)',        rec.ibBruto,                  est.box1GrossTax],
+    ['↳ Earned Income Credit',           rec.arbeidskorting,           est.arbeidskorting],
+    ['↳ General Tax Credit',       rec.algHeffingskorting,       est.algHeffingskorting],
+    ['Net IB (after credits)',     filNetIb||null,               estNetIb],
+    ['Payroll Tax Withheld',       rec.loonheffing||null,        est.loonheffingActual||null],
+    ['NL Dividend Tax Credit',     rec.nlDividendbelasting||null, est.nlDivBelastingActual||null],
+    ['Box 3 wealth tax (filed)',   rec.box3TaxFiled||null,       est.box3Tax],
+    ['Tax Due / Refund',           rec.teBetalen!=null&&rec.teBetalen!==0?rec.teBetalen:null, est.grandDue],
+  ];
+
+  const tableHtml=rows.map(([label,filV,estV])=>`
+    <tr style="border-bottom:1px solid var(--bdr)">
+      <td style="padding:4px 8px;font-size:12px">${label}</td>
+      ${filed(filV)}
+      ${estCell(estV)}
+      ${diffCell(filV,estV)}
+    </tr>`).join('');
+
+  // PVV row (no estimate — just show filed if present)
+  const pvvRow=rec.pvv>0?`
+    <tr style="border-bottom:1px solid var(--bdr)">
+      <td style="padding:4px 8px;font-size:12px;color:var(--txt2)">Nat. Insurance Premiums</td>
+      <td style="padding:4px 8px;text-align:right">€${Math.round(rec.pvv).toLocaleString()}</td>
+      <td style="padding:4px 8px;text-align:right;color:var(--txt2)">not computed</td>
+      <td style="padding:4px 8px"></td>
+    </tr>`:'';
+
+  const notesRow=rec.notes?`
+    <div style="margin-top:10px;padding:8px 10px;background:var(--neu-l);border-radius:var(--rs);font-size:11px;color:var(--txt2);line-height:1.5">
+      📝 ${rec.notes}
+    </div>`:'';
+
+  el.innerHTML=`
+  <div class="section">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">📋</span>Filed vs Dashboard Estimate — ${year} ${badge}</div>
+      <span class="t2" style="font-size:12px">Actual filed numbers vs dashboard estimate · Diff = estimate − filed</span>
+    </div>
+    <div class="card" style="max-width:900px;padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="background:var(--neu-l);color:var(--txt2);font-size:11px;text-transform:uppercase;letter-spacing:.04em">
+              <th style="padding:6px 8px;text-align:left;font-weight:600">Line</th>
+              <th style="padding:6px 8px;text-align:right;font-weight:600">Filed</th>
+              <th style="padding:6px 8px;text-align:right;font-weight:600">Dashboard Est.</th>
+              <th style="padding:6px 8px;text-align:right;font-weight:600">Diff</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableHtml}
+            ${pvvRow}
+          </tbody>
+        </table>
+      </div>
+      ${notesRow}
+      <div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bdr)">
+        <span style="font-size:11px;color:var(--txt2)">Source: employer statement + tax assessment via ✏️ Edit record · Diff = estimate − filed · ≈ match = within €10</span>
+        <button class="btn-ghost" style="font-size:12px" onclick="openTaxRecordModal(${year})">✏️ Edit record</button>
+      </div>
+    </div>
+  </div>`;
+}
 function openTaxRecordModal(year){
   const rec=(DB.taxRecords||{})[year]||{};
   document.getElementById('taxRecordModalTitle').textContent=`Tax Record — ${year}`;
@@ -5069,15 +4586,15 @@ function openTaxRecordModal(year){
     const filAhk=rec.algHeffingskorting||0;
     const filBox3=rec.box3TaxFiled||0;
     const estBox3=Math.round((DB.taxSettings?.capitalGainsRate||36)/100 * Math.max(0,((DB.taxSettings?.box3Allowance||57684))));
-    const diff=(v,e)=>v===0&&e>0?`<span style="color:#f59e0b;font-size:10px">ℹ️ may be in loonheffing</span>`:(Math.abs(v-e)<50?`<span style="color:#10b981">≈ match</span>`:`<span style="color:${v<e?'#ef4444':'#f59e0b'}">Δ €${Math.abs(v-e).toLocaleString()}</span>`);
+    const diff=(v,e)=>v===0&&e>0?`<span style="color:#f59e0b;font-size:10px">ℹ️ may be in payroll tax</span>`:(Math.abs(v-e)<50?`<span style="color:#10b981">≈ match</span>`:`<span style="color:${v<e?'#ef4444':'#f59e0b'}">Δ €${Math.abs(v-e).toLocaleString()}</span>`);
     banner.style.display='block';
     banner.innerHTML=`
       <div style="font-weight:600;font-size:12px;margin-bottom:8px">Filed vs Dashboard Estimate</div>
       <table style="width:100%;font-size:11px;border-collapse:collapse">
         <tr style="color:var(--txt2)"><th style="text-align:left;padding:2px 4px">Line</th><th style="text-align:right;padding:2px 4px">Filed</th><th style="text-align:right;padding:2px 4px">Estimate</th><th style="text-align:right;padding:2px 4px">Diff</th></tr>
         <tr><td style="padding:3px 4px">IB Box 1 (gross brackets)</td><td style="text-align:right;padding:3px 4px">${filIbBruto?'€'+filIbBruto.toLocaleString():'—'}</td><td style="text-align:right;padding:3px 4px">€${estIbBruto.toLocaleString()}</td><td style="text-align:right;padding:3px 4px">${filIbBruto?diff(filIbBruto,estIbBruto):'—'}</td></tr>
-        <tr><td style="padding:3px 4px">Arbeidskorting</td><td style="text-align:right;padding:3px 4px">${filAk?'€'+filAk.toLocaleString():'—'}</td><td style="text-align:right;padding:3px 4px">€${estAk.toLocaleString()}</td><td style="text-align:right;padding:3px 4px">${filAk?diff(filAk,estAk):'—'}</td></tr>
-        <tr><td style="padding:3px 4px" title="AHK is often absorbed in loonheffing by your employer — 0 on the aanslag is normal">Alg. Heffingskorting <span style="opacity:0.5">ℹ️</span></td><td style="text-align:right;padding:3px 4px">${filAhk?'€'+filAhk.toLocaleString():'€0'}</td><td style="text-align:right;padding:3px 4px">€${estAhk.toLocaleString()}</td><td style="text-align:right;padding:3px 4px">${diff(filAhk,estAhk)}</td></tr>
+        <tr><td style="padding:3px 4px">Earned Income Credit</td><td style="text-align:right;padding:3px 4px">${filAk?'€'+filAk.toLocaleString():'—'}</td><td style="text-align:right;padding:3px 4px">€${estAk.toLocaleString()}</td><td style="text-align:right;padding:3px 4px">${filAk?diff(filAk,estAk):'—'}</td></tr>
+        <tr><td style="padding:3px 4px" title="General Tax Credit is often absorbed in employer payroll tax — 0 on the assessment is normal">General Tax Credit <span style="opacity:0.5">ℹ️</span></td><td style="text-align:right;padding:3px 4px">${filAhk?'€'+filAhk.toLocaleString():'€0'}</td><td style="text-align:right;padding:3px 4px">€${estAhk.toLocaleString()}</td><td style="text-align:right;padding:3px 4px">${diff(filAhk,estAhk)}</td></tr>
         <tr><td style="padding:3px 4px">IB Box 3 (wealth tax)</td><td style="text-align:right;padding:3px 4px">${filBox3?'€'+filBox3.toLocaleString():'—'}</td><td style="text-align:right;padding:3px 4px"><span style="opacity:0.6">see Tax tab</span></td><td style="text-align:right;padding:3px 4px">—</td></tr>
         <tr style="font-weight:700;border-top:1px solid var(--bdr)"><td style="padding:4px 4px">Net IB after credits (est.)</td><td style="text-align:right;padding:4px 4px">—</td><td style="text-align:right;padding:4px 4px">€${estNetIb.toLocaleString()}</td><td style="text-align:right;padding:4px 4px">—</td></tr>
       </table>`;
@@ -5128,11 +4645,9 @@ function renderTaxTab(){
   const savRateEl=document.getElementById('tax_savRate');
   const invRateEl=document.getElementById('tax_invRate');
   const alEl=document.getElementById('tax_allowance');
-  const loonheffingEl=document.getElementById('tax_loonheffing');
   if(savRateEl) savRateEl.value=DB.taxSettings?.box3SavingsRate??1.37;
   if(invRateEl) invRateEl.value=DB.taxSettings?.box3InvRate??5.88;
   if(alEl) alEl.value=DB.taxSettings?.box3Allowance??57684;
-  if(loonheffingEl) loonheffingEl.value=rec.loonheffing||DB.taxSettings?.loonheffing||0;
   const nlDivEl=document.getElementById('tax_nlDivBelasting');
   if(nlDivEl) nlDivEl.value=rec.nlDividendbelasting!=null?rec.nlDividendbelasting:(DB.taxSettings?.nlDividendbelasting||0);
   const b1El=document.getElementById('tax_box1Rate');
@@ -5217,19 +4732,19 @@ function renderTaxTab(){
     const totalDed=bizProfit-taxableBizIncome;
     deductionRows=`
       <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:#ECFDF5">
-        <span style="color:#065F46">↳ Zelfstandigenaftrek</span><span></span><span></span>
+        <span style="color:#065F46">↳ Self-employed Deduction</span><span></span><span></span>
         <span class="num tg">−${feur(Math.min(zzpDed,bizProfit))}</span>
       </div>
       ${startDed>0?`<div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:#ECFDF5">
-        <span style="color:#065F46">↳ Startersaftrek</span><span></span><span></span>
+        <span style="color:#065F46">↳ Starter's Deduction</span><span></span><span></span>
         <span class="num tg">−${feur(Math.min(startDed,Math.max(0,bizProfit-zzpDed)))}</span>
       </div>`:''}
       <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:#ECFDF5">
-        <span style="color:#065F46">↳ MKB-winstvrijstelling (${ts.mkbVrijstelling||12.7}%)</span><span></span><span></span>
+        <span style="color:#065F46">↳ SME Profit Exemption (${ts.mkbVrijstelling||12.7}%)</span><span></span><span></span>
         <span class="num tg">−${feur(mkbExemption)}</span>
       </div>
       <div class="tax-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:#D1FAE5">
-        <span style="color:#065F46;font-weight:700">Total ZZP Tax Savings</span><span></span><span></span>
+        <span style="color:#065F46;font-weight:700">Total Self-employed Tax Savings</span><span></span><span></span>
         <span class="num fw7 tg">−${feur(totalDed)}</span>
       </div>`;
   }
@@ -5255,7 +4770,7 @@ function renderTaxTab(){
       <div style="margin-top:10px;padding:10px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:11px;color:#92400E">
         ${(DB.taxSettings?.box1EffectiveRate||0)>0
           ? `⚠️ Using your custom effective rate of <strong>${DB.taxSettings.box1EffectiveRate}%</strong>. Excludes personal tax credits. Consult a tax advisor for your specific situation.`
-          : `⚠️ Using NL ${currentYear} progressive brackets (35.82% · 37.48% · 49.50%). Set a custom effective rate in Tax Settings to override. Heffingskortingen (arbeidskorting + algemene heffingskorting) applied in Tax Year Summary below.`
+          : `⚠️ NL ${currentYear} progressive tax brackets applied (35.82% · 37.48% · 49.50%). Set a custom effective rate in Tax Settings to override. Tax credits applied in Tax Year Summary below.`
         }
       </div>
     </div>`;
@@ -5300,32 +4815,32 @@ function renderTaxTab(){
         <div class="kpi" style="margin:0">
           <div class="kpi-lbl">Taxable Base</div>
           <div class="kpi-val">${feur(taxableBase)}</div>
-          <div class="kpi-sub t2">After €${fmt(Math.round(freeAllowance))} heffingvrij vermogen</div>
+          <div class="kpi-sub t2">After €${fmt(Math.round(freeAllowance))} tax-free allowance</div>
         </div>
         <div class="kpi err" style="margin:0">
           <div class="kpi-lbl">Estimated Box 3 Tax</div>
           <div class="kpi-val tr">${feur(box3Tax)}</div>
-          <div class="kpi-sub t2">Voordeel ${feur(voordeel)} × ${(box3Rate*100).toFixed(0)}%</div>
+          <div class="kpi-sub t2">Deemed return ${feur(voordeel)} × ${(box3Rate*100).toFixed(0)}%</div>
         </div>
       </div>
       <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div style="padding:10px;background:var(--neu-l);border-radius:var(--rs);font-size:12px">
-          <div style="font-weight:600;margin-bottom:6px">Banktegoeden (savings)</div>
+          <div style="font-weight:600;margin-bottom:6px">Savings Accounts</div>
           <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Value</span><span>${feur(savingsNW)}</span></div>
           <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Taxable base</span><span>${feur(taxableBaseSav)}</span></div>
           <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Rate</span><span>${(box3SavRate*100).toFixed(2)}%</span></div>
-          <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:4px;border-top:1px solid var(--bdr);padding-top:4px"><span>Voordeel</span><span>${feur(taxableBaseSav*box3SavRate)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:4px;border-top:1px solid var(--bdr);padding-top:4px"><span>Deemed Return</span><span>${feur(taxableBaseSav*box3SavRate)}</span></div>
         </div>
         <div style="padding:10px;background:var(--neu-l);border-radius:var(--rs);font-size:12px">
-          <div style="font-weight:600;margin-bottom:6px">Beleggingen / overige bezittingen</div>
+          <div style="font-weight:600;margin-bottom:6px">Investments / Other Assets</div>
           <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Value</span><span>${feur(invNW)}</span></div>
           <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Taxable base</span><span>${feur(taxableBaseInv)}</span></div>
           <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Rate</span><span>${(box3InvRateVal*100).toFixed(2)}%</span></div>
-          <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:4px;border-top:1px solid var(--bdr);padding-top:4px"><span>Voordeel</span><span>${feur(taxableBaseInv*box3InvRateVal)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:4px;border-top:1px solid var(--bdr);padding-top:4px"><span>Deemed Return</span><span>${feur(taxableBaseInv*box3InvRateVal)}</span></div>
         </div>
       </div>
       <div style="margin-top:10px;padding:10px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:12px;color:#92400E">
-        ⚠️ NL 2025 rates: savings 1.37% · investments 5.88% · tax rate 36% · allowance €57.684. Cash category treated as banktegoeden, all other instruments as beleggingen. Rates are editable above. Consult a belastingadviseur for your aanslag.
+        ⚠️ NL 2025 rates: savings 1.37% · investments 5.88% · tax rate 36% · allowance €57,684. Cash category treated as savings accounts, all other instruments as investments. Rates are editable above. Consult a tax advisor for your assessment.
       </div>
     </div>`;
 
@@ -5377,7 +4892,7 @@ function renderTaxTab(){
           <span class="num fw7">${feur(btwQ)}</span>
         </div>
         <div style="margin-top:10px;padding:10px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:11px;color:#92400E">
-          ⚠️ File quarterly via <strong>Mijn Belastingdienst Zakelijk</strong>. Due dates: April 30, July 31, October 31, January 31. These figures are based on Business tab entries only — ensure revenue and expenses are entered excl. BTW.
+          ⚠️ File quarterly via <strong>Mijn Belastingdienst Zakelijk</strong> (Business Tax Portal). Due dates: April 30, July 31, October 31, January 31. Ensure revenue and expenses are entered excl. VAT.
         </div>
       </div>`;
     }
@@ -5395,7 +4910,7 @@ function renderTaxTab(){
   const algHeffingskorting=calcAlgemeneHeffingskorting(box1Income,currentYear);
   const totalHeffingskortingen=arbeidskorting+algHeffingskorting;
   // Loonheffing: from taxRecord first, fallback to taxSettings, or 0
-  const loonheffingActual=rec.loonheffing||ts2.loonheffing||0;
+  const loonheffingActual=rec.loonheffing||0;
   // NL dividendbelasting: from taxRecord first, then taxSettings
   const nlDivBelastingActual=rec.nlDividendbelasting!=null?rec.nlDividendbelasting:(ts2.nlDividendbelasting||0);
   // Net Box 1 due = gross tax − heffingskortingen − loonheffing (already paid) − NL dividendbelasting credit − foreign WHT credit
@@ -5417,11 +4932,11 @@ function renderTaxTab(){
         ${zzpEnabled?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span>ZZP deductions</span><span class="fw6">−${feur(bizProfit-taxableBizIncome)}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:13px;font-weight:700"><span>Taxable Box 1 income</span><span>${feur(box1Income)}</span></div>
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:var(--err)"><span>Gross Box 1 tax (brackets)</span><span class="fw6 tr">−${feur(box1GrossTax)}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px;color:#065F46"><span>&nbsp;↳ Arbeidskorting</span><span class="fw6">+${feur(arbeidskorting)}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px;color:#065F46"><span>&nbsp;↳ Algemene heffingskorting</span><span class="fw6">+${feur(algHeffingskorting)}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;font-weight:600"><span>Tax after heffingskortingen</span><span>${feur(box1AfterCredits)}</span></div>
-        ${loonheffingActual>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span title="Loonheffing — payroll tax withheld by employer from jaaropgaaf">Loonheffing withheld (jaaropgaaf)</span><span class="fw6">+${feur(loonheffingActual)}</span></div>`:'<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px;color:var(--txt2)"><span>Loonheffing (enter via ✏️ Edit record or Tax Settings)</span><span>—</span></div>'}
-        ${nlDivBelastingActual>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span title="NL Dividendbelasting — Dutch 15% WHT on NL company dividends; fully creditable against IB">NL Dividendbelasting credit</span><span class="fw6">+${feur(nlDivBelastingActual)}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px;color:#065F46"><span>&nbsp;↳ Earned Income Credit</span><span class="fw6">+${feur(arbeidskorting)}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px;color:#065F46"><span>&nbsp;↳ General Tax Credit</span><span class="fw6">+${feur(algHeffingskorting)}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;font-weight:600"><span>Tax after credits</span><span>${feur(box1AfterCredits)}</span></div>
+        ${loonheffingActual>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span title="Payroll tax withheld monthly by employer — from annual employer statement">Payroll Tax Withheld</span><span class="fw6">+${feur(loonheffingActual)}</span></div>`:'<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px;color:var(--txt2)"><span>Payroll tax withheld (enter via ✏️ Edit record)</span><span>—</span></div>'}
+        ${nlDivBelastingActual>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span title="Dutch 15% dividend withholding tax on NL company dividends — creditable against income tax">NL Dividend Tax Credit</span><span class="fw6">+${feur(nlDivBelastingActual)}</span></div>`:''}
         ${totalDivWHT>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:#065F46"><span title="Foreign dividend WHT withheld abroad; creditable against Box 3 / Box 1 liability">Foreign div. WHT credit</span><span class="fw6">+${feur(totalDivWHT)}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;font-weight:800;color:${box1NetDue>0?'var(--err)':'var(--ok)'}"><span>${box1NetDue>0?'Net Box 1 still due':'Box 1 fully covered'}</span><span>${box1NetDue>0?'−':''}${feur(box1NetDue)}</span></div>
       </div>
@@ -5432,18 +4947,18 @@ function renderTaxTab(){
           ${btwOn?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px;color:var(--err)"><span>BTW net to remit</span><span class="fw6 tr">−${feur(btwNet)}</span></div>`:''}
         </div>
         <div class="tax-card" style="background:var(--err-l);border-color:var(--err)">
-          <div style="font-weight:700;font-size:13px;margin-bottom:12px;color:var(--err);text-transform:uppercase;letter-spacing:.05em">⚡ Te betalen / Te ontvangen</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:12px;color:var(--err);text-transform:uppercase;letter-spacing:.05em">⚡ Tax Due / Refund</div>
           <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px"><span>Box 1 still due</span><span class="fw6 ${box1NetDue>0?'tr':''}">${box1NetDue>0?'−':''}${feur(box1NetDue)}</span></div>
           <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px"><span>Box 3 wealth tax</span><span class="fw6 tr">−${feur(box3Tax)}</span></div>
           ${btwOn?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px"><span>BTW net</span><span class="fw6 tr">−${feur(btwNet)}</span></div>`:''}
-          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bdr);font-size:15px;font-weight:800;color:var(--err)"><span>Total te betalen</span><span>−${feur(grandDue)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bdr);font-size:15px;font-weight:800;color:var(--err)"><span>Total Tax Due</span><span>−${feur(grandDue)}</span></div>
           <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px"><span>Effective rate (incl. credits)</span><span class="fw6">${effectiveRate.toFixed(1)}%</span></div>
-          <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px"><span>Quarterly voorlopige aanslag (est.)</span><span class="fw7 tr">−${feur(voorlopigQ)}/qtr</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px"><span>Quarterly Provisional Assessment (est.)</span><span class="fw7 tr">−${feur(voorlopigQ)}/qtr</span></div>
         </div>
       </div>
     </div>
     <div style="margin-top:12px;padding:10px;background:var(--wrn-l);border-radius:var(--rs);border:1px solid #FDE68A;font-size:11px;color:#92400E">
-      ⚠️ NL ${currentYear} brackets + heffingskortingen applied automatically. Enter your actual loonheffing from jaaropgaaf in Tax Settings for an accurate "te betalen" figure. Consult a belastingadviseur for your definitive aanslag.
+      ⚠️ NL ${currentYear} progressive tax brackets + tax credits applied automatically. ${loonheffingActual>0?`Payroll tax of €${Math.round(loonheffingActual).toLocaleString()} from ${currentYear} tax record.`:'Enter payroll tax withheld via ✏️ Edit record (year pill) for an accurate tax-due figure.'} Consult a tax advisor for your definitive assessment.
     </div>`;
 
   // ── DIVIDEND WITHHOLDING (per-instrument) ──
@@ -5547,6 +5062,7 @@ function renderTaxTab(){
     </div>`;
   renderRealizedGainsChart();
   renderTaxHistoryCards();
+  renderFiledVsEst(currentYear,{box1Income,box1GrossTax,arbeidskorting,algHeffingskorting,box1AfterCredits,loonheffingActual,nlDivBelastingActual,box3Tax,grandDue});
 }
 function renderRealizedGainsChart(){
   const canvas=document.getElementById('realizedGainsChart');
@@ -6648,7 +6164,6 @@ async function gistFetch(){
     if(DB.taxSettings.box3Allowance===undefined||DB.taxSettings.box3Allowance===57000) DB.taxSettings.box3Allowance=57684;
     if(DB.taxSettings.box1EffectiveRate===undefined) DB.taxSettings.box1EffectiveRate=0;
     if(DB.taxSettings.box2Rate===undefined) DB.taxSettings.box2Rate=26.9;
-    if(DB.taxSettings.loonheffing===undefined) DB.taxSettings.loonheffing=0;
     if(DB.taxSettings.entrepreneurDeductionsEnabled===undefined) DB.taxSettings.entrepreneurDeductionsEnabled=false;
     if(DB.taxSettings.zelfstandigenaftrek===undefined) DB.taxSettings.zelfstandigenaftrek=2470;
     if(DB.taxSettings.startersaftrekEnabled===undefined) DB.taxSettings.startersaftrekEnabled=false;
@@ -6658,16 +6173,11 @@ async function gistFetch(){
     if(DB.taxSettings.btwEnabled===undefined) DB.taxSettings.btwEnabled=false;
     if(DB.taxSettings.btwRate===undefined) DB.taxSettings.btwRate=21;
     if(DB.taxSettings.nlDividendbelasting===undefined) DB.taxSettings.nlDividendbelasting=0;
-    if(DB.taxSettings.alphaVantageKey===undefined) DB.taxSettings.alphaVantageKey='';
     if(!DB.taxRecords) DB.taxRecords={};
     if(!DB.taxRecords[2023]||DB.taxRecords[2023].income===0) DB.taxRecords[2023]={income:82397,loonheffing:29481,nlDividendbelasting:0,ibBruto:21334,arbeidskorting:2142,algHeffingskorting:0,pvv:10271,box3TaxFiled:153,teBetalen:135,status:'filed',notes:'Definitive assessment 3 May 2024. AHK absorbed in employer payroll tax (loonheffing).'};
     if(!DB.taxRecords[2024]||DB.taxRecords[2024].income===0) DB.taxRecords[2024]={income:82744,loonheffing:28761,nlDividendbelasting:67,ibBruto:20960,arbeidskorting:2747,algHeffingskorting:0,pvv:10534,box3TaxFiled:298,teBetalen:217,status:'pending',notes:'Provisional assessment 13 Jun 2025 — definitive assessment still pending.'};
     if(!DB.taxRecords[2025]||!('pvv' in (DB.taxRecords[2025]||{}))) DB.taxRecords[2025]={income:91063,loonheffing:0,nlDividendbelasting:236,ibBruto:0,arbeidskorting:0,algHeffingskorting:0,pvv:0,box3TaxFiled:0,teBetalen:0,status:'',notes:''};
-    if(!DB.priceTickers) DB.priceTickers={i01:'IUKS.DE',i02:'IESE.AS',i03:'ICMB.DE',i04:'IIND.DE',i05:'DFNS.DE',i06:'NUKL.DE',i07:'WTNC.DE',i08:'WTDE.DE',i09:'AMRS.DE',i10:'REMX',i11:'INGA.AS',i12:'PHIA.AS',i13:'ACOMO.AS',i14:'ACS.MC',i15:'HOT.DE',i16:'ASY.PA',i24:'AF.PA',i17:'BTC',i18:'ETH',i19:'SOL',i20:'4GLD.DE',i21:'XAU'};
     if(!DB.settings) DB.settings={currency:'€',country:''};
-    if(DB.settings.fiTarget===undefined) DB.settings.fiTarget=0;
-    if(!DB.settings.actualsStartDate) DB.settings.actualsStartDate=new Date().toISOString().slice(0,10);
-    if(DB.settings.autoFetchStale===undefined) DB.settings.autoFetchStale=true;
     if(!DB.netWorthHistory) DB.netWorthHistory=[];
     if(!DB.liabilities) DB.liabilities=[];
     if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
@@ -6680,7 +6190,6 @@ async function gistFetch(){
     if(DB.transition.cashTxDelta===undefined) DB.transition.cashTxDelta=0;
     if(DB.transition.savTxDelta===undefined) DB.transition.savTxDelta=0;
     if(!DB.transition._cashV2){ DB.transition.cashTxDelta=0; DB.transition._cashV2=true; }
-    if(!DB.lastPriceUpdateDate) DB.lastPriceUpdateDate={};
     if(!DB.priceHistory) DB.priceHistory={};
     if(!DB.ledger) DB.ledger={months:{}};
     if(!DB.tradingExperiment) DB.tradingExperiment={startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20};
@@ -6803,7 +6312,6 @@ window.addEventListener('DOMContentLoaded',()=>{
   // Daily net worth snapshot (must be after refreshAll so prices are current)
   snapshotNetWorth(computeCategories());
   try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
-  document.getElementById('lastUpd').textContent='Last updated: '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   // ── Sync init ──
   updateSyncUI();
   if(getSyncToken()&&getSyncGistId()){
@@ -6815,7 +6323,6 @@ window.addEventListener('DOMContentLoaded',()=>{
         applySectionOrder(); refreshAll(); loadTransitionSettings();
         snapshotNetWorth(computeCategories());
         try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
-        document.getElementById('lastUpd').textContent='Last updated: '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
       } else {
         if(getSyncGistId()) setSyncStatus('ok','Connected');
       }
@@ -6826,8 +6333,6 @@ window.addEventListener('DOMContentLoaded',()=>{
     // Show onboarding wizard on first launch (empty DB)
     if(DB.instruments.length===0) showWizard();
   }
-  // Auto-fetch live prices if any are stale (>6h)
-  setTimeout(autoFetchPricesIfStale, 1500);
 });
 // ── SAVE ON CLOSE / NAVIGATE AWAY ──
 window.addEventListener('beforeunload', ()=>{ saveDB(); });
