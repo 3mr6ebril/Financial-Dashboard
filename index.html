@@ -205,6 +205,35 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
 .fab:hover{transform:scale(1.1);background:var(--pri-d)}
 .lnk{color:var(--pri);font-size:12px;font-weight:500;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:3px}
 .lnk:hover{text-decoration:underline}
+.diag-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.diag-item{padding:12px 14px;border:1px solid var(--bdr);border-radius:10px;background:var(--neu-l)}
+.diag-title{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2);margin-bottom:4px;font-weight:700}
+.diag-value{font-size:18px;font-weight:800;line-height:1.2}
+.diag-sub{font-size:11px;color:var(--txt2);margin-top:4px;line-height:1.45}
+.signal-list{display:flex;flex-direction:column;gap:8px}
+.signal-item{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;background:#fff}
+.signal-copy{font-size:12px;line-height:1.45}
+.signal-pill{padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.signal-pill.good{background:var(--ok-l);color:var(--ok)}
+.signal-pill.warn{background:var(--wrn-l);color:var(--wrn)}
+.signal-pill.bad{background:var(--err-l);color:var(--err)}
+.mini-table{width:100%;border-collapse:separate;border-spacing:0 8px}
+.mini-table td,.mini-table th{padding:8px 10px;border:none;background:#fff}
+.mini-table tbody tr td:first-child{border-radius:8px 0 0 8px}
+.mini-table tbody tr td:last-child{border-radius:0 8px 8px 0}
+.mini-table tbody tr.clickable-row td{cursor:pointer}
+.mini-table tbody tr.clickable-row:hover td{background:var(--pri-l)}
+.mini-table thead th{background:transparent;padding:0 10px 6px;font-size:10px}
+.conf-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;border:1px solid transparent}
+.conf-good{background:var(--ok-l);color:var(--ok);border-color:#BBF7D0}
+.conf-warn{background:var(--wrn-l);color:var(--wrn);border-color:#FDE68A}
+.conf-bad{background:var(--err-l);color:var(--err);border-color:#FECACA}
+.sortable{cursor:pointer;user-select:none}
+.sortable:hover{color:var(--pri)}
+.journal-box{padding:12px 14px;border:1px solid var(--bdr);border-radius:10px;background:#fff}
+.journal-title{font-size:13px;font-weight:700;margin-bottom:5px}
+.journal-meta{font-size:11px;color:var(--txt2);margin-bottom:8px}
+.journal-copy{font-size:12px;color:var(--txt);line-height:1.5}
 /* Inline price edit */
 .price-inp{background:none;border:none;border-bottom:1.5px dashed var(--bdr);text-align:right;font-size:12px;font-weight:600;color:var(--txt);width:78px;padding:2px 0;transition:all .15s;cursor:text;-moz-appearance:textfield}
 .price-inp::-webkit-outer-spin-button,.price-inp::-webkit-inner-spin-button{-webkit-appearance:none}
@@ -264,6 +293,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   .cat-val{font-size:16px}
   .sec-hdr{flex-direction:column;align-items:flex-start;gap:6px}
   .holdings-header{flex-direction:column;align-items:flex-start}
+  .diag-list{grid-template-columns:1fr}
   .tbl-wrap{font-size:12px}
   td,th{padding:7px 8px}
   .bkd-hdr-row{grid-template-columns:12px 1fr 60px 80px 50px 36px 16px}
@@ -399,6 +429,33 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
 <div class="tab-content active" id="tab-overview">
   <div class="section" id="s-kpis">
     <div class="g g4" id="kpiGrid"></div>
+  </div>
+  <div class="section" id="s-strategy">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">🎯</span>Portfolio Strategy</div>
+      <span class="t2" style="font-size:12px" id="strategyMeta">Targets, benchmark, and policy drift</span>
+    </div>
+    <div class="g g2">
+      <div class="card" id="portfolioStrategyCard"></div>
+      <div class="card" id="portfolioBenchmarkCard"></div>
+    </div>
+  </div>
+  <div class="section" id="s-risk">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">⚠️</span>Risk Dashboard</div>
+      <span class="t2" style="font-size:12px" id="riskMeta">Concentration, liquidity, and exposure</span>
+    </div>
+    <div class="card" id="riskDashboardCard"></div>
+  </div>
+  <div class="section" id="s-income">
+    <div class="sec-hdr">
+      <div class="sec-ttl"><span class="sec-n">💸</span>Income Dashboard</div>
+      <span class="t2" style="font-size:12px" id="incomeMeta">Trailing and forward income profile</span>
+    </div>
+    <div class="g g2">
+      <div class="card" id="incomeDashboardCard"></div>
+      <div class="card" id="watchlistDashboardCard"></div>
+    </div>
   </div>
   <div class="tabs" id="ovwPeriodTabs" style="margin-bottom:0;padding:0 0 8px 0">
     <div class="tab ovw-ptab active" data-p="all" onclick="setPeriod('all',this)">All Time</div>
@@ -1525,6 +1582,25 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <div class="fg"><label class="flbl">Div Withholding Rate %</label><input class="finp" type="number" id="inst_wht" step="any" placeholder="e.g. 15"></div>
           <div class="fg"><label class="flbl">Unit <span style="font-size:10px;color:var(--txt2)">(commodities: g / troy oz)</span></label><input class="finp" type="text" id="inst_unit" placeholder="leave blank for shares"></div>
           <div class="fg"><label class="flbl">Interest Rate % <span style="font-size:10px;color:var(--txt2)">(savings)</span></label><input class="finp" type="number" id="inst_interest" step="any" placeholder="e.g. 3.42"></div>
+          <div class="fg"><label class="flbl">Target Weight %</label><input class="finp" type="number" id="inst_targetWeight" step="any" placeholder="e.g. 7.5"></div>
+          <div class="fg"><label class="flbl">Benchmark Ticker</label><input class="finp" type="text" id="inst_benchmark" placeholder="e.g. VWCE"></div>
+          <div class="fg"><label class="flbl">Forward Yield %</label><input class="finp" type="number" id="inst_forwardYield" step="any" placeholder="e.g. 2.8"></div>
+          <div class="fg"><label class="flbl">Thesis Status</label>
+            <select class="fsel" id="inst_thesisStatus">
+              <option value="">— select —</option>
+              <option value="active">Active</option>
+              <option value="watch">Watch</option>
+              <option value="trim">Trim</option>
+              <option value="broken">Broken</option>
+            </select>
+          </div>
+          <div class="fg"><label class="flbl">Watchlist Buy Zone (€)</label><input class="finp" type="number" id="inst_watchPrice" step="any" placeholder="optional"></div>
+          <div class="fg"><label class="flbl">Stop / Risk Level (€)</label><input class="finp" type="number" id="inst_stopPrice" step="any" placeholder="optional"></div>
+          <div class="fg"><label class="flbl">Target Price (€)</label><input class="finp" type="number" id="inst_targetPrice" step="any" placeholder="optional"></div>
+          <div class="fg ffull"><label class="flbl">Setup Type</label><input class="finp" type="text" id="inst_setupType" placeholder="e.g. Core, Swing, Rebalance, Income"></div>
+          <div class="fg ffull"><label class="flbl">Investment Thesis</label><input class="finp" type="text" id="inst_thesis" placeholder="Why own this?"></div>
+          <div class="fg ffull"><label class="flbl">Invalidation / Exit Rule</label><input class="finp" type="text" id="inst_invalidation" placeholder="What would make you exit?"></div>
+          <div class="fg ffull"><label class="flbl">Post-Trade Review / Notes</label><input class="finp" type="text" id="inst_review" placeholder="Key learnings or review notes"></div>
           <div class="fg ffull" style="display:flex;align-items:center;gap:10px;padding:6px 0">
             <input type="checkbox" id="inst_isTrading" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pri)">
             <label for="inst_isTrading" style="margin:0;cursor:pointer;font-size:13px;font-weight:500">📈 Active Trading Instrument <span style="font-size:11px;color:var(--txt2);font-weight:400">— include in Strategy Health metrics</span></label>
@@ -1550,6 +1626,7 @@ const DISTINCT_COLORS = [
 ];
 const CAT_COLOR = {ETF:'#3B82F6',Stock:'#8B5CF6',Crypto:'#EF4444',Commodity:'#F59E0B',Cash:'#10B981'};
 const CAT_ICON  = {ETF:'📊',Stock:'💹',Crypto:'₿',Commodity:'🔶',Cash:'💰'};
+let strategyLens='sector';
 
 // ── ENTITY COLOR — deterministic, consistent per key ──
 function getEntityColor(key){
@@ -1904,6 +1981,14 @@ const DEFAULT_TRANSITION = {
   wwDuration:0,
   modified:{}
 };
+const DEFAULT_SETTINGS = {
+  currency:'€',
+  country:'',
+  benchmarkTicker:'VWCE',
+  rebalanceBandPct:5,
+  emergencyReserveMonths:6,
+  maxMonthlyWithdrawalRate:0.4
+};
 
 const DEFAULT_BUSINESSES=[
   {id:'biz1',name:'Mushroom Farm',icon:'🍄',color:'#10B981',entries:[]},
@@ -1924,6 +2009,7 @@ let DB = {instruments:[],transactions:[],prices:{},priceHistory:{},taxSettings:{
 let activeCategory = 'ETF';
 let activeSectorFilter = null;
 let activeRegionFilter = null;
+let activeExposureFilter = null;
 let charts = {};
 
 function getDefaults(){
@@ -1934,12 +2020,12 @@ function getDefaults(){
     priceHistory:{},
     taxSettings:{dividendWithholdingRate:15,capitalGainsRate:36,box3SavingsRate:1.37,box3InvRate:5.88,box3Allowance:57684,box1EffectiveRate:0,box2Rate:26.9,entrepreneurDeductionsEnabled:false,zelfstandigenaftrek:2470,startersaftrekEnabled:false,startersaftrek:2123,mkbVrijstelling:12.7,korThreshold:20000,btwEnabled:false,btwRate:21},
     transition:JSON.parse(JSON.stringify(DEFAULT_TRANSITION)),
-    settings:{currency:'€',country:''},
+    settings:JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
     netWorthHistory:[],
     notes:[],
     liabilities:[],
     businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES)),
-    sectionOrder:['s-alloc','s-cats','s-nwhistory','s-notes'],
+    sectionOrder:['s-strategy','s-risk','s-income','s-alloc','s-cats','s-nwhistory','s-notes'],
     ledger:{months:{},expenseCategories:[...DEFAULT_EXPENSE_CATS],incomeCategories:[...DEFAULT_INCOME_ORDER]},
     tradingExperiment:{startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20},
     taxRecords:{
@@ -1990,15 +2076,17 @@ function loadDB(){
         // V2: cashTxDelta is now transfers-only; reset any forward-only buy/sell/div accumulation
         if(!DB.transition._cashV2){ DB.transition.cashTxDelta=0; DB.transition._cashV2=true; }
         // Migrate settings
-        if(!DB.settings) DB.settings={currency:'€',country:''};
+        if(!DB.settings) DB.settings=JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+        DB.settings={...DEFAULT_SETTINGS,...DB.settings};
         if(!DB.netWorthHistory) DB.netWorthHistory=[];
         if(!DB.notes) DB.notes=[];
         if(!DB.liabilities) DB.liabilities=[];
         if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
-        if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
+        if(!DB.sectionOrder) DB.sectionOrder=['s-strategy','s-risk','s-income','s-alloc','s-cats','s-nwhistory','s-notes'];
         // Remove obsolete section IDs from saved order
         DB.sectionOrder=DB.sectionOrder.filter(id=>id!=='s-biz-income'&&id!=='s-sectors');
-        if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
+        if(!DB.sectionOrder.length) DB.sectionOrder=['s-strategy','s-risk','s-income','s-alloc','s-cats','s-nwhistory','s-notes'];
+        ['s-strategy','s-risk','s-income','s-notes'].forEach(id=>{ if(!DB.sectionOrder.includes(id)) DB.sectionOrder.unshift(id); });
         if(!DB.sectionOrder.includes('s-notes')) DB.sectionOrder.push('s-notes');
         // Ensure biz3 (Self Trading) always exists — for manual entry support alongside auto-calc
         if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
@@ -2034,6 +2122,19 @@ function loadDB(){
         }
         // Normalise all instrument classifications to GICS taxonomy
         normalizeClassifications();
+        (DB.instruments||[]).forEach(inst=>{
+          if(inst.targetWeight===undefined) inst.targetWeight=undefined;
+          if(inst.benchmarkTicker===undefined) inst.benchmarkTicker='';
+          if(inst.forwardYield===undefined) inst.forwardYield=undefined;
+          if(inst.thesisStatus===undefined) inst.thesisStatus='';
+          if(inst.watchPrice===undefined) inst.watchPrice=undefined;
+          if(inst.stopPrice===undefined) inst.stopPrice=undefined;
+          if(inst.targetPrice===undefined) inst.targetPrice=undefined;
+          if(inst.setupType===undefined) inst.setupType='';
+          if(inst.thesis===undefined) inst.thesis='';
+          if(inst.invalidation===undefined) inst.invalidation='';
+          if(inst.review===undefined) inst.review='';
+        });
         return;
       }
     }
@@ -2379,14 +2480,16 @@ function importDB(event){
       if(DB.transition.cashTxDelta===undefined) DB.transition.cashTxDelta=0;
       if(DB.transition.savTxDelta===undefined) DB.transition.savTxDelta=0;
       if(!DB.transition._cashV2){ DB.transition.cashTxDelta=0; DB.transition._cashV2=true; }
-      if(!DB.settings) DB.settings={currency:'€',country:''};
+      if(!DB.settings) DB.settings=JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+      DB.settings={...DEFAULT_SETTINGS,...DB.settings};
       if(!DB.netWorthHistory) DB.netWorthHistory=[];
         if(!DB.notes) DB.notes=[];
       if(!DB.liabilities) DB.liabilities=[];
       if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
-      if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
+      if(!DB.sectionOrder) DB.sectionOrder=['s-strategy','s-risk','s-income','s-alloc','s-cats','s-nwhistory','s-notes'];
       DB.sectionOrder=DB.sectionOrder.filter(id=>id!=='s-biz-income'&&id!=='s-sectors');
-      if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
+      if(!DB.sectionOrder.length) DB.sectionOrder=['s-strategy','s-risk','s-income','s-alloc','s-cats','s-nwhistory','s-notes'];
+      ['s-strategy','s-risk','s-income','s-notes'].forEach(id=>{ if(!DB.sectionOrder.includes(id)) DB.sectionOrder.unshift(id); });
       if(!DB.sectionOrder.includes('s-notes')) DB.sectionOrder.push('s-notes');
       if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
       if(!DB.ledger) DB.ledger={months:{}};
@@ -2403,6 +2506,19 @@ function importDB(event){
       const _asyI=DB.instruments.find(i=>i.id==='i16');
       if(_asyI&&(_asyI.country==='USA'||_asyI.name==='AssetMark Financial Holdings')){Object.assign(_asyI,{name:'Assystem S.A.',sector:'Industrials',industry:'Engineering & Construction Services',country:'France',region:'Europe',exchange:'Euronext Paris',withholdingRate:12.8});}
       normalizeClassifications();
+      (DB.instruments||[]).forEach(inst=>{
+        if(inst.targetWeight===undefined) inst.targetWeight=undefined;
+        if(inst.benchmarkTicker===undefined) inst.benchmarkTicker='';
+        if(inst.forwardYield===undefined) inst.forwardYield=undefined;
+        if(inst.thesisStatus===undefined) inst.thesisStatus='';
+        if(inst.watchPrice===undefined) inst.watchPrice=undefined;
+        if(inst.stopPrice===undefined) inst.stopPrice=undefined;
+        if(inst.targetPrice===undefined) inst.targetPrice=undefined;
+        if(inst.setupType===undefined) inst.setupType='';
+        if(inst.thesis===undefined) inst.thesis='';
+        if(inst.invalidation===undefined) inst.invalidation='';
+        if(inst.review===undefined) inst.review='';
+      });
       saveDB();
       const cats=computeCategories();
       if(cats.length) activeCategory=cats[0].label;
@@ -2433,14 +2549,70 @@ function getPositions(){
   });
   return Object.fromEntries(Object.entries(pos).filter(([,p])=>p.qty>0.00001));
 }
+function buildPositions(){ return getPositions(); }
+function validateTransactionInput({iid,type,qty,price,date,taxPaid,fees}){
+  if(!date||!(price>0)) return 'Amount and date are required.';
+  if(type!=='dividend'&&type!=='deposit'&&type!=='savings_add'&&type!=='savings_withdraw'&&!(qty>0)) return 'Quantity is required.';
+  if(type==='dividend'&&(qty||1)<=0) return 'Dividend quantity must be positive.';
+  if((taxPaid||0)<0||(fees||0)<0) return 'Fees and taxes cannot be negative.';
+  if(type==='sell'){
+    const held=getPositions()[iid]?.qty||0;
+    const currentEdit=(_editTxId&&DB.transactions.find(t=>t.id===_editTxId))||null;
+    const editableQty=currentEdit&&currentEdit.type==='sell'&&currentEdit.iid===iid?(currentEdit.qty||0):0;
+    if((qty||0)>(held+editableQty)+1e-9) return `You only hold ${fmt(held+editableQty,(held+editableQty)<10?4:2)} units.`;
+  }
+  return '';
+}
 function getDividends(year){
   // Returns dividend/distribution income per instrument id, optionally filtered by year
   const divs={};
   DB.transactions.filter(tx=>tx.type==='dividend'&&(!year||tx.date.startsWith(String(year)))).forEach(tx=>{
     if(!divs[tx.iid]) divs[tx.iid]=0;
-    divs[tx.iid]+=(tx.qty||1)*(tx.price||0);
+    divs[tx.iid]+=getDividendGross(tx);
   });
   return divs;
+}
+function getDividendGross(tx){
+  return (tx.qty||1)*(tx.price||0);
+}
+function getDividendNet(tx, inst){
+  const gross=getDividendGross(tx);
+  const explicitTax=tx.taxPaid||0;
+  if(explicitTax>0) return Math.max(0,gross-explicitTax);
+  const globalWHR=(DB.taxSettings?.dividendWithholdingRate||15)/100;
+  const rate=inst&&inst.withholdingRate!==undefined&&inst.withholdingRate!==null?inst.withholdingRate/100:globalWHR;
+  return gross-(gross*rate);
+}
+function getTxCashAmount(tx, inst){
+  if(tx.type==='buy') return -((tx.qty||0)*(tx.price||0)+(tx.fees||0)+(tx.taxPaid||0));
+  if(tx.type==='sell') return (tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0);
+  if(tx.type==='dividend') return getDividendNet(tx, inst);
+  if(tx.type==='deposit') return tx.price||0;
+  if(tx.type==='savings_add') return -(tx.price||0);
+  if(tx.type==='savings_withdraw') return tx.price||0;
+  return 0;
+}
+function getPriceHistoryCoverage(instId, days){
+  if(!days) return {coverage:0,samples:0,staleDays:null};
+  const hist=DB.priceHistory[instId]||[];
+  if(!hist.length) return {coverage:0,samples:0,staleDays:null};
+  const latest=hist[hist.length-1]?.date;
+  const staleDays=latest?Math.max(0,Math.round((new Date()-new Date(latest))/(1000*86400))):null;
+  const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-days);
+  const samples=hist.filter(h=>new Date(h.date)>=cutoff).length;
+  const coverage=Math.min(1,samples/Math.max(2,Math.ceil(days/7)));
+  return {coverage,samples,staleDays};
+}
+function getMetricConfidenceLabel(score){
+  if(score>=0.8) return {label:'High confidence',cls:'conf-good'};
+  if(score>=0.45) return {label:'Medium confidence',cls:'conf-warn'};
+  return {label:'Low confidence',cls:'conf-bad'};
+}
+function getMetricConfidence(days, instIds){
+  if(!days||!instIds.length) return {score:0,label:'Low confidence',cls:'conf-bad'};
+  const scores=instIds.map(id=>getPriceHistoryCoverage(id,days).coverage);
+  const score=scores.length?scores.reduce((s,v)=>s+v,0)/scores.length:0;
+  return {score,...getMetricConfidenceLabel(score)};
 }
 function snapshotPrice(instId, price){
   if(!DB.priceHistory[instId]) DB.priceHistory[instId]=[];
@@ -2526,10 +2698,194 @@ function computeCategories(){
     const divTax=divIncome*withholdingRate;
     const pnlGross=curVal-p.cost+divIncome;
     const pnl=curVal-p.cost+(divIncome-divTax);
-    cats[cat].invested+=p.cost; cats[cat].current+=curVal; cats[cat].pnl+=pnl; cats[cat].pnlGross+=(cats[cat].pnlGross||0)+pnlGross; cats[cat].divIncome+=divIncome; cats[cat].divTax+=(cats[cat].divTax||0)+divTax;
+    cats[cat].invested+=p.cost;
+    cats[cat].current+=curVal;
+    cats[cat].pnl+=pnl;
+    cats[cat].pnlGross+=pnlGross;
+    cats[cat].divIncome+=divIncome;
+    cats[cat].divTax+=divTax;
     cats[cat].holdings.push({inst,pos:p,price,curVal,pnl,pnlGross,divIncome,divTax});
   });
   return Object.values(cats).map(c=>({...c,retPct:c.invested>0?c.pnl/c.invested:0}));
+}
+function getLatestPriceDate(instId){
+  const hist=DB.priceHistory[instId]||[];
+  return hist.length?hist[hist.length-1].date:'';
+}
+function getInstrumentStaleDays(instId){
+  const dt=getLatestPriceDate(instId);
+  if(!dt) return null;
+  return Math.max(0,Math.round((new Date()-new Date(dt))/(1000*86400)));
+}
+function normalizeExposureLabel(field, inst){
+  const raw=field==='sector' ? inst.sector
+    : field==='group' ? inst.gicsGroup
+    : field==='industry' ? (inst.gicsIndustry||inst.industry)
+    : field==='region' ? inst.region
+    : field==='country' ? inst.country
+    : field==='broker' ? inst.broker
+    : '';
+  const cleaned=(raw||'').trim();
+  if(cleaned&&cleaned!=='—'&&cleaned!=='-') return cleaned;
+  if(field==='country') return inst.region&&inst.region!=='—'&&inst.region!=='-' ? `${inst.region} (multi-country)` : 'Multi-country';
+  if(field==='region') return 'Global';
+  return 'Other';
+}
+function getPortfolioExposureRows(cats){
+  const liquidValue=(window._cashVal||0)+(window._savVal||0);
+  const nonCashCats=cats.filter(c=>c.label!=='Cash');
+  const totalValue=nonCashCats.reduce((s,c)=>s+c.current,0)+liquidValue;
+  const rows=nonCashCats.flatMap(c=>c.holdings.map(h=>{
+    const value=h.curVal;
+    return {
+      id:h.inst.id,
+      ticker:h.inst.ticker||h.inst.name,
+      name:h.inst.name,
+      category:c.label,
+      value,
+      allocPct:totalValue>0?value/totalValue*100:0,
+      sector:normalizeExposureLabel('sector',h.inst),
+      group:normalizeExposureLabel('group',h.inst),
+      industry:normalizeExposureLabel('industry',h.inst),
+      region:normalizeExposureLabel('region',h.inst),
+      country:normalizeExposureLabel('country',h.inst),
+      broker:normalizeExposureLabel('broker',h.inst),
+      benchmarkTicker:h.inst.benchmarkTicker||DB.settings?.benchmarkTicker||'VWCE',
+      targetWeight:h.inst.targetWeight,
+      forwardYield:h.inst.forwardYield,
+      thesisStatus:h.inst.thesisStatus||'',
+      staleDays:getInstrumentStaleDays(h.inst.id)
+    };
+  }));
+  rows.push({
+    id:'__liquid__',
+    ticker:'LIQ',
+    name:'Cash + Savings',
+    category:'Cash',
+    value:liquidValue,
+    allocPct:totalValue>0?liquidValue/totalValue*100:0,
+    sector:'Liquidity',
+    group:'Liquidity',
+    industry:'Liquidity',
+    region:'Netherlands',
+    country:'Netherlands',
+    broker:'Cash & Savings',
+    benchmarkTicker:'',
+    targetWeight:undefined,
+    forwardYield:undefined,
+    thesisStatus:'',
+    staleDays:0,
+    isLiquid:true
+  });
+  return rows;
+}
+function getPortfolioBase(cats){
+  const investmentValue=cats.filter(c=>c.label!=='Cash').reduce((s,c)=>s+c.current,0);
+  const liquidValue=(window._cashVal||0)+(window._savVal||0);
+  const portfolioValue=investmentValue+liquidValue;
+  const liabilities=getTotalLiabilities();
+  return {investmentValue,liquidValue,portfolioValue,liabilities,netWorth:portfolioValue-liabilities};
+}
+function buildExposureMix(rows, field, totalValue){
+  return Object.entries(rows.reduce((acc,row)=>{
+    const key=row[field]||'Other';
+    acc[key]=(acc[key]||0)+row.value;
+    return acc;
+  },{})).map(([label,value])=>({label,value,pct:totalValue>0?value/totalValue*100:0})).sort((a,b)=>b.value-a.value);
+}
+function openExposureFilter(field,label){
+  activeExposureFilter={field,label};
+  activeSectorFilter=field==='sector'?label:null;
+  activeRegionFilter=field==='region'?label:null;
+  switchTabByName('holdings');
+  updateFilterChips();
+  renderHoldingsTable(computeCategories());
+}
+function getPortfolioStrategy(cats){
+  const rows=getPortfolioExposureRows(cats);
+  const base=getPortfolioBase(cats);
+  const totalValue=base.portfolioValue;
+  const band=DB.settings?.rebalanceBandPct||5;
+  const targetRows=rows.filter(r=>!r.isLiquid&&r.targetWeight!=null&&r.targetWeight!==undefined&&r.targetWeight!=='');
+  const drifts=targetRows.map(r=>{
+    const drift=r.allocPct-r.targetWeight;
+    return {...r,drift};
+  }).sort((a,b)=>Math.abs(b.drift)-Math.abs(a.drift));
+  const benchmarkTicker=(DB.settings?.benchmarkTicker||'VWCE').toUpperCase();
+  const benchmarkInst=(DB.instruments||[]).find(i=>(i.ticker||'').toUpperCase()===benchmarkTicker);
+  const portfolioXirr=computePortfolioXIRR(cats);
+  const benchmarkXirr=benchmarkInst?computeInstXIRR(benchmarkInst.id):null;
+  const alpha=portfolioXirr!=null&&benchmarkXirr!=null?portfolioXirr-benchmarkXirr:null;
+  const needsRebalance=drifts.some(r=>Math.abs(r.drift)>=band);
+  const mixes={
+    sector:buildExposureMix(rows,'sector',totalValue),
+    group:buildExposureMix(rows,'group',totalValue),
+    industry:buildExposureMix(rows,'industry',totalValue),
+    region:buildExposureMix(rows,'region',totalValue),
+    country:buildExposureMix(rows,'country',totalValue)
+  };
+  return {totalValue,band,drifts,needsRebalance,benchmarkTicker,portfolioXirr,benchmarkXirr,alpha,mixes,base};
+}
+function getRiskDashboard(cats){
+  const rows=getPortfolioExposureRows(cats);
+  const base=getPortfolioBase(cats);
+  const totalValue=base.portfolioValue;
+  const byField=(field)=>buildExposureMix(rows,field,totalValue);
+  return {
+    totalValue,
+    topPositions:[...rows].sort((a,b)=>b.value-a.value).slice(0,5),
+    sector:byField('sector'),
+    group:byField('group'),
+    industry:byField('industry'),
+    region:byField('region'),
+    country:byField('country'),
+    broker:byField('broker'),
+    cashPct:totalValue>0?(base.liquidValue/totalValue*100):0,
+    goldPct:totalValue>0?(rows.filter(r=>/gold/i.test(r.sector)||/gold/i.test(r.name)).reduce((s,r)=>s+r.value,0)/totalValue*100):0,
+    cryptoPct:totalValue>0?(rows.filter(r=>r.category==='Crypto').reduce((s,r)=>s+r.value,0)/totalValue*100):0,
+    liquidValue:base.liquidValue
+  };
+}
+function getIncomeDashboard(){
+  const now=new Date();
+  const trailingMonths=[];
+  for(let i=11;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    trailingMonths.push(d.toISOString().slice(0,7));
+  }
+  const monthMap={};
+  trailingMonths.forEach(m=>monthMap[m]=0);
+  (DB.transactions||[]).filter(tx=>tx.type==='dividend').forEach(tx=>{
+    const ym=tx.date?.slice(0,7);
+    if(monthMap[ym]!==undefined) monthMap[ym]+=getDividendNet(tx,instById(tx.iid));
+  });
+  const trailing12=Object.values(monthMap).reduce((s,v)=>s+v,0);
+  const exposures=getPortfolioExposureRows(computeCategories());
+  const totalValue=exposures.reduce((s,r)=>s+r.value,0);
+  const forwardIncome=exposures.reduce((s,r)=>{
+    const inst=instById(r.id);
+    const y=(inst?.forwardYield??inst?.dividendYield??0)/100;
+    return s+(r.value*y);
+  },0);
+  const withholdingDrag=(DB.transactions||[]).filter(tx=>tx.type==='dividend').reduce((s,tx)=>{
+    const inst=instById(tx.iid);
+    return s+(getDividendGross(tx)-getDividendNet(tx,inst));
+  },0);
+  return {monthMap,trailing12,forwardIncome,currentYield:totalValue>0?forwardIncome/totalValue*100:0,yieldOnCost:totalValue>0?trailing12/Math.max(1,exposures.reduce((s,r)=>s+(getPositions()[r.id]?.cost||0),0))*100:0,withholdingDrag};
+}
+function getWatchlistActions(cats){
+  const rows=getPortfolioExposureRows(cats);
+  const actions=[];
+  rows.forEach(r=>{
+    const inst=instById(r.id);
+    const current=DB.prices[r.id]||0;
+    if(inst?.watchPrice&&current<=inst.watchPrice) actions.push({type:'watch',label:`${r.ticker} reached buy zone`,detail:`${feur(current)} at or below ${feur(inst.watchPrice)}`});
+    if(inst?.targetWeight!=null&&inst.targetWeight!==undefined&&Math.abs(r.allocPct-inst.targetWeight)>=((DB.settings?.rebalanceBandPct)||5)) actions.push({type:'rebalance',label:`${r.ticker} drifted from target`,detail:`Actual ${r.allocPct.toFixed(1)}% vs target ${inst.targetWeight.toFixed(1)}%`});
+    if(inst?.thesisStatus==='broken') actions.push({type:'broken',label:`${r.ticker} thesis marked broken`,detail:inst.invalidation||'Review exit plan.'});
+    if(r.staleDays!=null&&r.staleDays>14) actions.push({type:'stale',label:`${r.ticker} price is stale`,detail:`Last updated ${r.staleDays} days ago.`});
+  });
+  if((window._cashVal||0)<0) actions.push({type:'bad',label:'Cash balance below zero',detail:'Runway and deployability are distorted until this is fixed.'});
+  return actions.slice(0,8);
 }
 
 // ── FORMATTING ──
@@ -2561,9 +2917,13 @@ function renderKPIs(cats){
   const xirrAll=computePortfolioXIRR(cats);
   const xirrPd=currentPeriod!=='all'&&PERIOD_DAYS[currentPeriod]?computePortfolioPeriodXIRR(PERIOD_DAYS[currentPeriod],cats):null;
   const fxirr=r=>r===null?'—':((r>=0?'+':'')+(r*100).toFixed(1)+'%');
+  const xirrConf=currentPeriod!=='all'&&PERIOD_DAYS[currentPeriod]
+    ?getMetricConfidence(PERIOD_DAYS[currentPeriod],cats.flatMap(c=>c.holdings.map(h=>h.inst.id)))
+    :getMetricConfidence(365,cats.flatMap(c=>c.holdings.map(h=>h.inst.id)));
   let xirrLine='<div style="margin-top:5px;font-size:11px;color:var(--txt2)">XIRR&nbsp;<span style="font-weight:600;color:'+(xirrAll!==null?(xirrAll>=0?'var(--ok)':'var(--err)'):'var(--txt2)')+'">'+fxirr(xirrAll)+'</span>&nbsp;all-time';
   if(xirrPd!==null) xirrLine+='&nbsp;·&nbsp;<span style="font-weight:600;color:'+(xirrPd>=0?'var(--ok)':'var(--err)')+'">'+fxirr(xirrPd)+'</span>&nbsp;'+currentPeriod.toUpperCase();
   xirrLine+='</div>';
+  xirrLine+=`<div style="margin-top:5px"><span class="conf-badge ${xirrConf.cls}">${xirrConf.label}</span></div>`;
   // Business income YTD (Box 1 businesses + Self Trading)
   const bizPL=(DB.businesses||[]).filter(b=>b.id!=='biz3').reduce((acc,biz)=>{const p=getBizPL(biz.id,yr);return{rev:acc.rev+p.revenue,cost:acc.cost+p.expenses,net:acc.net+p.profit};},{rev:0,cost:0,net:0});
   const tpl=getTradingPL(yr);
@@ -2571,7 +2931,7 @@ function renderKPIs(cats){
   const totalBizCost=bizPL.cost+tpl.expenses;
   const totalBizNet=bizPL.net+tpl.profit;
   document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi ${nw<0?'err':''}"><div class="kpi-lbl">Net Worth</div><div class="kpi-val ${nw<0?'tr':''}">${feur(nw)}</div><div class="kpi-sub"><span class="badge bn">current market value</span></div></div>
+    <div class="kpi ${nw<0?'err':''}"><div class="kpi-lbl">Net Worth</div><div class="kpi-val ${nw<0?'tr':''}">${feur(nw)}</div><div class="kpi-sub"><span class="badge bn">portfolio ${feur(portfolioValue,0)}</span><span class="t2">liabilities ${feur(totalLiab,0)}</span></div></div>
     <div class="kpi ${ret>=0?'ok':'err'}"><div class="kpi-lbl">Portfolio P&amp;L</div><div class="kpi-val ${pc(pnl)}">${pnl>=0?'+':''}${feur(pnl)}</div><div class="kpi-sub"><span class="badge ${pnl>=0?'bg':'br'}">${fpct(ret)}</span><span class="t2">vs cost basis</span>${xirrLine}</div></div>
     <div class="kpi">
       <div class="kpi-lbl">Investment Activity ${yr}</div>
@@ -2585,6 +2945,105 @@ function renderKPIs(cats){
       <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0"><div class="hdot ${h.color}"></div><div style="font-size:16px;font-weight:700;color:${hc[h.color]}">${h.color==='green'?'🟢':h.color==='amber'?'🟡':'🔴'} ${h.label}</div></div>
       <div class="health-comment">${h.comment}</div>
     </div>`;
+}
+function renderPortfolioStrategy(cats){
+  const el=document.getElementById('portfolioStrategyCard');
+  const benchEl=document.getElementById('portfolioBenchmarkCard');
+  if(!el||!benchEl) return;
+  const strat=getPortfolioStrategy(cats);
+  const conf=currentPeriod!=='all'&&PERIOD_DAYS[currentPeriod]?getMetricConfidence(PERIOD_DAYS[currentPeriod],cats.flatMap(c=>c.holdings.map(h=>h.inst.id))):getMetricConfidence(365,cats.flatMap(c=>c.holdings.map(h=>h.inst.id)));
+  const lensLabels={sector:'Sector',group:'Industry Group',industry:'Industry',region:'Region',country:'Country'};
+  const mixRows=(strat.mixes[strategyLens]||[]).slice(0,6).map(r=>`
+    <tr class="clickable-row" onclick="openExposureFilter('${strategyLens}','${String(r.label).replace(/'/g,"&#39;")}')">
+      <td>${r.label}</td>
+      <td class="num">${feur(r.value,0)}</td>
+      <td class="num">${r.pct.toFixed(1)}%</td>
+    </tr>`).join('');
+  const driftRows=strat.drifts.slice(0,5).map(r=>`
+    <tr class="clickable-row" onclick="jumpToHoldings('${r.category}')">
+      <td>${r.ticker}</td>
+      <td class="num">${r.allocPct.toFixed(1)}%</td>
+      <td class="num">${r.targetWeight.toFixed(1)}%</td>
+      <td class="num ${Math.abs(r.drift)>=strat.band?'tr':'tg'}">${r.drift>=0?'+':''}${r.drift.toFixed(1)}%</td>
+    </tr>`).join('');
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="chart-ttl" style="margin:0">Exposure Strategy</div>
+      <span class="conf-badge ${conf.cls}">${conf.label}</span>
+    </div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px">
+      ${Object.entries(lensLabels).map(([key,label])=>`<button class="btn btn-sm" style="${strategyLens===key?'background:var(--pri);color:#fff;border:none':''}" onclick="setStrategyLens('${key}')">${label}</button>`).join('')}
+    </div>
+    <div class="diag-list" style="margin-bottom:14px">
+      <div class="diag-item"><div class="diag-title">Portfolio Value</div><div class="diag-value">${feur(strat.base.portfolioValue)}</div><div class="diag-sub">Assets only: investments plus live cash and savings.</div></div>
+      <div class="diag-item"><div class="diag-title">Net Worth</div><div class="diag-value">${feur(strat.base.netWorth)}</div><div class="diag-sub">Liabilities currently tracked: ${feur(strat.base.liabilities,0)}.</div></div>
+    </div>
+    <table class="mini-table"><thead><tr><th>${lensLabels[strategyLens]}</th><th class="num">Value</th><th class="num">Weight</th></tr></thead><tbody>${mixRows}</tbody></table>
+    ${driftRows?`<div style="margin-top:14px"><div class="chart-ttl" style="margin-bottom:8px">Instrument Drift vs Explicit Targets</div><table class="mini-table"><thead><tr><th>Instrument</th><th class="num">Actual</th><th class="num">Target</th><th class="num">Drift</th></tr></thead><tbody>${driftRows}</tbody></table></div>`:'<div style="margin-top:12px;font-size:11px;color:var(--txt2)">This strategy view now prioritizes factor weights by ${lensLabels[strategyLens].toLowerCase()}. If you also set per-instrument targets, they appear below as a secondary drift check.</div>'}`;
+  benchEl.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="chart-ttl" style="margin:0">Benchmark Check</div>
+      <span class="t2" style="font-size:11px">Default benchmark: ${(strat.benchmarkTicker||'VWCE').toUpperCase()}</span>
+    </div>
+    <div class="diag-list">
+      <div class="diag-item"><div class="diag-title">Portfolio XIRR</div><div class="diag-value ${strat.portfolioXirr!=null&&strat.portfolioXirr<0?'tr':'tg'}">${strat.portfolioXirr!=null?(strat.portfolioXirr>=0?'+':'')+(strat.portfolioXirr*100).toFixed(1)+'%':'—'}</div><div class="diag-sub">Money-weighted, all-time.</div></div>
+      <div class="diag-item"><div class="diag-title">${(strat.benchmarkTicker||'VWCE').toUpperCase()} XIRR</div><div class="diag-value">${strat.benchmarkXirr!=null?(strat.benchmarkXirr>=0?'+':'')+(strat.benchmarkXirr*100).toFixed(1)+'%':'—'}</div><div class="diag-sub">Uses the benchmark instrument only if it exists in your dashboard.</div></div>
+      <div class="diag-item"><div class="diag-title">Alpha vs Benchmark</div><div class="diag-value ${strat.alpha!=null&&strat.alpha<0?'tr':'tg'}">${strat.alpha!=null?(strat.alpha>=0?'+':'')+(strat.alpha*100).toFixed(1)+'%':'—'}</div><div class="diag-sub">Positive means you outperformed your configured benchmark.</div></div>
+      <div class="diag-item"><div class="diag-title">Policy Signal</div><div class="diag-value">${strat.needsRebalance?'Rebalance':'On Target'}</div><div class="diag-sub">${strat.needsRebalance?'Trim overweight names or add to underweights.':'No forced action from target drift right now.'}</div></div>
+    </div>`;
+}
+function renderRiskDashboard(cats){
+  const el=document.getElementById('riskDashboardCard');
+  if(!el) return;
+  const risk=getRiskDashboard(cats);
+  const topPositions=risk.topPositions.map(r=>`
+    <div class="signal-item">
+      <div class="signal-copy"><strong>${r.ticker}</strong><br><span class="t2">${r.name}</span></div>
+      <div style="text-align:right"><div class="fw7">${feur(r.value)}</div><div class="t2" style="font-size:11px">${r.allocPct.toFixed(1)}%</div></div>
+    </div>`).join('');
+  const concentrationSignals=[
+    {label:'Cash + Savings',pct:risk.cashPct,target:feur(risk.liquidValue,0),flag:risk.cashPct<10?'bad':'good'},
+    {label:'Gold',pct:risk.goldPct,target:'hedge',flag:risk.goldPct>20?'warn':'good'},
+    {label:'Crypto',pct:risk.cryptoPct,target:'risk sleeve',flag:risk.cryptoPct>15?'warn':'good'},
+    {label:'Top sector',pct:risk.sector[0]?.pct||0,target:risk.sector[0]?.label||'—',flag:(risk.sector[0]?.pct||0)>30?'bad':'good'},
+    {label:'Top broker',pct:risk.broker[0]?.pct||0,target:risk.broker[0]?.label||'—',flag:(risk.broker[0]?.pct||0)>45?'warn':'good'}
+  ];
+  el.innerHTML=`
+    <div class="g g2">
+      <div>
+        <div class="chart-ttl">Top 5 Exposures</div>
+        <div class="signal-list">${topPositions||'<div class="empty">No live positions.</div>'}</div>
+      </div>
+      <div>
+        <div class="chart-ttl">Concentration Signals</div>
+        <div class="signal-list">${concentrationSignals.map(s=>`<div class="signal-item"><div class="signal-copy"><strong>${s.label}</strong><br><span class="t2">${s.target}</span></div><span class="signal-pill ${s.flag==='good'?'good':s.flag==='warn'?'warn':'bad'}">${s.pct.toFixed(1)}%</span></div>`).join('')}</div>
+      </div>
+    </div>`;
+}
+function renderIncomeAndWatchlist(cats){
+  const incomeEl=document.getElementById('incomeDashboardCard');
+  const watchEl=document.getElementById('watchlistDashboardCard');
+  if(!incomeEl||!watchEl) return;
+  const inc=getIncomeDashboard();
+  const actions=getWatchlistActions(cats);
+  const calendarRows=Object.entries(inc.monthMap).map(([ym,val])=>{
+    const dt=new Date(ym+'-01');
+    return `<tr><td>${dt.toLocaleDateString('en-GB',{month:'short',year:'2-digit'})}</td><td class="num">${val>0?feur(val,2):'—'}</td></tr>`;
+  }).join('');
+  incomeEl.innerHTML=`
+    <div class="diag-list" style="margin-bottom:14px">
+      <div class="diag-item"><div class="diag-title">Trailing 12M Net Dividends</div><div class="diag-value tg">${feur(inc.trailing12)}</div><div class="diag-sub">Net of withholding where available.</div></div>
+      <div class="diag-item"><div class="diag-title">Forward Income</div><div class="diag-value">${feur(inc.forwardIncome)}</div><div class="diag-sub">Based on forward yield or instrument dividend yield.</div></div>
+      <div class="diag-item"><div class="diag-title">Current Yield</div><div class="diag-value">${inc.currentYield.toFixed(2)}%</div><div class="diag-sub">Forward income divided by current portfolio value.</div></div>
+      <div class="diag-item"><div class="diag-title">Withholding Drag</div><div class="diag-value tr">${feur(inc.withholdingDrag)}</div><div class="diag-sub">Total tax withheld from dividend flows on record.</div></div>
+    </div>
+    <table class="mini-table"><thead><tr><th>Month</th><th class="num">Net Income</th></tr></thead><tbody>${calendarRows}</tbody></table>`;
+  watchEl.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="chart-ttl" style="margin:0">Action List</div>
+      <span class="t2" style="font-size:11px">${actions.length} active signals</span>
+    </div>
+    <div class="signal-list">${actions.length?actions.map(a=>`<div class="signal-item"><div class="signal-copy"><strong>${a.label}</strong><br><span class="t2">${a.detail}</span></div><span class="signal-pill ${a.type==='broken'||a.type==='bad'?'bad':a.type==='rebalance'||a.type==='stale'?'warn':'good'}">${a.type}</span></div>`).join(''):'<div class="empty">No immediate action items. Add watch prices, target weights, and thesis status to enrich this list.</div>'}</div>`;
 }
 
 // ── RENDER ALLOCATION CHARTS ──
@@ -2934,13 +3393,14 @@ function renderSectorBreakdown(){
       ${rows}
     </div>`;
 }
-function filterBySector(sector){ activeSectorFilter=sector; activeRegionFilter=null; switchTabByName('holdings'); updateFilterChips(); renderHoldingsTable(computeCategories()); }
-function filterByRegion(region){ activeRegionFilter=region; activeSectorFilter=null; switchTabByName('holdings'); updateFilterChips(); renderHoldingsTable(computeCategories()); }
-function clearFilters(){ activeSectorFilter=null; activeRegionFilter=null; updateFilterChips(); renderHoldingsTable(computeCategories()); }
+function filterBySector(sector){ activeSectorFilter=sector; activeRegionFilter=null; activeExposureFilter={field:'sector',label:sector}; switchTabByName('holdings'); updateFilterChips(); renderHoldingsTable(computeCategories()); }
+function filterByRegion(region){ activeRegionFilter=region; activeSectorFilter=null; activeExposureFilter={field:'region',label:region}; switchTabByName('holdings'); updateFilterChips(); renderHoldingsTable(computeCategories()); }
+function clearFilters(){ activeSectorFilter=null; activeRegionFilter=null; activeExposureFilter=null; updateFilterChips(); renderHoldingsTable(computeCategories()); }
 function updateFilterChips(){
   const chips=[];
   if(activeSectorFilter) chips.push(`<span class="chip">Sector: ${activeSectorFilter}<span class="rm" onclick="clearFilters()">✕</span></span>`);
   if(activeRegionFilter) chips.push(`<span class="chip">Region: ${activeRegionFilter}<span class="rm" onclick="clearFilters()">✕</span></span>`);
+  if(activeExposureFilter&&activeExposureFilter.field!=='sector'&&activeExposureFilter.field!=='region') chips.push(`<span class="chip">${activeExposureFilter.field}: ${activeExposureFilter.label}<span class="rm" onclick="clearFilters()">✕</span></span>`);
   document.getElementById('activeFilters').innerHTML=chips.join('');
 }
 
@@ -2949,6 +3409,15 @@ function catDisplayLabel(label){
   if(label==='ETF') return 'ETFs';
   if(label==='Commodity') return 'Gold';
   return label;
+}
+let holdSort={key:'current',dir:'desc'};
+function setStrategyLens(lens){
+  strategyLens=lens;
+  renderPortfolioStrategy(computeCategories());
+}
+function setHoldSort(key){
+  holdSort=holdSort.key===key?{key,dir:holdSort.dir==='asc'?'desc':'asc'}:{key,dir:'desc'};
+  renderHoldingsTable(computeCategories());
 }
 function renderHoldingsTabs(cats){
   const displayCats=cats.filter(c=>c.label!=='Cash');
@@ -2973,20 +3442,70 @@ function renderHoldingsTable(cats){
   let holdings=[...cat.holdings];
   if(activeSectorFilter) holdings=holdings.filter(h=>h.inst.sector===activeSectorFilter);
   if(activeRegionFilter) holdings=holdings.filter(h=>h.inst.region===activeRegionFilter);
+  if(activeExposureFilter&&activeExposureFilter.field!=='sector'&&activeExposureFilter.field!=='region'){
+    holdings=holdings.filter(h=>normalizeExposureLabel(activeExposureFilter.field,h.inst)===activeExposureFilter.label);
+  }
+  const totalValue=cats.filter(c=>c.label!=='Cash').reduce((s,c)=>s+c.current,0)+((window._cashVal||0)+(window._savVal||0));
+  const benchmarkInstMap={}; (DB.instruments||[]).forEach(i=>benchmarkInstMap[(i.ticker||'').toUpperCase()]=i);
+  holdings=holdings.map(h=>{
+    const allocPct=totalValue>0?h.curVal/totalValue*100:0;
+    const costPct=cat.invested>0?h.pos.cost/cat.invested*100:0;
+    const forwardYield=h.inst.forwardYield??h.inst.dividendYield??null;
+    const bmkTicker=(h.inst.benchmarkTicker||DB.settings?.benchmarkTicker||'VWCE').toUpperCase();
+    const bmkInst=benchmarkInstMap[bmkTicker];
+    const instXirr=computeInstXIRR(h.inst.id);
+    const bmkXirr=bmkInst?computeInstXIRR(bmkInst.id):null;
+    const alpha=instXirr!=null&&bmkXirr!=null?instXirr-bmkXirr:null;
+    return {...h,allocPct,costPct,forwardYield,bmkTicker,alpha,staleDays:getInstrumentStaleDays(h.inst.id),thesisStatus:h.inst.thesisStatus||'',instXirr};
+  });
+  const dir=holdSort.dir==='asc'?1:-1;
+  holdings.sort((a,b)=>{
+    const va=holdSort.key==='holding'?a.inst.ticker:
+      holdSort.key==='invested'?a.pos.cost:
+      holdSort.key==='current'?a.curVal:
+      holdSort.key==='pnl'?a.pnl:
+      holdSort.key==='alloc'?a.allocPct:
+      holdSort.key==='costPct'?a.costPct:
+      holdSort.key==='yield'?a.forwardYield??-999:
+      holdSort.key==='alpha'?a.alpha??-999:
+      holdSort.key==='stale'?a.staleDays??999:
+      holdSort.key==='thesis'?a.thesisStatus||'':a.curVal;
+    const vb=holdSort.key==='holding'?b.inst.ticker:
+      holdSort.key==='invested'?b.pos.cost:
+      holdSort.key==='current'?b.curVal:
+      holdSort.key==='pnl'?b.pnl:
+      holdSort.key==='alloc'?b.allocPct:
+      holdSort.key==='costPct'?b.costPct:
+      holdSort.key==='yield'?b.forwardYield??-999:
+      holdSort.key==='alpha'?b.alpha??-999:
+      holdSort.key==='stale'?b.staleDays??999:
+      holdSort.key==='thesis'?b.thesisStatus||'':b.curVal;
+    if(typeof va==='string') return va.localeCompare(vb)*dir;
+    return ((va>vb?1:va<vb?-1:0))*dir;
+  });
   document.getElementById('holdThead').innerHTML=`<tr>
-    <th>Holding</th>
-    <th class="num">Invested (€)</th>
-    <th class="num">Current (€)</th>
-    <th class="num">P&amp;L</th>
+    <th class="sortable" onclick="setHoldSort('holding')">Holding</th>
+    <th class="num sortable" onclick="setHoldSort('invested')">Invested (€)</th>
+    <th class="num sortable" onclick="setHoldSort('current')">Current (€)</th>
+    <th class="num sortable" onclick="setHoldSort('alloc')">Alloc %</th>
+    <th class="num sortable" onclick="setHoldSort('costPct')">Cost %</th>
+    <th class="num sortable" onclick="setHoldSort('pnl')">P&amp;L</th>
+    <th class="num sortable" onclick="setHoldSort('yield')">Fwd Yield</th>
+    <th class="num sortable xirr-col" onclick="setHoldSort('alpha')">Bench α</th>
     <th class="num xirr-col">XIRR</th>
+    <th class="num sortable" onclick="setHoldSort('stale')">Price Age</th>
+    <th class="num sortable" onclick="setHoldSort('thesis')">Thesis</th>
     <th class="num" title="Click to edit inline">Price ✏️</th>
   </tr>`;
   document.getElementById('holdTbody').innerHTML=holdings.map(h=>{
     const pnlPct=h.pos.cost>0?h.pnl/h.pos.cost:0;
     const periodRet=computeInstPeriodReturn(h.inst.id);
     const periodBadge=periodRet!==null?`<div style="font-size:10px;margin-top:2px;color:${periodRet>=0?'var(--ok)':'var(--err)'}">🕐${currentPeriod.toUpperCase()} ${periodRet>=0?'+':''}${periodRet.toFixed(1)}%</div>`:'';
-    const iXirr=computeInstXIRR(h.inst.id);
+    const iXirr=h.instXirr;
     const xirrCell=iXirr===null?'<span style="color:var(--txt2);font-size:11px">—</span>':`<span style="font-weight:600;color:${iXirr>=0?'var(--ok)':'var(--err)'}">${iXirr>=0?'+':''}${(iXirr*100).toFixed(1)}%</span><div style="font-size:10px;color:var(--txt2)">ann.</div>`;
+    const alphaCell=h.alpha===null?'<span style="color:var(--txt2);font-size:11px">—</span>':`<span style="font-weight:600;color:${h.alpha>=0?'var(--ok)':'var(--err)'}">${h.alpha>=0?'+':''}${(h.alpha*100).toFixed(1)}%</span><div style="font-size:10px;color:var(--txt2)">${h.bmkTicker}</div>`;
+    const ageCell=h.staleDays==null?'<span class="t2">—</span>':`${h.staleDays}d`;
+    const thesisLabel=h.thesisStatus?`<span class="badge ${h.thesisStatus==='broken'?'br':h.thesisStatus==='trim'?'bw':h.thesisStatus==='watch'?'bn':'bg'}">${h.thesisStatus}</span>`:'<span class="t2">—</span>';
     return`<tr>
       <td>
         <div style="font-weight:700;font-size:13px">${h.inst.ticker}</div>
@@ -2994,18 +3513,24 @@ function renderHoldingsTable(cats){
       </td>
       <td class="num" style="font-size:13px">${feur(h.pos.cost,1)}</td>
       <td class="num fw7" style="font-size:13px">${feur(h.curVal,1)}</td>
+      <td class="num">${h.allocPct.toFixed(1)}%</td>
+      <td class="num">${h.costPct.toFixed(1)}%</td>
       <td class="num">
         <div class="fw7 ${pc(h.pnl)}">${h.pnl>=0?'+':''}${feur(h.pnl,1)}</div>
         <div style="font-size:11px;color:var(--txt2)">${pnlPct>=0?'+':''}${(pnlPct*100).toFixed(1)}%</div>
         ${periodBadge}
       </td>
+      <td class="num">${h.forwardYield!=null?`${h.forwardYield.toFixed(2)}%`:'—'}</td>
+      <td class="num xirr-col" style="font-size:12px">${alphaCell}</td>
       <td class="num xirr-col" style="font-size:12px">${xirrCell}</td>
+      <td class="num">${ageCell}</td>
+      <td class="num">${thesisLabel}</td>
       <td class="num"><input class="price-inp" type="number" value="${h.price.toFixed(1)}" step="any" min="0"
         onkeydown="if(event.key==='Enter')this.blur()"
         onblur="updatePriceInline('${h.inst.id}',this.value)"
         title="Current: €${h.price} — edit &amp; press Enter or click away to save"></td>
     </tr>`;
-  }).join('')||`<tr><td colspan="6" class="empty">No holdings match this filter</td></tr>`;
+  }).join('')||`<tr><td colspan="12" class="empty">No holdings match this filter</td></tr>`;
 
   // ── Bar chart: mode-aware ──
   const catOffset={ETF:0,Stock:5,Crypto:10,Commodity:13,Cash:16}[activeCategory]||0;
@@ -3447,7 +3972,7 @@ function rebuildCashFlow(){
     if(skip) return;
     if(tx.type==='buy')           cashTradeDelta -= (tx.qty||0)*(tx.price||0)+(tx.fees||0)+(tx.taxPaid||0);
     else if(tx.type==='sell')     cashTradeDelta += (tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0);
-    else if(tx.type==='dividend') cashTradeDelta += tx.price||0;
+    else if(tx.type==='dividend') cashTradeDelta += getDividendNet(tx,instById(tx.iid));
     else if(tx.type==='deposit')  cashTradeDelta += tx.price||0;
   });
   const cashTransferDelta=DB.transition.cashTxDelta||0; // cash↔savings transfers only
@@ -3477,6 +4002,11 @@ function rebuildCashFlow(){
   // Liquid Buffer = Cash + Savings + any extra manual buffer
   const totalLiquid=cashVal+savVal+(t.buf||0);
   const runwayMonths=t.exp1>0?Math.floor(totalLiquid/t.exp1):0;
+  const reserveMonths=DB.settings?.emergencyReserveMonths||6;
+  const reserveNeed=(t.exp1||0)*reserveMonths;
+  const deployable=Math.max(0,totalLiquid-reserveNeed);
+  const maxWithdrawalRate=DB.settings?.maxMonthlyWithdrawalRate||0.4;
+  const maxMonthlyWithdrawal=invOutflow>=0?((computeCategories().filter(c=>c.label!=='Cash').reduce((s,c)=>s+c.current,0))*maxWithdrawalRate/100):0;
   document.getElementById('runwayVal').textContent=runwayMonths;
   document.getElementById('runwayFill').style.width=Math.min(100,runwayMonths/36*100)+'%';
   document.getElementById('savBuf').textContent=feur(totalLiquid);
@@ -3499,6 +4029,8 @@ function rebuildCashFlow(){
   // Savings card: show red if negative (data inconsistency — transfers exceeded balance)
   const cfSavValEl=document.getElementById('cfSavVal');
   if(cfSavValEl) cfSavValEl.style.color=savVal<0?'var(--err)':'var(--ok)';
+  const runwayLbl=document.getElementById('runwayFill');
+  if(runwayLbl) runwayLbl.title=`Emergency reserve target ${feur(reserveNeed)} · deployable cash ${feur(deployable)}`;
   // Update transfer modal preview if open
   const xferCash=document.getElementById('xfer_cash_before');
   const xferSav=document.getElementById('xfer_sav_before');
@@ -3519,7 +4051,13 @@ function rebuildCashFlow(){
     actEl.innerHTML=(rows.length?rows.map(r=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:13px">
       <span>${r.label}</span><span style="font-weight:700;color:${r.color}">${r.sign}${feur(r.val)}</span></div>`).join(''):'<div style="color:var(--txt2);font-size:13px;padding:12px 0;text-align:center">No investment transactions yet this year.</div>')
       +`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;border-top:2px solid var(--bdr);margin-top:4px">
-        <span>Net investment cash flow</span><span style="color:${netInv>=0?'var(--ok)':'var(--err)'}">${netInv>=0?'+':''}${feur(netInv)}</span></div>`;
+        <span>Net investment cash flow</span><span style="color:${netInv>=0?'var(--ok)':'var(--err)'}">${netInv>=0?'+':''}${feur(netInv)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px">
+        <span>Emergency reserve target</span><span>${feur(reserveNeed)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px">
+        <span>Safe to deploy now</span><span style="color:${deployable>0?'var(--ok)':'var(--err)'}">${feur(deployable)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px">
+        <span>Max monthly portfolio withdrawal</span><span>${feur(maxMonthlyWithdrawal)}</span></div>`;
   }
 
   const curMonth=new Date().toISOString().slice(0,7);
@@ -3672,7 +4210,8 @@ function computeInstPeriodReturn(instId){
   const days=PERIOD_DAYS[currentPeriod]; if(!days) return null;
   const startPrice=getPriceAt(instId,days);
   const curPrice=DB.prices[instId];
-  if(!startPrice||!curPrice) return null;
+  const conf=getPriceHistoryCoverage(instId,days);
+  if(!startPrice||!curPrice||conf.coverage<0.35) return null;
   return (curPrice-startPrice)/startPrice*100;
 }
 // Returns period P&L for a category (aggregated across holdings), null if insufficient data
@@ -3720,7 +4259,7 @@ function computePortfolioXIRR(cats){
     if(!inst||inst.category==='Cash') return;
     if(tx.type==='buy')      flows.push({date:tx.date,amount:-((tx.qty||0)*(tx.price||0)+(tx.fees||0)+(tx.taxPaid||0))});
     else if(tx.type==='sell')    flows.push({date:tx.date,amount:(tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0)});
-    else if(tx.type==='dividend') flows.push({date:tx.date,amount:(tx.price||0)});
+    else if(tx.type==='dividend') flows.push({date:tx.date,amount:getDividendNet(tx,inst)});
   });
   const invCats=cats.filter(c=>c.label!=='Cash');
   const totalCur=invCats.reduce((s,c)=>s+c.current,0);
@@ -3740,7 +4279,7 @@ function computePortfolioPeriodXIRR(daysAgo,cats){
     if(!inst||inst.category==='Cash') return;
     if(tx.type==='buy')      flows.push({date:tx.date,amount:-((tx.qty||0)*(tx.price||0)+(tx.fees||0)+(tx.taxPaid||0))});
     else if(tx.type==='sell')    flows.push({date:tx.date,amount:(tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0)});
-    else if(tx.type==='dividend') flows.push({date:tx.date,amount:(tx.price||0)});
+    else if(tx.type==='dividend') flows.push({date:tx.date,amount:getDividendNet(tx,inst)});
   });
   if(flows.length===0) return null;
   const invCats=cats.filter(c=>c.label!=='Cash');
@@ -3757,7 +4296,7 @@ function computeInstXIRR(instId){
     if(tx.iid!==instId) return;
     if(tx.type==='buy')      flows.push({date:tx.date,amount:-((tx.qty||0)*(tx.price||0)+(tx.fees||0)+(tx.taxPaid||0))});
     else if(tx.type==='sell')    flows.push({date:tx.date,amount:(tx.qty||0)*(tx.price||0)-(tx.fees||0)-(tx.taxPaid||0)});
-    else if(tx.type==='dividend') flows.push({date:tx.date,amount:(tx.price||0)});
+    else if(tx.type==='dividend') flows.push({date:tx.date,amount:getDividendNet(tx,instById(instId))});
   });
   const p=getPositions()[instId];
   if(!p||p.qty<=0) return null;
@@ -3785,7 +4324,7 @@ function updatePeriodMenuLocks(){
   const periodP={7:'7d',30:'30d',90:'90d',180:'180d',365:'365d'};
   const ovwMap={7:'ovw-weekly',30:'ovw-monthly',90:'ovw-quarterly',180:'ovw-6m',365:'ovw-annual'};
   const holdMap={7:'hold-weekly',30:'hold-monthly',90:'hold-quarterly',180:'hold-6m',365:'hold-annual'};
-  // Lower thresholds: weekly needs 2 days, monthly 14, quarterly 60, 6m 120, annual 270
+  // Confidence-based thresholds: unlock only once enough data exists to make the number credible.
   const lockThresh={7:2,30:14,90:60,180:120,365:270};
   [7,30,90,180,365].forEach(days=>{
     [ovwMap[days],holdMap[days]].forEach(id=>{
@@ -3805,7 +4344,7 @@ function updatePeriodMenuLocks(){
     });
   });
 }
-function periodLockedNotice(){ notify('⏳ Unlocks automatically as weekly price history builds. Keep updating prices each Monday!'); }
+function periodLockedNotice(){ notify('⏳ This period stays locked until price-history coverage is strong enough to produce a credible return signal. Keep updating prices regularly.'); }
 document.addEventListener('click',e=>{
   if(!e.target.closest('.period-wrap')){
     document.querySelectorAll('.period-menu').forEach(m=>m.classList.remove('open'));
@@ -4074,13 +4613,14 @@ function saveTx(){
     DB.prices[ni.id]=parseFloat(document.getElementById('tx_price').value)||0;
     iid=ni.id;
   }
-  const qty=(type==='dividend'||isNoInst)?1:parseFloat(document.getElementById('tx_qty').value);
+  const rawQty=parseFloat(document.getElementById('tx_qty').value);
+  const qty=(type==='dividend'||isNoInst)?(isNaN(rawQty)?1:rawQty):rawQty;
   const price=parseFloat(document.getElementById('tx_price').value);
   const date=document.getElementById('tx_date').value;
-  if(!price||!date){ notify('⚠️ Amount and date required.','warn'); return; }
-  if(type!=='dividend'&&!isNoInst&&!qty){ notify('⚠️ Quantity required.','warn'); return; }
   const taxPaid=(type==='buy'||type==='sell'||type==='dividend')?parseFloat(document.getElementById('tx_taxPaid').value)||0:0;
   const fees=(type==='dividend'||isNoInst)?0:parseFloat(document.getElementById('tx_fees').value)||0;
+  const txErr=validateTransactionInput({iid,type,qty,price,date,taxPaid,fees});
+  if(txErr){ notify('⚠️ '+txErr,'warn'); return; }
   const txObj={iid,type,date,qty,price,fees,taxPaid,notes:document.getElementById('tx_notes').value.trim()};
   if(_editTxId){
     const idx=DB.transactions.findIndex(t=>t.id===_editTxId);
@@ -4148,7 +4688,7 @@ function renderHistory(){
     const inst=instById(tx.iid);
     const isDiv=tx.type==='dividend';
     const isDeposit=tx.type==='deposit';
-    const tot=isDiv?(tx.price||0):(tx.qty*tx.price+(tx.fees||0));
+    const tot=isDiv?getDividendGross(tx):(tx.qty*tx.price+(tx.fees||0));
     // Cash impact for __cash_flow__ view
     const isCashInstTx=cashInst&&tx.iid===cashInst.id;
     let cashImpact=0;
@@ -4162,7 +4702,7 @@ function renderHistory(){
     } else {
       if(tx.type==='buy') cashImpact=-(tx.qty*tx.price+(tx.fees||0));
       else if(tx.type==='sell') cashImpact=tx.qty*tx.price-(tx.fees||0)-(tx.taxPaid||0);
-      else if(tx.type==='dividend') cashImpact=tx.price||0;
+      else if(tx.type==='dividend') cashImpact=getDividendNet(tx,inst);
     }
     const typeBadge=isDeposit
       ?`<span class="badge" style="background:#DBEAFE;color:#1D4ED8;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700">DEP</span>`
@@ -4250,6 +4790,17 @@ function showInstForm(editId){
   setVal('inst_wht', inst?.withholdingRate??'');
   setVal('inst_unit', inst?.unit||'');
   setVal('inst_interest', inst?.interestRate??'');
+  setVal('inst_targetWeight', inst?.targetWeight??'');
+  setVal('inst_benchmark', inst?.benchmarkTicker||'');
+  setVal('inst_forwardYield', inst?.forwardYield??inst?.dividendYield??'');
+  setVal('inst_thesisStatus', inst?.thesisStatus||'');
+  setVal('inst_watchPrice', inst?.watchPrice??'');
+  setVal('inst_stopPrice', inst?.stopPrice??'');
+  setVal('inst_targetPrice', inst?.targetPrice??'');
+  setVal('inst_setupType', inst?.setupType||'');
+  setVal('inst_thesis', inst?.thesis||'');
+  setVal('inst_invalidation', inst?.invalidation||'');
+  setVal('inst_review', inst?.review||'');
   const cbEl=document.getElementById('inst_isTrading'); if(cbEl) cbEl.checked=!!(inst?.isTrading);
 }
 function saveInstForm(){
@@ -4269,6 +4820,17 @@ function saveInstForm(){
     distType:getV('inst_distType')||undefined,
     ter:getN('inst_ter'), withholdingRate:getN('inst_wht'),
     unit:getV('inst_unit')||undefined, interestRate:getN('inst_interest'),
+    targetWeight:getN('inst_targetWeight'),
+    benchmarkTicker:getV('inst_benchmark').toUpperCase(),
+    forwardYield:getN('inst_forwardYield'),
+    thesisStatus:getV('inst_thesisStatus'),
+    watchPrice:getN('inst_watchPrice'),
+    stopPrice:getN('inst_stopPrice'),
+    targetPrice:getN('inst_targetPrice'),
+    setupType:getV('inst_setupType'),
+    thesis:getV('inst_thesis'),
+    invalidation:getV('inst_invalidation'),
+    review:getV('inst_review'),
     isTrading:!!(document.getElementById('inst_isTrading')?.checked)
   };
   if(editId){
@@ -4399,6 +4961,7 @@ function refreshAll(){
   const cats=computeCategories();
   rebuildCashFlow(); // must run first — sets window._cashVal/_savVal used by renderKPIs
   renderKPIs(cats); renderAlloc(cats); renderCatCards(cats);
+  renderPortfolioStrategy(cats); renderRiskDashboard(cats); renderIncomeAndWatchlist(cats);
   renderHoldingsTabs(cats); renderHoldingsTable(cats);
   snapshotNetWorth(cats); // keep NW chart end-point fresh after price updates
   renderNWChart(cats);
@@ -5259,7 +5822,7 @@ function getTradingPLForRange(start,end){
     const inRange=tx.date>=start&&tx.date<=end;
     if(tx.type==='buy'){p.cost+=tx.qty*tx.price+(tx.fees||0);p.qty+=tx.qty;if(inRange)fees+=(tx.fees||0);}
     else if(tx.type==='sell'){const avg=p.qty>0?p.cost/p.qty:0;const gain=tx.qty*tx.price-tx.qty*avg-(tx.fees||0);p.cost-=avg*tx.qty;p.qty-=tx.qty;if(inRange)realizedNet+=gain;}
-    else if(tx.type==='dividend'&&inRange){dividends+=(tx.qty||1)*(tx.price||0);}
+    else if(tx.type==='dividend'&&inRange){dividends+=getDividendGross(tx);}
   });
   // Fold in manual biz3 entries for the same date range
   const biz3manual=getBizPLForRange('biz3',start,end);
@@ -5340,7 +5903,7 @@ function getTradingPL(year){
       p.cost-=avg*tx.qty; p.qty-=tx.qty;
       if(inYear) realizedNet+=gain;
     } else if(tx.type==='dividend'&&inYear){
-      dividends+=(tx.qty||1)*(tx.price||0);
+      dividends+=getDividendGross(tx);
     }
   });
   // Fold in manual biz3 entries (e.g. platform subscriptions, account fees)
@@ -5355,7 +5918,7 @@ function getTradingPL(year){
 function getYTDDividends(year){
   const yr=String(year);
   return (DB.transactions||[]).filter(t=>t.type==='dividend'&&t.date.startsWith(yr))
-    .reduce((s,t)=>s+(t.qty||1)*(t.price||0),0);
+    .reduce((s,t)=>s+getDividendGross(t),0);
 }
 function getYTDRealizedGains(year){
   // Returns net realized gain/loss across all investment categories
@@ -5462,6 +6025,7 @@ function getStrategyHealth(){
 }
 function renderStrategyHealthHTML(){
   const h=getStrategyHealth();
+  const tradingInsts=(DB.instruments||[]).filter(i=>i.isTrading);
   if(h.tradingInstCount===0){
     return`<div style="border-top:2px dashed var(--bdr);padding:20px;margin-top:4px;text-align:center;color:var(--txt2);font-size:13px">
       <strong style="font-size:15px">📊 Strategy Health</strong><br><br>
@@ -5545,6 +6109,18 @@ function renderStrategyHealthHTML(){
         <div style="background:var(--bdr);border-radius:4px;height:8px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:${h.timelinePct}%;background:${h.timelinePct>=100?'var(--err)':'var(--pri)'};border-radius:4px;transition:.3s"></div></div>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt2)"><span>${h.startDate}</span><span>${h.endDate}</span></div>`:`<div style="font-size:12px;color:var(--txt2)">End date not set. Add it in ⚙️ Settings.</div>`}
       </div>
+    </div>
+    <div style="margin-top:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2);margin-bottom:10px">📝 Trading Journal Overlay</div>
+      <div class="g g2">${tradingInsts.map(inst=>`
+        <div class="journal-box">
+          <div class="journal-title">${inst.ticker||inst.name}</div>
+          <div class="journal-meta">${inst.setupType||'Setup not set'} · ${inst.thesisStatus||'status unset'}</div>
+          <div class="journal-copy"><strong>Thesis:</strong> ${inst.thesis||'Add a thesis in Manage Instruments.'}</div>
+          <div class="journal-copy" style="margin-top:6px"><strong>Invalidation:</strong> ${inst.invalidation||'No invalidation rule set.'}</div>
+          <div class="journal-copy" style="margin-top:6px"><strong>Levels:</strong> stop ${inst.stopPrice!=null?feur(inst.stopPrice):'—'} · target ${inst.targetPrice!=null?feur(inst.targetPrice):'—'}</div>
+          <div class="journal-copy" style="margin-top:6px"><strong>Review:</strong> ${inst.review||'No post-trade review yet.'}</div>
+        </div>`).join('')}</div>
     </div>
   </div>`;
 }
@@ -5692,7 +6268,7 @@ function getLedgerDividends(ym){
   const instMap={};
   DB.instruments.forEach(i=>{ instMap[i.id]=i.withholdingRate??DB.taxSettings?.dividendWithholdingRate??15; });
   return (DB.transactions||[]).filter(tx=>tx.type==='dividend'&&tx.date.startsWith(ym))
-    .reduce((s,tx)=>{ const whr=(instMap[tx.iid]??15)/100; return s+(tx.qty||1)*(tx.price||0)*(1-whr); },0);
+    .reduce((s,tx)=>{ const whr=(instMap[tx.iid]??15)/100; return s+getDividendGross(tx)*(1-whr); },0);
 }
 
 function getPlannedNetForMonth(ym){
