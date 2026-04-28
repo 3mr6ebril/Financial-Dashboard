@@ -1227,12 +1227,15 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
             <li>Paste it below and click <strong>Connect</strong></li>
           </ol>
         </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <input id="syncGistInput" type="text" class="ts-inp" placeholder="Existing Gist ID (optional, saved on this device)" style="flex:1;min-width:220px;font-family:monospace;font-size:12px;letter-spacing:.03em">
+        </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <input id="syncTokenInput" type="password" class="ts-inp" placeholder="Paste your GitHub token (ghp_...)" style="flex:1;min-width:220px;font-family:monospace;font-size:12px;letter-spacing:.03em">
           <button class="btn btn-p" onclick="connectGist()" style="white-space:nowrap;padding:9px 20px;font-size:13px">☁️ Connect</button>
         </div>
         <div style="font-size:11px;color:var(--txt2);margin-top:10px">
-          🔒 Stored only on this device in localStorage — never uploaded anywhere except GitHub's API.
+          🔒 Gist ID is remembered on this device. Your GitHub token is kept only for this browser session.
         </div>
       </div>
       <!-- ── CONNECTED ── -->
@@ -2135,10 +2138,9 @@ function loadDB(){
   const oldGistId=localStorage.getItem(GIST_ID_KEY);
   if(oldToken||oldGistId){
     if(oldToken) sessionStorage.setItem(GIST_TOKEN_KEY,oldToken);
-    if(oldGistId) sessionStorage.setItem(GIST_ID_KEY,oldGistId);
+    if(oldGistId) localStorage.setItem(GIST_ID_KEY,oldGistId);
     localStorage.removeItem(GIST_TOKEN_KEY);
-    localStorage.removeItem(GIST_ID_KEY);
-    console.log('🔐 GitHub credentials migrated to secure sessionStorage');
+    console.log('🔐 GitHub token migrated to sessionStorage; Gist ID remains in localStorage');
   }
 }
 function saveDB(){ try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){} scheduleGistPush(); }
@@ -3942,6 +3944,8 @@ function openCloudSync(){
   closeSettingsMenu();
   openModal('cloudSyncModal');
   updateSyncUI();
+  const gistInput=document.getElementById('syncGistInput');
+  if(gistInput) gistInput.value=getSyncGistId();
 }
 function openPlanSettings(){
   loadTransitionSettings();
@@ -6691,9 +6695,14 @@ const GIST_ID_KEY='findb_gist_id';
 let _syncDebounce=null;
 
 function getSyncToken(){return sessionStorage.getItem(GIST_TOKEN_KEY)||'';}
-function getSyncGistId(){return sessionStorage.getItem(GIST_ID_KEY)||'';}
-// 🔐 Security: Credentials stored in sessionStorage (cleared when tab closes), not persistent localStorage
-window.addEventListener('beforeunload',()=>{sessionStorage.removeItem(GIST_TOKEN_KEY);sessionStorage.removeItem(GIST_ID_KEY);});
+function getSyncGistId(){return localStorage.getItem(GIST_ID_KEY)||'';}
+function setSyncGistId(gistId){
+  const cleaned=(gistId||'').trim();
+  if(cleaned) localStorage.setItem(GIST_ID_KEY,cleaned);
+  else localStorage.removeItem(GIST_ID_KEY);
+}
+// 🔐 Security: token is session-only; Gist ID is safe to remember locally.
+window.addEventListener('beforeunload',()=>{sessionStorage.removeItem(GIST_TOKEN_KEY);});
 
 function setSyncStatus(status,msg){
   const icons={ok:'✅',pending:'⏳',error:'❌',idle:'☁'};
@@ -6813,8 +6822,11 @@ async function gistFetch(){
 
 async function connectGist(){
   const tokenEl=document.getElementById('syncTokenInput');
+  const gistEl=document.getElementById('syncGistInput');
   const token=(tokenEl?.value||'').trim();
+  const typedGistId=(gistEl?.value||'').trim();
   if(!token){ alert('Please paste your GitHub Personal Access Token first.'); return; }
+  if(typedGistId) setSyncGistId(typedGistId);
   setSyncStatus('pending','Connecting…');
   try{
     // validate token
@@ -6825,7 +6837,7 @@ async function connectGist(){
     // check if existing gist is still valid
     if(gistId){
       const chk=await fetch(`https://api.github.com/gists/${gistId}`,{headers:{Authorization:`Bearer ${token}`}});
-      if(!chk.ok) gistId='';
+      if(!chk.ok){ gistId=''; setSyncGistId(''); }
     }
     // create private gist if none
     if(!gistId){
@@ -6839,8 +6851,9 @@ async function connectGist(){
       gistId=newGist.id;
     }
     sessionStorage.setItem(GIST_TOKEN_KEY,token);
-    sessionStorage.setItem(GIST_ID_KEY,gistId);
+    setSyncGistId(gistId);
     if(tokenEl) tokenEl.value='';
+    if(gistEl) gistEl.value=gistId;
     updateSyncUI();
     const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     setSyncStatus('ok','Connected as @'+user.login);
@@ -6855,7 +6868,7 @@ async function connectGist(){
 function disconnectGist(){
   if(!confirm('Disconnect cloud sync?\n\nYour data stays saved locally. You can reconnect anytime.')) return;
   sessionStorage.removeItem(GIST_TOKEN_KEY);
-  sessionStorage.removeItem(GIST_ID_KEY);
+  localStorage.removeItem(GIST_ID_KEY);
   setSyncStatus('idle');
   updateSyncUI();
   notify('Cloud sync disconnected.');
@@ -6866,9 +6879,11 @@ function updateSyncUI(){
   const cs=document.getElementById('syncConnectSection');
   const ss=document.getElementById('syncConnectedSection');
   const gd=document.getElementById('syncGistIdDisplay');
+  const gi=document.getElementById('syncGistInput');
   if(cs) cs.style.display=connected?'none':'block';
   if(ss) ss.style.display=connected?'block':'none';
   if(gd&&connected) gd.textContent=getSyncGistId();
+  if(gi&&!gi.value) gi.value=getSyncGistId();
 }
 
 // ── INIT ──
@@ -6924,7 +6939,7 @@ window.addEventListener('DOMContentLoaded',()=>{
       if(DB.instruments.length===0) showWizard();
     });
   } else {
-    setSyncStatus('idle');
+    setSyncStatus('idle',getSyncGistId()?'Token needed':'Not configured');
     // Show onboarding wizard on first launch (empty DB)
     if(DB.instruments.length===0) showWizard();
   }
