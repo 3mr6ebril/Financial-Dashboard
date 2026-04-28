@@ -278,29 +278,53 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   .trans-settings{grid-template-columns:1fr 1fr}
 }
 @media(max-width:768px){
+  html,body{max-width:100%;overflow-x:hidden}
   .hdr{padding:0 16px}
   .hdr-top{flex-wrap:wrap;gap:8px;padding:10px 0}
   .brand h1{font-size:15px}
-  .hdr-right{flex-wrap:wrap;gap:6px}
+  .brand{min-width:0}
+  .upd-badge{display:none}
+  .hdr-right{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;gap:6px;padding-bottom:4px}
   .hdr-right .btn-sm{font-size:11px;padding:4px 8px}
+  .settings-wrap{margin-left:0;flex-shrink:0}
+  .settings-menu{right:auto;left:0;max-width:calc(100vw - 32px)}
+  .period-wrap,.sync-pill{flex-shrink:0}
   .main-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .mtab{padding:9px 14px;font-size:12px;white-space:nowrap}
   .main{padding:14px}
   .g2,.g3,.g4,.g5{grid-template-columns:1fr}
   .g4.kpi-grid-4col{grid-template-columns:repeat(2,1fr)}
+  #kpiGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g[style*="grid-template-columns"]{grid-template-columns:1fr!important}
   .fgrid{grid-template-columns:1fr}
   .trans-settings{grid-template-columns:1fr}
+  .card{padding:14px}
+  .section{margin-bottom:22px}
   .kpi-val{font-size:22px}
+  .kpi-sub{font-size:11px;gap:5px}
   .cat-val{font-size:16px}
   .sec-hdr{flex-direction:column;align-items:flex-start;gap:6px}
   .holdings-header{flex-direction:column;align-items:flex-start}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  .tab{white-space:nowrap;flex-shrink:0}
   .diag-list{grid-template-columns:1fr}
   .tbl-wrap{font-size:12px}
+  .tbl-wrap table{min-width:760px}
+  .mini-table{min-width:520px}
+  .mini-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
   td,th{padding:7px 8px}
   .bkd-hdr-row{grid-template-columns:12px 1fr 60px 80px 50px 36px 16px}
+  .bkd-hdr-row,.bkd-hold-row{min-width:560px}
+  #sectorBreakdownCard{overflow-x:auto}
   .modal{border-radius:var(--r) var(--r) 0 0;max-height:85vh;position:fixed;bottom:0;left:0;right:0;top:auto;transform:translateY(100%)}
   .overlay.open .modal{transform:translateY(0)}
   .modal-wide{max-width:100%}
+  .mhdr,.mbody,.mfoot{padding-left:16px;padding-right:16px}
+  .mfoot{flex-wrap:wrap}
+  .mfoot .btn{flex:1;justify-content:center}
+  .notif{left:12px;right:12px;bottom:14px;transform:translateY(100px);max-width:none;white-space:normal;text-align:center}
+  .notif.show{transform:translateY(0)}
+  .fab{right:16px;bottom:16px;width:48px;height:48px}
   /* CF tab: stack 3-column grid to single column */
   .cf-3col{grid-template-columns:1fr !important}
   /* Investments table: horizontal scroll, hide XIRR column */
@@ -314,6 +338,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
   .main{padding:10px}
   .mtab{padding:8px 10px;font-size:11px}
   .g4.kpi-grid-4col{grid-template-columns:1fr 1fr}
+  #kpiGrid{grid-template-columns:1fr}
   .kpi{padding:12px}
   .kpi-val{font-size:19px}
   .cat-card{padding:12px}
@@ -6696,6 +6721,7 @@ function renderNWChart(cats){
 const GIST_TOKEN_KEY='findb_gist_token';
 const GIST_ID_KEY='findb_gist_id';
 let _syncDebounce=null;
+let _syncBooting=false;
 
 function getSyncToken(){return sessionStorage.getItem(GIST_TOKEN_KEY)||localStorage.getItem(GIST_TOKEN_KEY)||'';}
 function setSyncToken(token,remember=false){
@@ -6727,6 +6753,7 @@ function setSyncStatus(status,msg){
 }
 
 function scheduleGistPush(){
+  if(_syncBooting) return;
   if(!getSyncToken()||!getSyncGistId()) return;
   clearTimeout(_syncDebounce);
   _syncDebounce=setTimeout(()=>gistPush(false),2000);
@@ -6908,8 +6935,15 @@ document.addEventListener('click',e=>{
     closeSettingsMenu();
   }
 });
-window.addEventListener('DOMContentLoaded',()=>{
+window.addEventListener('DOMContentLoaded',async ()=>{
+  _syncBooting=true;
   loadDB();
+  updateSyncUI();
+  const hasCloudConfig=!!(getSyncToken()&&getSyncGistId());
+  if(hasCloudConfig){
+    setSyncStatus('pending','Loading from cloud…');
+    await gistFetch();
+  }
   // Snapshot current prices as baseline
   DB.instruments.forEach(i=>{ if(DB.prices[i.id]) snapshotPrice(i.id, DB.prices[i.id]); });
   // Don't call saveDB() here so we don't trigger a gist push on every page load
@@ -6935,22 +6969,11 @@ window.addEventListener('DOMContentLoaded',()=>{
   // Daily net worth snapshot (must be after refreshAll so prices are current)
   snapshotNetWorth(computeCategories());
   try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
+  _syncBooting=false;
   // ── Sync init ──
   updateSyncUI();
-  if(getSyncToken()&&getSyncGistId()){
-    setSyncStatus('pending','Loading from cloud…');
-    gistFetch().then(fetched=>{
-      if(fetched){
-        const cats2=computeCategories();
-        if(cats2.length) activeCategory=cats2[0].label;
-        applySectionOrder(); refreshAll(); loadTransitionSettings();
-        snapshotNetWorth(computeCategories());
-        try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){}
-      } else {
-        if(getSyncGistId()) setSyncStatus('ok','Connected');
-      }
-      if(DB.instruments.length===0) showWizard();
-    });
+  if(hasCloudConfig){
+    if(DB.instruments.length===0) showWizard();
   } else {
     setSyncStatus('idle',getSyncGistId()?'Token needed':'Not configured');
     // Show onboarding wizard on first launch (empty DB)
