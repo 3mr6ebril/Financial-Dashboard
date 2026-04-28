@@ -105,6 +105,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .price-dot{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:super;margin-left:3px;flex-shrink:0;cursor:help}
 .price-dot.ok{background:var(--ok)}
 .price-dot.err{background:var(--err)}
+.fresh-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-l);margin-left:6px;vertical-align:middle;cursor:help}
 .health-comment{font-size:11px;color:var(--txt2);font-style:italic;margin-top:6px;padding:8px;background:var(--neu-l);border-radius:6px;border-left:3px solid var(--wrn);line-height:1.4;text-align:left}
 .cat-card{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--sh);border:1.5px solid var(--bdr);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
 .cat-card:hover{transform:translateY(-2px);box-shadow:var(--shm)}
@@ -3297,10 +3298,11 @@ function renderHoldingsTable(cats){
     const xirrCell=iXirr===null?'<span style="color:var(--txt2);font-size:11px">—</span>':`<span style="font-weight:600;color:${iXirr>=0?'var(--ok)':'var(--err)'}">${iXirr>=0?'+':''}${(iXirr*100).toFixed(1)}%</span><div style="font-size:10px;color:var(--txt2)">ann.</div>`;
     const alphaCell=h.alpha===null?'<span style="color:var(--txt2);font-size:11px">—</span>':`<span style="font-weight:600;color:${h.alpha>=0?'var(--ok)':'var(--err)'}">${h.alpha>=0?'+':''}${(h.alpha*100).toFixed(1)}%</span><div style="font-size:10px;color:var(--txt2)">${h.bmkTicker}</div>`;
     const ageCell=h.staleDays==null?'<span class="t2">—</span>':`${h.staleDays}d`;
+    const freshDot=h.staleDays!=null&&h.staleDays<=5?'<span class="fresh-dot" title="Price updated within last 5 days"></span>':'';
     const thesisLabel=h.thesisStatus?`<span class="badge ${h.thesisStatus==='broken'?'br':h.thesisStatus==='trim'?'bw':h.thesisStatus==='watch'?'bn':'bg'}">${h.thesisStatus}</span>`:'<span class="t2">—</span>';
     return`<tr>
       <td>
-        <div style="font-weight:700;font-size:13px">${h.inst.ticker}</div>
+        <div style="font-weight:700;font-size:13px">${h.inst.ticker}${freshDot}</div>
         <div style="font-size:11px;color:var(--txt2);margin-top:1px">${h.inst.name} <span style="opacity:.6;font-size:10px">· ${fmt(h.pos.qty,h.pos.qty<10?4:2)} units</span></div>
       </td>
       <td class="num" style="font-size:13px">${feur(h.pos.cost,1)}</td>
