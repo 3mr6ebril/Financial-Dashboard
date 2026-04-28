@@ -1234,8 +1234,12 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <input id="syncTokenInput" type="password" class="ts-inp" placeholder="Paste your GitHub token (ghp_...)" style="flex:1;min-width:220px;font-family:monospace;font-size:12px;letter-spacing:.03em">
           <button class="btn btn-p" onclick="connectGist()" style="white-space:nowrap;padding:9px 20px;font-size:13px">☁️ Connect</button>
         </div>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--txt2);cursor:pointer">
+          <input type="checkbox" id="syncRememberToken" style="width:15px;height:15px;accent-color:var(--pri)">
+          Remember token on this device so new tabs reconnect automatically
+        </label>
         <div style="font-size:11px;color:var(--txt2);margin-top:10px">
-          🔒 Gist ID is remembered on this device. Your GitHub token is kept only for this browser session.
+          🔒 Gist ID is always remembered. If checked, your token is also stored locally on this device.
         </div>
       </div>
       <!-- ── CONNECTED ── -->
@@ -2137,10 +2141,9 @@ function loadDB(){
   const oldToken=localStorage.getItem(GIST_TOKEN_KEY);
   const oldGistId=localStorage.getItem(GIST_ID_KEY);
   if(oldToken||oldGistId){
-    if(oldToken) sessionStorage.setItem(GIST_TOKEN_KEY,oldToken);
+    if(oldToken) setSyncToken(oldToken,true);
     if(oldGistId) localStorage.setItem(GIST_ID_KEY,oldGistId);
-    localStorage.removeItem(GIST_TOKEN_KEY);
-    console.log('🔐 GitHub token migrated to sessionStorage; Gist ID remains in localStorage');
+    console.log('🔐 GitHub sync settings migrated');
   }
 }
 function saveDB(){ try{localStorage.setItem('findb_v4',JSON.stringify(DB));}catch(e){} scheduleGistPush(); }
@@ -6694,15 +6697,21 @@ const GIST_TOKEN_KEY='findb_gist_token';
 const GIST_ID_KEY='findb_gist_id';
 let _syncDebounce=null;
 
-function getSyncToken(){return sessionStorage.getItem(GIST_TOKEN_KEY)||'';}
+function getSyncToken(){return sessionStorage.getItem(GIST_TOKEN_KEY)||localStorage.getItem(GIST_TOKEN_KEY)||'';}
+function setSyncToken(token,remember=false){
+  const cleaned=(token||'').trim();
+  if(!cleaned){ sessionStorage.removeItem(GIST_TOKEN_KEY); localStorage.removeItem(GIST_TOKEN_KEY); return; }
+  sessionStorage.setItem(GIST_TOKEN_KEY,cleaned);
+  if(remember) localStorage.setItem(GIST_TOKEN_KEY,cleaned);
+  else localStorage.removeItem(GIST_TOKEN_KEY);
+}
 function getSyncGistId(){return localStorage.getItem(GIST_ID_KEY)||'';}
 function setSyncGistId(gistId){
   const cleaned=(gistId||'').trim();
   if(cleaned) localStorage.setItem(GIST_ID_KEY,cleaned);
   else localStorage.removeItem(GIST_ID_KEY);
 }
-// 🔐 Security: token is session-only; Gist ID is safe to remember locally.
-window.addEventListener('beforeunload',()=>{sessionStorage.removeItem(GIST_TOKEN_KEY);});
+// Token can be remembered locally only when explicitly requested in Cloud Sync.
 
 function setSyncStatus(status,msg){
   const icons={ok:'✅',pending:'⏳',error:'❌',idle:'☁'};
@@ -6823,8 +6832,10 @@ async function gistFetch(){
 async function connectGist(){
   const tokenEl=document.getElementById('syncTokenInput');
   const gistEl=document.getElementById('syncGistInput');
+  const rememberEl=document.getElementById('syncRememberToken');
   const token=(tokenEl?.value||'').trim();
   const typedGistId=(gistEl?.value||'').trim();
+  const remember=!!rememberEl?.checked;
   if(!token){ alert('Please paste your GitHub Personal Access Token first.'); return; }
   if(typedGistId) setSyncGistId(typedGistId);
   setSyncStatus('pending','Connecting…');
@@ -6850,7 +6861,7 @@ async function connectGist(){
       const newGist=await createRes.json();
       gistId=newGist.id;
     }
-    sessionStorage.setItem(GIST_TOKEN_KEY,token);
+    setSyncToken(token,remember);
     setSyncGistId(gistId);
     if(tokenEl) tokenEl.value='';
     if(gistEl) gistEl.value=gistId;
@@ -6867,7 +6878,7 @@ async function connectGist(){
 
 function disconnectGist(){
   if(!confirm('Disconnect cloud sync?\n\nYour data stays saved locally. You can reconnect anytime.')) return;
-  sessionStorage.removeItem(GIST_TOKEN_KEY);
+  setSyncToken('');
   localStorage.removeItem(GIST_ID_KEY);
   setSyncStatus('idle');
   updateSyncUI();
@@ -6880,10 +6891,12 @@ function updateSyncUI(){
   const ss=document.getElementById('syncConnectedSection');
   const gd=document.getElementById('syncGistIdDisplay');
   const gi=document.getElementById('syncGistInput');
+  const rt=document.getElementById('syncRememberToken');
   if(cs) cs.style.display=connected?'none':'block';
   if(ss) ss.style.display=connected?'block':'none';
   if(gd&&connected) gd.textContent=getSyncGistId();
   if(gi&&!gi.value) gi.value=getSyncGistId();
+  if(rt) rt.checked=!!localStorage.getItem(GIST_TOKEN_KEY);
 }
 
 // ── INIT ──
