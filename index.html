@@ -428,34 +428,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
 <!-- TAB: OVERVIEW -->
 <div class="tab-content active" id="tab-overview">
   <div class="section" id="s-kpis">
-    <div class="g g4" id="kpiGrid"></div>
-  </div>
-  <div class="section" id="s-strategy">
-    <div class="sec-hdr">
-      <div class="sec-ttl"><span class="sec-n">🎯</span>Portfolio Strategy</div>
-      <span class="t2" style="font-size:12px" id="strategyMeta">Targets, benchmark, and policy drift</span>
-    </div>
-    <div class="g g2">
-      <div class="card" id="portfolioStrategyCard"></div>
-      <div class="card" id="portfolioBenchmarkCard"></div>
-    </div>
-  </div>
-  <div class="section" id="s-risk">
-    <div class="sec-hdr">
-      <div class="sec-ttl"><span class="sec-n">⚠️</span>Risk Dashboard</div>
-      <span class="t2" style="font-size:12px" id="riskMeta">Concentration, liquidity, and exposure</span>
-    </div>
-    <div class="card" id="riskDashboardCard"></div>
-  </div>
-  <div class="section" id="s-income">
-    <div class="sec-hdr">
-      <div class="sec-ttl"><span class="sec-n">💸</span>Income Dashboard</div>
-      <span class="t2" style="font-size:12px" id="incomeMeta">Trailing and forward income profile</span>
-    </div>
-    <div class="g g2">
-      <div class="card" id="incomeDashboardCard"></div>
-      <div class="card" id="watchlistDashboardCard"></div>
-    </div>
+    <div class="g g5" id="kpiGrid"></div>
   </div>
   <div class="tabs" id="ovwPeriodTabs" style="margin-bottom:0;padding:0 0 8px 0">
     <div class="tab ovw-ptab active" data-p="all" onclick="setPeriod('all',this)">All Time</div>
@@ -464,6 +437,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     <div class="tab ovw-ptab locked" id="ovw-quarterly" onclick="periodLockedNotice()">Quarterly 🔒</div>
     <div class="tab ovw-ptab locked" id="ovw-6m" onclick="periodLockedNotice()">6 Months 🔒</div>
     <div class="tab ovw-ptab locked" id="ovw-annual" onclick="periodLockedNotice()">Annual 🔒</div>
+    <div class="tab" id="ovwPrivacyToggle" onclick="toggleOverviewPrivacy()" style="margin-left:auto">🙈 Hide amounts</div>
   </div>
   <!-- Rearrangeable sections wrapper -->
   <div id="ovwSections">
@@ -1626,7 +1600,6 @@ const DISTINCT_COLORS = [
 ];
 const CAT_COLOR = {ETF:'#3B82F6',Stock:'#8B5CF6',Crypto:'#EF4444',Commodity:'#F59E0B',Cash:'#10B981'};
 const CAT_ICON  = {ETF:'📊',Stock:'💹',Crypto:'₿',Commodity:'🔶',Cash:'💰'};
-let strategyLens='sector';
 
 // ── ENTITY COLOR — deterministic, consistent per key ──
 function getEntityColor(key){
@@ -1987,7 +1960,8 @@ const DEFAULT_SETTINGS = {
   benchmarkTicker:'VWCE',
   rebalanceBandPct:5,
   emergencyReserveMonths:6,
-  maxMonthlyWithdrawalRate:0.4
+  maxMonthlyWithdrawalRate:0.4,
+  hideOverviewAmounts:false
 };
 
 const DEFAULT_BUSINESSES=[
@@ -2011,6 +1985,22 @@ let activeSectorFilter = null;
 let activeRegionFilter = null;
 let activeExposureFilter = null;
 let charts = {};
+function isOverviewPrivacyOn(){ return !!(DB.settings?.hideOverviewAmounts); }
+function fmask(d=1){ return (DB.settings?.currency||'€')+(d>0?'••••.•':'••••'); }
+function fov(n,d=1){ return isOverviewPrivacyOn()?fmask(d):feur(n,d); }
+function syncOverviewPrivacyToggle(){
+  const el=document.getElementById('ovwPrivacyToggle');
+  if(!el) return;
+  const on=isOverviewPrivacyOn();
+  el.classList.toggle('active',on);
+  el.textContent=on?'👁 Show amounts':'🙈 Hide amounts';
+}
+function toggleOverviewPrivacy(){
+  DB.settings=DB.settings||{};
+  DB.settings.hideOverviewAmounts=!DB.settings.hideOverviewAmounts;
+  saveDB();
+  refreshAll();
+}
 
 function getDefaults(){
   return {
@@ -2025,7 +2015,7 @@ function getDefaults(){
     notes:[],
     liabilities:[],
     businesses:JSON.parse(JSON.stringify(DEFAULT_BUSINESSES)),
-    sectionOrder:['s-strategy','s-risk','s-income','s-alloc','s-cats','s-nwhistory','s-notes'],
+    sectionOrder:['s-alloc','s-cats','s-nwhistory','s-notes'],
     ledger:{months:{},expenseCategories:[...DEFAULT_EXPENSE_CATS],incomeCategories:[...DEFAULT_INCOME_ORDER]},
     tradingExperiment:{startDate:'',endDate:'',maxRiskCapital:0,drawdownAlertPct:20},
     taxRecords:{
@@ -2082,11 +2072,10 @@ function loadDB(){
         if(!DB.notes) DB.notes=[];
         if(!DB.liabilities) DB.liabilities=[];
         if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
-        if(!DB.sectionOrder) DB.sectionOrder=['s-strategy','s-risk','s-income','s-alloc','s-cats','s-nwhistory','s-notes'];
+        if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
         // Remove obsolete section IDs from saved order
-        DB.sectionOrder=DB.sectionOrder.filter(id=>id!=='s-biz-income'&&id!=='s-sectors');
-        if(!DB.sectionOrder.length) DB.sectionOrder=['s-strategy','s-risk','s-income','s-alloc','s-cats','s-nwhistory','s-notes'];
-        ['s-strategy','s-risk','s-income','s-notes'].forEach(id=>{ if(!DB.sectionOrder.includes(id)) DB.sectionOrder.unshift(id); });
+        DB.sectionOrder=DB.sectionOrder.filter(id=>!['s-biz-income','s-sectors','s-strategy','s-risk','s-income'].includes(id));
+        if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
         if(!DB.sectionOrder.includes('s-notes')) DB.sectionOrder.push('s-notes');
         // Ensure biz3 (Self Trading) always exists — for manual entry support alongside auto-calc
         if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
@@ -2486,10 +2475,9 @@ function importDB(event){
         if(!DB.notes) DB.notes=[];
       if(!DB.liabilities) DB.liabilities=[];
       if(!DB.businesses) DB.businesses=JSON.parse(JSON.stringify(DEFAULT_BUSINESSES));
-      if(!DB.sectionOrder) DB.sectionOrder=['s-strategy','s-risk','s-income','s-alloc','s-cats','s-nwhistory','s-notes'];
-      DB.sectionOrder=DB.sectionOrder.filter(id=>id!=='s-biz-income'&&id!=='s-sectors');
-      if(!DB.sectionOrder.length) DB.sectionOrder=['s-strategy','s-risk','s-income','s-alloc','s-cats','s-nwhistory','s-notes'];
-      ['s-strategy','s-risk','s-income','s-notes'].forEach(id=>{ if(!DB.sectionOrder.includes(id)) DB.sectionOrder.unshift(id); });
+      if(!DB.sectionOrder) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
+      DB.sectionOrder=DB.sectionOrder.filter(id=>!['s-biz-income','s-sectors','s-strategy','s-risk','s-income'].includes(id));
+      if(!DB.sectionOrder.length) DB.sectionOrder=['s-alloc','s-cats','s-nwhistory','s-notes'];
       if(!DB.sectionOrder.includes('s-notes')) DB.sectionOrder.push('s-notes');
       if(!DB.businesses.find(b=>b.id==='biz3')) DB.businesses.push({id:'biz3',name:'Self Trading',icon:'📈',color:'#F59E0B',entries:[]});
       if(!DB.ledger) DB.ledger={months:{}};
@@ -2786,13 +2774,6 @@ function getPortfolioBase(cats){
   const liabilities=getTotalLiabilities();
   return {investmentValue,liquidValue,portfolioValue,liabilities,netWorth:portfolioValue-liabilities};
 }
-function buildExposureMix(rows, field, totalValue){
-  return Object.entries(rows.reduce((acc,row)=>{
-    const key=row[field]||'Other';
-    acc[key]=(acc[key]||0)+row.value;
-    return acc;
-  },{})).map(([label,value])=>({label,value,pct:totalValue>0?value/totalValue*100:0})).sort((a,b)=>b.value-a.value);
-}
 function openExposureFilter(field,label){
   activeExposureFilter={field,label};
   activeSectorFilter=field==='sector'?label:null;
@@ -2800,92 +2781,6 @@ function openExposureFilter(field,label){
   switchTabByName('holdings');
   updateFilterChips();
   renderHoldingsTable(computeCategories());
-}
-function getPortfolioStrategy(cats){
-  const rows=getPortfolioExposureRows(cats);
-  const base=getPortfolioBase(cats);
-  const totalValue=base.portfolioValue;
-  const band=DB.settings?.rebalanceBandPct||5;
-  const targetRows=rows.filter(r=>!r.isLiquid&&r.targetWeight!=null&&r.targetWeight!==undefined&&r.targetWeight!=='');
-  const drifts=targetRows.map(r=>{
-    const drift=r.allocPct-r.targetWeight;
-    return {...r,drift};
-  }).sort((a,b)=>Math.abs(b.drift)-Math.abs(a.drift));
-  const benchmarkTicker=(DB.settings?.benchmarkTicker||'VWCE').toUpperCase();
-  const benchmarkInst=(DB.instruments||[]).find(i=>(i.ticker||'').toUpperCase()===benchmarkTicker);
-  const portfolioXirr=computePortfolioXIRR(cats);
-  const benchmarkXirr=benchmarkInst?computeInstXIRR(benchmarkInst.id):null;
-  const alpha=portfolioXirr!=null&&benchmarkXirr!=null?portfolioXirr-benchmarkXirr:null;
-  const needsRebalance=drifts.some(r=>Math.abs(r.drift)>=band);
-  const mixes={
-    sector:buildExposureMix(rows,'sector',totalValue),
-    group:buildExposureMix(rows,'group',totalValue),
-    industry:buildExposureMix(rows,'industry',totalValue),
-    region:buildExposureMix(rows,'region',totalValue),
-    country:buildExposureMix(rows,'country',totalValue)
-  };
-  return {totalValue,band,drifts,needsRebalance,benchmarkTicker,portfolioXirr,benchmarkXirr,alpha,mixes,base};
-}
-function getRiskDashboard(cats){
-  const rows=getPortfolioExposureRows(cats);
-  const base=getPortfolioBase(cats);
-  const totalValue=base.portfolioValue;
-  const byField=(field)=>buildExposureMix(rows,field,totalValue);
-  return {
-    totalValue,
-    topPositions:[...rows].sort((a,b)=>b.value-a.value).slice(0,5),
-    sector:byField('sector'),
-    group:byField('group'),
-    industry:byField('industry'),
-    region:byField('region'),
-    country:byField('country'),
-    broker:byField('broker'),
-    cashPct:totalValue>0?(base.liquidValue/totalValue*100):0,
-    goldPct:totalValue>0?(rows.filter(r=>/gold/i.test(r.sector)||/gold/i.test(r.name)).reduce((s,r)=>s+r.value,0)/totalValue*100):0,
-    cryptoPct:totalValue>0?(rows.filter(r=>r.category==='Crypto').reduce((s,r)=>s+r.value,0)/totalValue*100):0,
-    liquidValue:base.liquidValue
-  };
-}
-function getIncomeDashboard(){
-  const now=new Date();
-  const trailingMonths=[];
-  for(let i=11;i>=0;i--){
-    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
-    trailingMonths.push(d.toISOString().slice(0,7));
-  }
-  const monthMap={};
-  trailingMonths.forEach(m=>monthMap[m]=0);
-  (DB.transactions||[]).filter(tx=>tx.type==='dividend').forEach(tx=>{
-    const ym=tx.date?.slice(0,7);
-    if(monthMap[ym]!==undefined) monthMap[ym]+=getDividendNet(tx,instById(tx.iid));
-  });
-  const trailing12=Object.values(monthMap).reduce((s,v)=>s+v,0);
-  const exposures=getPortfolioExposureRows(computeCategories());
-  const totalValue=exposures.reduce((s,r)=>s+r.value,0);
-  const forwardIncome=exposures.reduce((s,r)=>{
-    const inst=instById(r.id);
-    const y=(inst?.forwardYield??inst?.dividendYield??0)/100;
-    return s+(r.value*y);
-  },0);
-  const withholdingDrag=(DB.transactions||[]).filter(tx=>tx.type==='dividend').reduce((s,tx)=>{
-    const inst=instById(tx.iid);
-    return s+(getDividendGross(tx)-getDividendNet(tx,inst));
-  },0);
-  return {monthMap,trailing12,forwardIncome,currentYield:totalValue>0?forwardIncome/totalValue*100:0,yieldOnCost:totalValue>0?trailing12/Math.max(1,exposures.reduce((s,r)=>s+(getPositions()[r.id]?.cost||0),0))*100:0,withholdingDrag};
-}
-function getWatchlistActions(cats){
-  const rows=getPortfolioExposureRows(cats);
-  const actions=[];
-  rows.forEach(r=>{
-    const inst=instById(r.id);
-    const current=DB.prices[r.id]||0;
-    if(inst?.watchPrice&&current<=inst.watchPrice) actions.push({type:'watch',label:`${r.ticker} reached buy zone`,detail:`${feur(current)} at or below ${feur(inst.watchPrice)}`});
-    if(inst?.targetWeight!=null&&inst.targetWeight!==undefined&&Math.abs(r.allocPct-inst.targetWeight)>=((DB.settings?.rebalanceBandPct)||5)) actions.push({type:'rebalance',label:`${r.ticker} drifted from target`,detail:`Actual ${r.allocPct.toFixed(1)}% vs target ${inst.targetWeight.toFixed(1)}%`});
-    if(inst?.thesisStatus==='broken') actions.push({type:'broken',label:`${r.ticker} thesis marked broken`,detail:inst.invalidation||'Review exit plan.'});
-    if(r.staleDays!=null&&r.staleDays>14) actions.push({type:'stale',label:`${r.ticker} price is stale`,detail:`Last updated ${r.staleDays} days ago.`});
-  });
-  if((window._cashVal||0)<0) actions.push({type:'bad',label:'Cash balance below zero',detail:'Runway and deployability are distorted until this is fixed.'});
-  return actions.slice(0,8);
 }
 
 // ── FORMATTING ──
@@ -2920,10 +2815,9 @@ function renderKPIs(cats){
   const xirrConf=currentPeriod!=='all'&&PERIOD_DAYS[currentPeriod]
     ?getMetricConfidence(PERIOD_DAYS[currentPeriod],cats.flatMap(c=>c.holdings.map(h=>h.inst.id)))
     :getMetricConfidence(365,cats.flatMap(c=>c.holdings.map(h=>h.inst.id)));
-  let xirrLine='<div style="margin-top:5px;font-size:11px;color:var(--txt2)">XIRR&nbsp;<span style="font-weight:600;color:'+(xirrAll!==null?(xirrAll>=0?'var(--ok)':'var(--err)'):'var(--txt2)')+'">'+fxirr(xirrAll)+'</span>&nbsp;all-time';
-  if(xirrPd!==null) xirrLine+='&nbsp;·&nbsp;<span style="font-weight:600;color:'+(xirrPd>=0?'var(--ok)':'var(--err)')+'">'+fxirr(xirrPd)+'</span>&nbsp;'+currentPeriod.toUpperCase();
-  xirrLine+='</div>';
-  xirrLine+=`<div style="margin-top:5px"><span class="conf-badge ${xirrConf.cls}">${xirrConf.label}</span></div>`;
+  const xirrPeriodLine=xirrPd!==null
+    ?`<span class="badge ${xirrPd>=0?'bg':'br'}">${fxirr(xirrPd)} ${currentPeriod.toUpperCase()}</span>`
+    :'<span class="t2">all-time money-weighted</span>';
   // Business income YTD (Box 1 businesses + Self Trading)
   const bizPL=(DB.businesses||[]).filter(b=>b.id!=='biz3').reduce((acc,biz)=>{const p=getBizPL(biz.id,yr);return{rev:acc.rev+p.revenue,cost:acc.cost+p.expenses,net:acc.net+p.profit};},{rev:0,cost:0,net:0});
   const tpl=getTradingPL(yr);
@@ -2931,11 +2825,12 @@ function renderKPIs(cats){
   const totalBizCost=bizPL.cost+tpl.expenses;
   const totalBizNet=bizPL.net+tpl.profit;
   document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi ${nw<0?'err':''}"><div class="kpi-lbl">Net Worth</div><div class="kpi-val ${nw<0?'tr':''}">${feur(nw)}</div><div class="kpi-sub"><span class="badge bn">portfolio ${feur(portfolioValue,0)}</span><span class="t2">liabilities ${feur(totalLiab,0)}</span></div></div>
-    <div class="kpi ${ret>=0?'ok':'err'}"><div class="kpi-lbl">Portfolio P&amp;L</div><div class="kpi-val ${pc(pnl)}">${pnl>=0?'+':''}${feur(pnl)}</div><div class="kpi-sub"><span class="badge ${pnl>=0?'bg':'br'}">${fpct(ret)}</span><span class="t2">vs cost basis</span>${xirrLine}</div></div>
+    <div class="kpi ${nw<0?'err':''}"><div class="kpi-lbl">Net Worth</div><div class="kpi-val ${nw<0?'tr':''}">${fov(nw)}</div><div class="kpi-sub"><span class="badge bn">portfolio ${fov(portfolioValue,0)}</span><span class="t2">liabilities ${fov(totalLiab,0)}</span></div></div>
+    <div class="kpi ${ret>=0?'ok':'err'}"><div class="kpi-lbl">Portfolio P&amp;L</div><div class="kpi-val ${pc(pnl)}">${pnl>=0?'+':''}${fov(pnl)}</div><div class="kpi-sub"><span class="badge ${pnl>=0?'bg':'br'}">${fpct(ret)}</span><span class="t2">vs cost basis</span></div></div>
+    <div class="kpi ${xirrAll===null?'':xirrAll>=0?'ok':'err'}"><div class="kpi-lbl">Portfolio XIRR</div><div class="kpi-val ${xirrAll!==null?pc(xirrAll):''}">${fxirr(xirrAll)}</div><div class="kpi-sub">${xirrPeriodLine}<div style="margin-top:5px"><span class="conf-badge ${xirrConf.cls}">${xirrConf.label}</span></div></div></div>
     <div class="kpi">
       <div class="kpi-lbl">Investment Activity ${yr}</div>
-      <div class="kpi-val tg">+${feur(tpl.dividends+Math.max(0,tpl.realizedNet))}</div>
+      <div class="kpi-val tg">+${fov(tpl.dividends+Math.max(0,tpl.realizedNet))}</div>
       <div class="kpi-sub">
         <span class="t2">Dividends + Realized Gains</span>
       </div>
@@ -2945,105 +2840,6 @@ function renderKPIs(cats){
       <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0"><div class="hdot ${h.color}"></div><div style="font-size:16px;font-weight:700;color:${hc[h.color]}">${h.color==='green'?'🟢':h.color==='amber'?'🟡':'🔴'} ${h.label}</div></div>
       <div class="health-comment">${h.comment}</div>
     </div>`;
-}
-function renderPortfolioStrategy(cats){
-  const el=document.getElementById('portfolioStrategyCard');
-  const benchEl=document.getElementById('portfolioBenchmarkCard');
-  if(!el||!benchEl) return;
-  const strat=getPortfolioStrategy(cats);
-  const conf=currentPeriod!=='all'&&PERIOD_DAYS[currentPeriod]?getMetricConfidence(PERIOD_DAYS[currentPeriod],cats.flatMap(c=>c.holdings.map(h=>h.inst.id))):getMetricConfidence(365,cats.flatMap(c=>c.holdings.map(h=>h.inst.id)));
-  const lensLabels={sector:'Sector',group:'Industry Group',industry:'Industry',region:'Region',country:'Country'};
-  const mixRows=(strat.mixes[strategyLens]||[]).slice(0,6).map(r=>`
-    <tr class="clickable-row" onclick="openExposureFilter('${strategyLens}','${String(r.label).replace(/'/g,"&#39;")}')">
-      <td>${r.label}</td>
-      <td class="num">${feur(r.value,0)}</td>
-      <td class="num">${r.pct.toFixed(1)}%</td>
-    </tr>`).join('');
-  const driftRows=strat.drifts.slice(0,5).map(r=>`
-    <tr class="clickable-row" onclick="jumpToHoldings('${r.category}')">
-      <td>${r.ticker}</td>
-      <td class="num">${r.allocPct.toFixed(1)}%</td>
-      <td class="num">${r.targetWeight.toFixed(1)}%</td>
-      <td class="num ${Math.abs(r.drift)>=strat.band?'tr':'tg'}">${r.drift>=0?'+':''}${r.drift.toFixed(1)}%</td>
-    </tr>`).join('');
-  el.innerHTML=`
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="chart-ttl" style="margin:0">Exposure Strategy</div>
-      <span class="conf-badge ${conf.cls}">${conf.label}</span>
-    </div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px">
-      ${Object.entries(lensLabels).map(([key,label])=>`<button class="btn btn-sm" style="${strategyLens===key?'background:var(--pri);color:#fff;border:none':''}" onclick="setStrategyLens('${key}')">${label}</button>`).join('')}
-    </div>
-    <div class="diag-list" style="margin-bottom:14px">
-      <div class="diag-item"><div class="diag-title">Portfolio Value</div><div class="diag-value">${feur(strat.base.portfolioValue)}</div><div class="diag-sub">Assets only: investments plus live cash and savings.</div></div>
-      <div class="diag-item"><div class="diag-title">Net Worth</div><div class="diag-value">${feur(strat.base.netWorth)}</div><div class="diag-sub">Liabilities currently tracked: ${feur(strat.base.liabilities,0)}.</div></div>
-    </div>
-    <table class="mini-table"><thead><tr><th>${lensLabels[strategyLens]}</th><th class="num">Value</th><th class="num">Weight</th></tr></thead><tbody>${mixRows}</tbody></table>
-    ${driftRows?`<div style="margin-top:14px"><div class="chart-ttl" style="margin-bottom:8px">Instrument Drift vs Explicit Targets</div><table class="mini-table"><thead><tr><th>Instrument</th><th class="num">Actual</th><th class="num">Target</th><th class="num">Drift</th></tr></thead><tbody>${driftRows}</tbody></table></div>`:'<div style="margin-top:12px;font-size:11px;color:var(--txt2)">This strategy view now prioritizes factor weights by ${lensLabels[strategyLens].toLowerCase()}. If you also set per-instrument targets, they appear below as a secondary drift check.</div>'}`;
-  benchEl.innerHTML=`
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="chart-ttl" style="margin:0">Benchmark Check</div>
-      <span class="t2" style="font-size:11px">Default benchmark: ${(strat.benchmarkTicker||'VWCE').toUpperCase()}</span>
-    </div>
-    <div class="diag-list">
-      <div class="diag-item"><div class="diag-title">Portfolio XIRR</div><div class="diag-value ${strat.portfolioXirr!=null&&strat.portfolioXirr<0?'tr':'tg'}">${strat.portfolioXirr!=null?(strat.portfolioXirr>=0?'+':'')+(strat.portfolioXirr*100).toFixed(1)+'%':'—'}</div><div class="diag-sub">Money-weighted, all-time.</div></div>
-      <div class="diag-item"><div class="diag-title">${(strat.benchmarkTicker||'VWCE').toUpperCase()} XIRR</div><div class="diag-value">${strat.benchmarkXirr!=null?(strat.benchmarkXirr>=0?'+':'')+(strat.benchmarkXirr*100).toFixed(1)+'%':'—'}</div><div class="diag-sub">Uses the benchmark instrument only if it exists in your dashboard.</div></div>
-      <div class="diag-item"><div class="diag-title">Alpha vs Benchmark</div><div class="diag-value ${strat.alpha!=null&&strat.alpha<0?'tr':'tg'}">${strat.alpha!=null?(strat.alpha>=0?'+':'')+(strat.alpha*100).toFixed(1)+'%':'—'}</div><div class="diag-sub">Positive means you outperformed your configured benchmark.</div></div>
-      <div class="diag-item"><div class="diag-title">Policy Signal</div><div class="diag-value">${strat.needsRebalance?'Rebalance':'On Target'}</div><div class="diag-sub">${strat.needsRebalance?'Trim overweight names or add to underweights.':'No forced action from target drift right now.'}</div></div>
-    </div>`;
-}
-function renderRiskDashboard(cats){
-  const el=document.getElementById('riskDashboardCard');
-  if(!el) return;
-  const risk=getRiskDashboard(cats);
-  const topPositions=risk.topPositions.map(r=>`
-    <div class="signal-item">
-      <div class="signal-copy"><strong>${r.ticker}</strong><br><span class="t2">${r.name}</span></div>
-      <div style="text-align:right"><div class="fw7">${feur(r.value)}</div><div class="t2" style="font-size:11px">${r.allocPct.toFixed(1)}%</div></div>
-    </div>`).join('');
-  const concentrationSignals=[
-    {label:'Cash + Savings',pct:risk.cashPct,target:feur(risk.liquidValue,0),flag:risk.cashPct<10?'bad':'good'},
-    {label:'Gold',pct:risk.goldPct,target:'hedge',flag:risk.goldPct>20?'warn':'good'},
-    {label:'Crypto',pct:risk.cryptoPct,target:'risk sleeve',flag:risk.cryptoPct>15?'warn':'good'},
-    {label:'Top sector',pct:risk.sector[0]?.pct||0,target:risk.sector[0]?.label||'—',flag:(risk.sector[0]?.pct||0)>30?'bad':'good'},
-    {label:'Top broker',pct:risk.broker[0]?.pct||0,target:risk.broker[0]?.label||'—',flag:(risk.broker[0]?.pct||0)>45?'warn':'good'}
-  ];
-  el.innerHTML=`
-    <div class="g g2">
-      <div>
-        <div class="chart-ttl">Top 5 Exposures</div>
-        <div class="signal-list">${topPositions||'<div class="empty">No live positions.</div>'}</div>
-      </div>
-      <div>
-        <div class="chart-ttl">Concentration Signals</div>
-        <div class="signal-list">${concentrationSignals.map(s=>`<div class="signal-item"><div class="signal-copy"><strong>${s.label}</strong><br><span class="t2">${s.target}</span></div><span class="signal-pill ${s.flag==='good'?'good':s.flag==='warn'?'warn':'bad'}">${s.pct.toFixed(1)}%</span></div>`).join('')}</div>
-      </div>
-    </div>`;
-}
-function renderIncomeAndWatchlist(cats){
-  const incomeEl=document.getElementById('incomeDashboardCard');
-  const watchEl=document.getElementById('watchlistDashboardCard');
-  if(!incomeEl||!watchEl) return;
-  const inc=getIncomeDashboard();
-  const actions=getWatchlistActions(cats);
-  const calendarRows=Object.entries(inc.monthMap).map(([ym,val])=>{
-    const dt=new Date(ym+'-01');
-    return `<tr><td>${dt.toLocaleDateString('en-GB',{month:'short',year:'2-digit'})}</td><td class="num">${val>0?feur(val,2):'—'}</td></tr>`;
-  }).join('');
-  incomeEl.innerHTML=`
-    <div class="diag-list" style="margin-bottom:14px">
-      <div class="diag-item"><div class="diag-title">Trailing 12M Net Dividends</div><div class="diag-value tg">${feur(inc.trailing12)}</div><div class="diag-sub">Net of withholding where available.</div></div>
-      <div class="diag-item"><div class="diag-title">Forward Income</div><div class="diag-value">${feur(inc.forwardIncome)}</div><div class="diag-sub">Based on forward yield or instrument dividend yield.</div></div>
-      <div class="diag-item"><div class="diag-title">Current Yield</div><div class="diag-value">${inc.currentYield.toFixed(2)}%</div><div class="diag-sub">Forward income divided by current portfolio value.</div></div>
-      <div class="diag-item"><div class="diag-title">Withholding Drag</div><div class="diag-value tr">${feur(inc.withholdingDrag)}</div><div class="diag-sub">Total tax withheld from dividend flows on record.</div></div>
-    </div>
-    <table class="mini-table"><thead><tr><th>Month</th><th class="num">Net Income</th></tr></thead><tbody>${calendarRows}</tbody></table>`;
-  watchEl.innerHTML=`
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="chart-ttl" style="margin:0">Action List</div>
-      <span class="t2" style="font-size:11px">${actions.length} active signals</span>
-    </div>
-    <div class="signal-list">${actions.length?actions.map(a=>`<div class="signal-item"><div class="signal-copy"><strong>${a.label}</strong><br><span class="t2">${a.detail}</span></div><span class="signal-pill ${a.type==='broken'||a.type==='bad'?'bad':a.type==='rebalance'||a.type==='stale'?'warn':'good'}">${a.type}</span></div>`).join(''):'<div class="empty">No immediate action items. Add watch prices, target weights, and thesis status to enrich this list.</div>'}</div>`;
 }
 
 // ── RENDER ALLOCATION CHARTS ──
@@ -3256,14 +3052,14 @@ function renderCatCards(cats){
     const sig=c.label==='Cash'?'green':healthSig(c.retPct);
     const comment=catHealthComment(c.label,c.retPct);
     const periodPnl=c.label==='Cash'?null:computeCatPeriodPnl(c);
-    const periodLine=periodPnl?`<div style="font-size:11px;margin-top:2px;color:${periodPnl.pct>=0?'var(--ok)':'var(--err)'}">🕐 ${currentPeriod.toUpperCase()}: ${periodPnl.pct>=0?'+':''}${periodPnl.pct.toFixed(1)}% (${periodPnl.pnl>=0?'+':''}${feur(periodPnl.pnl)})</div>`:'';
+    const periodLine=periodPnl?`<div style="font-size:11px;margin-top:2px;color:${periodPnl.pct>=0?'var(--ok)':'var(--err)'}">🕐 ${currentPeriod.toUpperCase()}: ${periodPnl.pct>=0?'+':''}${periodPnl.pct.toFixed(1)}% (${periodPnl.pnl>=0?'+':''}${fov(periodPnl.pnl)})</div>`:'';
     const cardClick=c.label==='Cash'?`switchTabByName('transition')`:`jumpToHoldings('${c.label}')`;
     // Cash card: show Cash + Savings breakdown in sub-line
     const subLine=c.label==='Cash'
-      ?`<div class="cat-broker">💵 ${feur(cashV,0)} cash · 💰 ${feur(savV,0)} savings</div>`
+      ?`<div class="cat-broker">💵 ${fov(cashV,0)} cash · 💰 ${fov(savV,0)} savings</div>`
       :`<div class="cat-broker">${[...new Set(c.holdings.map(h=>h.inst.broker))].join(', ')}</div>`;
     const pnlLine=c.label==='Cash'?''
-      :`<div class="cat-pnl ${pc(c.pnl)}">${c.pnl>=0?'+':''}${feur(c.pnl)} (${fpct(c.retPct)})</div>`;
+      :`<div class="cat-pnl ${pc(c.pnl)}">${c.pnl>=0?'+':''}${fov(c.pnl)} (${fpct(c.retPct)})</div>`;
     return`<div class="cat-card" onclick="${cardClick}" id="cat-${c.label}">
       <div class="cat-strip" style="background:${color}"></div>
       <div class="cat-top">
@@ -3272,7 +3068,7 @@ function renderCatCards(cats){
         <div class="tip" style="cursor:help"><div class="hdot ${sig}"></div>
           <span class="tip-box" style="left:auto;right:0;transform:none;min-width:180px">${comment}</span></div>
       </div>
-      <div class="cat-val" style="color:${color}">${feur(displayVal)}</div>
+      <div class="cat-val" style="color:${color}">${fov(displayVal)}</div>
       ${pnlLine}
       ${periodLine}
       <div class="cat-alloc">${c.label==='Cash'?'Cash + Savings':c.holdings.length+' holdings'} · ${allocPct.toFixed(1)}% of portfolio</div>
@@ -3411,10 +3207,6 @@ function catDisplayLabel(label){
   return label;
 }
 let holdSort={key:'current',dir:'desc'};
-function setStrategyLens(lens){
-  strategyLens=lens;
-  renderPortfolioStrategy(computeCategories());
-}
 function setHoldSort(key){
   holdSort=holdSort.key===key?{key,dir:holdSort.dir==='asc'?'desc':'asc'}:{key,dir:'desc'};
   renderHoldingsTable(computeCategories());
@@ -4960,8 +4752,8 @@ function startEditNote(id){
 function refreshAll(){
   const cats=computeCategories();
   rebuildCashFlow(); // must run first — sets window._cashVal/_savVal used by renderKPIs
+  syncOverviewPrivacyToggle();
   renderKPIs(cats); renderAlloc(cats); renderCatCards(cats);
-  renderPortfolioStrategy(cats); renderRiskDashboard(cats); renderIncomeAndWatchlist(cats);
   renderHoldingsTabs(cats); renderHoldingsTable(cats);
   snapshotNetWorth(cats); // keep NW chart end-point fresh after price updates
   renderNWChart(cats);
@@ -6798,7 +6590,7 @@ function snapshotNetWorth(cats){
   if(!DB.netWorthHistory) DB.netWorthHistory=[];
         if(!DB.notes) DB.notes=[];
   const today=new Date().toISOString().slice(0,10);
-  const nw=cats.reduce((s,c)=>s+c.current,0)-getTotalLiabilities();
+  const nw=getPortfolioBase(cats).netWorth;
   if(nw<=0) return; // don't snapshot empty portfolio
   const last=DB.netWorthHistory[DB.netWorthHistory.length-1];
   if(last&&last.date===today){ last.value=+nw.toFixed(2); return; } // update today's entry
@@ -6853,9 +6645,9 @@ function renderNWChart(cats){
   const growthColor=growth>=0?'var(--ok)':'var(--err)';
   const periodLbl=nwZoom==='all'?'all time':{'1m':'last 30d','3m':'last 90d','6m':'last 6m','1y':'last year'}[nwZoom]||nwZoom;
   const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.innerHTML=v; };
-  set('nwStatStart',feur(first));
-  set('nwStatCurrent',`<span style="color:var(--pri)">${feur(last)}</span>`);
-  set('nwStatPeak',`<span style="color:var(--ok)">${feur(peak)}</span>`);
+  set('nwStatStart',fov(first));
+  set('nwStatCurrent',`<span style="color:var(--pri)">${fov(last)}</span>`);
+  set('nwStatPeak',`<span style="color:var(--ok)">${fov(peak)}</span>`);
   set('nwStatGrowth',`<span style="color:${growthColor}">${growth>=0?'+':''}${growth.toFixed(1)}% <span style="font-size:11px;font-weight:400;opacity:.7">(${periodLbl})</span></span>`);
   if(meta) meta.textContent=`${hist.length} data point${hist.length!==1?'s':''} · ${nwZoom==='all'?'since '+allHist[0].date:'showing '+periodLbl}`;
   // Chart
@@ -6878,13 +6670,13 @@ function renderNWChart(cats){
       responsive:true,maintainAspectRatio:false,
       scales:{
         x:{ticks:{font:{size:10},maxTicksLimit:8,maxRotation:0},grid:{display:false}},
-        y:{ticks:{font:{size:11},callback:v=>feur(v)},grid:{color:'rgba(0,0,0,.04)'}}
+        y:{ticks:{font:{size:11},callback:v=>isOverviewPrivacyOn()?'':feur(v)},grid:{color:'rgba(0,0,0,.04)'}}
       },
       plugins:{
         legend:{display:false},
         tooltip:{callbacks:{
           title:items=>items[0].label,
-          label:ctx=>' Net Worth: '+feur(ctx.raw)
+          label:ctx=>' Net Worth: '+(isOverviewPrivacyOn()?fmask():feur(ctx.raw))
         }}
       }
     }
