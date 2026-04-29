@@ -2020,7 +2020,8 @@ let activeExposureFilter = null;
 let charts = {};
 function isOverviewPrivacyOn(){ return !!(DB.settings?.hideOverviewAmounts); }
 function fmask(d=1){ return (DB.settings?.currency||'€')+(d>0?'••••.•':'••••'); }
-function fov(n,d=1){ return isOverviewPrivacyOn()?fmask(d):feur(n,d); }
+function fov(n,d=1){ return isOverviewPrivacyOn()?fmask(d):feurRaw(n,d); }
+function fchart(v,suffix=''){ return isOverviewPrivacyOn()?'':`${DB.settings?.currency||'€'}${fmt(v)}${suffix}`; }
 function syncOverviewPrivacyToggle(){
   const el=document.getElementById('ovwPrivacyToggle');
   if(!el) return;
@@ -2816,7 +2817,8 @@ function openExposureFilter(field,label){
 
 // ── FORMATTING ──
 const fmt=(n,d=0)=>new Intl.NumberFormat('en-EU',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
-const feur=(n,d=1)=>(DB.settings?.currency||'€')+fmt(n,d);
+const feurRaw=(n,d=1)=>(DB.settings?.currency||'€')+fmt(n,d);
+const feur=(n,d=1)=>isOverviewPrivacyOn()?fmask(d):feurRaw(n,d);
 const fpct=(n,d=1)=>(n>=0?'+':'')+fmt(n*100,d)+'%';
 const fdate=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
 const pc=n=>n>=0?'tg':'tr';
@@ -2934,7 +2936,7 @@ function renderAlloc(cats){
             }
             return ` ${ctx.dataset.label}: ${feur(ctx.raw)}`;
           }}}},
-        scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
+        scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>fchart(v/1000,'K'),font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
         onClick:(e,els)=>{if(els.length){const k=keys[els[0].index];if(ovwAllocMode==='sector')filterBySector(k);else if(ovwAllocMode==='region')filterByRegion(k);else switchTabByName('holdings');}}
       }
     });
@@ -3009,7 +3011,7 @@ function renderAlloc(cats){
             const ret=cat.invested>0?(cat.pnl/cat.invested*100).toFixed(1):null;
             return [` P&L: ${cat.pnl>=0?'+':''}${feur(cat.pnl)}`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
           }}}},
-        scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
+        scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>fchart(v/1000,'K'),font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
         onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
       }
     });
@@ -3062,7 +3064,7 @@ function renderAlloc(cats){
             }
             return ` ${ctx.dataset.label}: ${feur(ctx.raw)}`;
           }}}},
-        scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
+        scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>fchart(v/1000,'K'),font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
         onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
       }
     });
@@ -3160,7 +3162,7 @@ function renderSectorRegion(){
           }
           return ` ${ctx.dataset.label}: ${feur(ctx.raw)}`;
         }}}},
-      scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>fchart(v/1000,'K'),font:{size:10}}}},
       onClick:(e,els)=>{if(els.length){filterByRegion(rKeys[els[0].index]);}}
     }
   });
@@ -3382,7 +3384,7 @@ function renderHoldingsTable(cats){
             return ` Invested: ${feur(ctx.raw)}`;
           }}}},
         scales:{
-          x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},
+          x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>fchart(v/1000,'K'),font:{size:10}}},
           y:{grid:{display:false},ticks:{font:{size:11},padding:4}}
         }
       }
@@ -3403,7 +3405,7 @@ function renderHoldingsTable(cats){
         plugins:{legend:{display:false},
           tooltip:{callbacks:{label:ctx=>[` ${feur(ctx.raw)}`,` Share: ${gTotal>0?(ctx.raw/gTotal*100).toFixed(1):0}%`]}}},
         scales:{
-          x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:10}}},
+          x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>fchart(v/1000,'K'),font:{size:10}}},
           y:{grid:{display:false},ticks:{font:{size:11},padding:4}}
         }
       }
@@ -3758,7 +3760,7 @@ function rebuildCashFlow(){
       },
       scales:{
         x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},
-        y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v),font:{size:9}}}
+        y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>fchart(v),font:{size:9}}}
       }
     }
   });
@@ -3925,7 +3927,7 @@ function rebuildCashFlow(){
         ]}},
         tooltip:{callbacks:{label:ctx=>{const d=savData[ctx.dataIndex];return d.spike?` ${ctx.dataset.label}: ${feur(ctx.raw)} ⬆ one-time inflow`:` ${ctx.dataset.label}: ${feur(ctx.raw)}`;} }}
       },
-      scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(v/1000)+'K',font:{size:9}}}}
+      scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>fchart(v/1000,'K'),font:{size:9}}}}
     }
   });
   renderLedger();
@@ -4921,8 +4923,8 @@ function renderTaxHistoryCards(){
     const badgeMap={filed:'✓ Filed',estimated:'~ Est.',pending:'⏳ Pending'};
     const badgeText=badgeMap[status]||'Not Filed';
     const badgeClass=status||'not-filed';
-    const incomeStr=rec.income?`€${Math.round(rec.income).toLocaleString()}`:'—';
-    const teBetalenStr=rec.teBetalen!=null&&rec.teBetalen!==0?(rec.teBetalen>0?`Pay €${Math.round(Math.abs(rec.teBetalen)).toLocaleString()}`:`Refund €${Math.round(Math.abs(rec.teBetalen)).toLocaleString()}`):'—';
+    const incomeStr=rec.income?feur(rec.income,0):'—';
+    const teBetalenStr=rec.teBetalen!=null&&rec.teBetalen!==0?(rec.teBetalen>0?`Pay ${feur(Math.abs(rec.teBetalen),0)}`:`Refund ${feur(Math.abs(rec.teBetalen),0)}`):'—';
     return `<div class="tax-yr-pill${isActive?' active':''}" data-year="${yr}" onclick="setTaxYear(${yr})" style="cursor:pointer;min-width:110px;padding:8px 14px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <span style="font-weight:600;font-size:14px">${yr}</span>
@@ -4954,10 +4956,10 @@ function renderFiledVsEst(year,est){
     if(Math.abs(d)<10) return `<td style="padding:4px 8px;text-align:right;color:var(--ok)">≈ match</td>`;
     const sign=d>0?'+':'';
     const col=Math.abs(d)<100?'var(--wrn)':Math.abs(d)<500?'#f97316':'var(--err)';
-    return `<td style="padding:4px 8px;text-align:right;color:${col};font-weight:600">${sign}€${Math.abs(d).toLocaleString()}</td>`;
+    return `<td style="padding:4px 8px;text-align:right;color:${col};font-weight:600">${sign}${feur(Math.abs(d),0)}</td>`;
   }
-  function filed(v){ return (v==null||v===''||v===0)?'<td style="padding:4px 8px;text-align:right;color:var(--txt2)">—</td>':`<td style="padding:4px 8px;text-align:right">€${Math.round(v).toLocaleString()}</td>`; }
-  function estCell(v){ return v==null?'<td style="padding:4px 8px;text-align:right;color:var(--txt2)">—</td>':`<td style="padding:4px 8px;text-align:right;color:var(--txt2)">€${Math.round(v).toLocaleString()}</td>`; }
+  function filed(v){ return (v==null||v===''||v===0)?'<td style="padding:4px 8px;text-align:right;color:var(--txt2)">—</td>':`<td style="padding:4px 8px;text-align:right">${feur(v,0)}</td>`; }
+  function estCell(v){ return v==null?'<td style="padding:4px 8px;text-align:right;color:var(--txt2)">—</td>':`<td style="padding:4px 8px;text-align:right;color:var(--txt2)">${feur(v,0)}</td>`; }
 
   // Computed filed net IB (ibBruto - arbeidskorting - algHeffingskorting)
   const filNetIb=(rec.ibBruto||0)-(rec.arbeidskorting||0)-(rec.algHeffingskorting||0);
@@ -5055,17 +5057,17 @@ function openTaxRecordModal(year){
     const filAhk=rec.algHeffingskorting||0;
     const filBox3=rec.box3TaxFiled||0;
     const estBox3=Math.round((DB.taxSettings?.capitalGainsRate||36)/100 * Math.max(0,((DB.taxSettings?.box3Allowance||57684))));
-    const diff=(v,e)=>v===0&&e>0?`<span style="color:#f59e0b;font-size:10px">ℹ️ may be in payroll tax</span>`:(Math.abs(v-e)<50?`<span style="color:#10b981">≈ match</span>`:`<span style="color:${v<e?'#ef4444':'#f59e0b'}">Δ €${Math.abs(v-e).toLocaleString()}</span>`);
+    const diff=(v,e)=>v===0&&e>0?`<span style="color:#f59e0b;font-size:10px">ℹ️ may be in payroll tax</span>`:(Math.abs(v-e)<50?`<span style="color:#10b981">≈ match</span>`:`<span style="color:${v<e?'#ef4444':'#f59e0b'}">Δ ${feur(Math.abs(v-e),0)}</span>`);
     banner.style.display='block';
     banner.innerHTML=`
       <div style="font-weight:600;font-size:12px;margin-bottom:8px">Filed vs Dashboard Estimate</div>
       <table style="width:100%;font-size:11px;border-collapse:collapse">
         <tr style="color:var(--txt2)"><th style="text-align:left;padding:2px 4px">Line</th><th style="text-align:right;padding:2px 4px">Filed</th><th style="text-align:right;padding:2px 4px">Estimate</th><th style="text-align:right;padding:2px 4px">Diff</th></tr>
-        <tr><td style="padding:3px 4px">IB Box 1 (gross brackets)</td><td style="text-align:right;padding:3px 4px">${filIbBruto?'€'+filIbBruto.toLocaleString():'—'}</td><td style="text-align:right;padding:3px 4px">€${estIbBruto.toLocaleString()}</td><td style="text-align:right;padding:3px 4px">${filIbBruto?diff(filIbBruto,estIbBruto):'—'}</td></tr>
-        <tr><td style="padding:3px 4px">Earned Income Credit</td><td style="text-align:right;padding:3px 4px">${filAk?'€'+filAk.toLocaleString():'—'}</td><td style="text-align:right;padding:3px 4px">€${estAk.toLocaleString()}</td><td style="text-align:right;padding:3px 4px">${filAk?diff(filAk,estAk):'—'}</td></tr>
-        <tr><td style="padding:3px 4px" title="General Tax Credit is often absorbed in employer payroll tax — 0 on the assessment is normal">General Tax Credit <span style="opacity:0.5">ℹ️</span></td><td style="text-align:right;padding:3px 4px">${filAhk?'€'+filAhk.toLocaleString():'€0'}</td><td style="text-align:right;padding:3px 4px">€${estAhk.toLocaleString()}</td><td style="text-align:right;padding:3px 4px">${diff(filAhk,estAhk)}</td></tr>
-        <tr><td style="padding:3px 4px">IB Box 3 (wealth tax)</td><td style="text-align:right;padding:3px 4px">${filBox3?'€'+filBox3.toLocaleString():'—'}</td><td style="text-align:right;padding:3px 4px"><span style="opacity:0.6">see Tax tab</span></td><td style="text-align:right;padding:3px 4px">—</td></tr>
-        <tr style="font-weight:700;border-top:1px solid var(--bdr)"><td style="padding:4px 4px">Net IB after credits (est.)</td><td style="text-align:right;padding:4px 4px">—</td><td style="text-align:right;padding:4px 4px">€${estNetIb.toLocaleString()}</td><td style="text-align:right;padding:4px 4px">—</td></tr>
+        <tr><td style="padding:3px 4px">IB Box 1 (gross brackets)</td><td style="text-align:right;padding:3px 4px">${filIbBruto?feur(filIbBruto,0):'—'}</td><td style="text-align:right;padding:3px 4px">${feur(estIbBruto,0)}</td><td style="text-align:right;padding:3px 4px">${filIbBruto?diff(filIbBruto,estIbBruto):'—'}</td></tr>
+        <tr><td style="padding:3px 4px">Earned Income Credit</td><td style="text-align:right;padding:3px 4px">${filAk?feur(filAk,0):'—'}</td><td style="text-align:right;padding:3px 4px">${feur(estAk,0)}</td><td style="text-align:right;padding:3px 4px">${filAk?diff(filAk,estAk):'—'}</td></tr>
+        <tr><td style="padding:3px 4px" title="General Tax Credit is often absorbed in employer payroll tax — 0 on the assessment is normal">General Tax Credit <span style="opacity:0.5">ℹ️</span></td><td style="text-align:right;padding:3px 4px">${filAhk?feur(filAhk,0):feur(0,0)}</td><td style="text-align:right;padding:3px 4px">${feur(estAhk,0)}</td><td style="text-align:right;padding:3px 4px">${diff(filAhk,estAhk)}</td></tr>
+        <tr><td style="padding:3px 4px">IB Box 3 (wealth tax)</td><td style="text-align:right;padding:3px 4px">${filBox3?feur(filBox3,0):'—'}</td><td style="text-align:right;padding:3px 4px"><span style="opacity:0.6">see Tax tab</span></td><td style="text-align:right;padding:3px 4px">—</td></tr>
+        <tr style="font-weight:700;border-top:1px solid var(--bdr)"><td style="padding:4px 4px">Net IB after credits (est.)</td><td style="text-align:right;padding:4px 4px">—</td><td style="text-align:right;padding:4px 4px">${feur(estNetIb,0)}</td><td style="text-align:right;padding:4px 4px">—</td></tr>
       </table>`;
   } else {
     banner.style.display='none';
@@ -5698,7 +5700,7 @@ function renderBizIncomeOverview(){
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:true,position:'top',labels:{font:{size:10},boxWidth:12,padding:8}},
         tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${feur(ctx.raw)}`}}},
-      scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>'€'+fmt(Math.abs(v)/1000)+'K',font:{size:9}}}}
+      scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'#F3F4F6'},ticks:{callback:v=>fchart(Math.abs(v)/1000,'K'),font:{size:9}}}}
     }
   });
 }
