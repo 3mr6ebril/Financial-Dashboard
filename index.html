@@ -442,6 +442,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <button class="sm-item" onclick="openCloudSync()">☁️ Cloud Sync</button>
         <button class="sm-item" onclick="openInstModal();closeSettingsMenu()">⚙ Manage Instruments</button>
         <button class="sm-item" onclick="openModal('historyModal');closeSettingsMenu()">📋 Transaction History</button>
+        <button class="sm-item" onclick="closeSettingsMenu();resetTransitionDefaults()">↺ Reset Cash Flow Plan</button>
         <label class="sm-item sm-sep" style="cursor:pointer">📥 Import<input type="file" accept=".json" onchange="importDB(event);closeSettingsMenu()" style="display:none"></label>
         <button class="sm-item" onclick="exportDB();closeSettingsMenu()">📤 Export</button>
       </div>
@@ -621,8 +622,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
     <div class="sec-hdr">
       <div class="sec-ttl">💸 Cash Flow Planner</div>
       <div style="display:flex;gap:8px;align-items:center">
-        <span class="t2" style="font-size:11px">Edit values below — changes auto-save &amp; refresh charts</span>
-        <button class="btn btn-ok btn-sm" onclick="resetTransitionDefaults()">↺ Reset to defaults</button>
+        <span class="t2" style="font-size:11px">Savings is editable here and drives the dashboard totals</span>
       </div>
     </div>
 
@@ -652,7 +652,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <div class="cat-strip" style="background:var(--ok)"></div>
         <div class="cat-top"><div class="cat-name">📊 Net Monthly</div></div>
         <div class="cat-val" id="netMon">—</div>
-        <div class="cat-alloc">Income − Expenses</div>
+        <div class="cat-alloc" id="netMonSub">Current month income − expenses</div>
       </div>
     </div>
 
@@ -672,7 +672,8 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <div class="cat-strip" style="background:#3B82F6"></div>
         <div class="cat-top"><div class="cat-name">🏦 Savings</div><span style="font-size:10px;color:#3B82F6" id="savTxBadge"></span></div>
         <div class="cat-val tg" id="cfSavVal">—</div>
-        <div class="cat-alloc" style="margin-bottom:10px">Savings account balance</div>
+        <input class="ts-inp" id="cfSavInput" type="number" step="0.01" placeholder="Savings balance" style="margin:8px 0 6px;font-size:13px" onchange="saveSavingsBalance(this)" onkeydown="if(event.key==='Enter')this.blur()">
+        <div class="cat-alloc" style="margin-bottom:10px" id="cfSavSource">Editable bank balance · source of truth</div>
         <button class="btn btn-sm" style="width:100%;margin-top:4px;font-size:12px" onclick="openSavTransferModal()">⇄ Transfer</button>
       </div>
 
@@ -708,7 +709,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <button class="xbtn" onclick="closeModal('savTransferModal')">✕</button>
         </div>
         <div class="mbody">
-          <div style="font-size:13px;color:var(--txt2);margin-bottom:16px">Transfers move money between your brokerage cash and savings account. Both balances and the projection update immediately.</div>
+          <div style="font-size:13px;color:var(--txt2);margin-bottom:16px">Transfers move money between brokerage cash and savings. If manual savings balance is enabled, update the bank balance after the real transfer clears.</div>
           <div class="fg" style="margin-bottom:12px">
             <label class="flbl">Direction</label>
             <select class="fsel" id="transfer_dir">
@@ -745,35 +746,67 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
       </div>
     </div>
 
-    <!-- Plan vs Actual -->
-    <div class="section">
-      <div class="sec-hdr">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <div class="sec-ttl">📊 Plan vs Actual</div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <button class="btn btn-g btn-sm" onclick="ledgerPrevMonth()">‹</button>
-            <span id="ldgMonthLabel" style="font-size:15px;font-weight:700;min-width:110px;text-align:center">—</span>
-            <button class="btn btn-g btn-sm" onclick="ledgerNextMonth()">›</button>
+    <!-- Monthly Actuals Modal -->
+    <div class="overlay" id="monthlyActualsModal">
+      <div class="modal" style="max-width:520px">
+        <div class="mhdr">
+          <span class="mtitle">Monthly Actuals</span>
+          <button class="xbtn" onclick="closeModal('monthlyActualsModal')">✕</button>
+        </div>
+        <div class="mbody">
+          <div style="font-size:13px;color:var(--txt2);margin-bottom:16px;line-height:1.55">
+            Enter only monthly totals. Income and expenses feed the actuals chart; Closing Savings controls the savings projection for that month.
+          </div>
+          <div class="fgrid">
+            <div class="fg">
+              <label class="flbl">Month</label>
+              <input class="finp" type="month" id="ma_month" onchange="loadMonthlyActualsForm(this.value)">
+            </div>
+            <div class="fg">
+              <label class="flbl">Actual Net</label>
+              <div class="finp" id="ma_net_preview" style="background:var(--neu-l);font-weight:800">—</div>
+            </div>
+            <div class="fg">
+              <label class="flbl">Actual Total Income (€)</label>
+              <input class="finp" type="number" id="ma_incomeTotal" min="0" step="0.01" placeholder="0.00" oninput="updateMonthlyActualsPreview()">
+            </div>
+            <div class="fg">
+              <label class="flbl">Actual Total Expenses (€)</label>
+              <input class="finp" type="number" id="ma_expenseTotal" min="0" step="0.01" placeholder="0.00" oninput="updateMonthlyActualsPreview()">
+            </div>
+            <div class="fg">
+              <label class="flbl">Closing Cash Balance (€)</label>
+              <input class="finp" type="number" id="ma_closingCash" step="0.01" placeholder="optional">
+            </div>
+            <div class="fg">
+              <label class="flbl">Closing Savings Balance (€)</label>
+              <input class="finp" type="number" id="ma_closingSavings" step="0.01" placeholder="optional">
+            </div>
+            <div class="fg ffull">
+              <label class="flbl">Notes</label>
+              <textarea class="finp" id="ma_notes" rows="3" style="resize:vertical;font-family:inherit" placeholder="Optional note for this month"></textarea>
+            </div>
           </div>
         </div>
-        <button class="btn btn-g btn-sm" onclick="openPlanSettings()" style="font-size:12px">✎ Edit plan</button>
-      </div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead>
-            <tr style="background:var(--bg2);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
-              <th style="padding:8px 16px;text-align:left;font-weight:600">Category</th>
-              <th style="padding:8px 16px;text-align:right;font-weight:600;width:130px">Plan</th>
-              <th style="padding:8px 16px;text-align:right;font-weight:600;width:150px">Actual</th>
-              <th style="padding:8px 16px;text-align:right;font-weight:600;width:110px">Diff</th>
-            </tr>
-          </thead>
-          <tbody id="planVsActualBody"></tbody>
-        </table>
+        <div class="mfoot">
+          <button class="btn btn-g" onclick="closeModal('monthlyActualsModal')">Cancel</button>
+          <button class="btn btn-p" onclick="saveMonthlyActuals()">Save Actuals</button>
+        </div>
       </div>
     </div>
 
-    <!-- Charts: row 1 = CF full width, row 2 = Savings + Deviation -->
+
+    <!-- Charts: cash flow and savings projection -->
+    <div class="card" style="padding:12px 14px;margin-top:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--txt)">Cash Flow Controls</div>
+        <div style="font-size:11px;color:var(--txt2)">Actuals and plan settings update the charts below.</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-p btn-sm" onclick="openMonthlyActuals()">Monthly Actuals</button>
+        <button class="btn btn-g btn-sm" onclick="openPlanSettings()">Edit Plan</button>
+      </div>
+    </div>
     <div class="g g1" style="margin-top:16px">
       <div class="card">
         <div class="chart-ttl" style="margin-bottom:8px">Monthly Cash Flow — Income vs Expenses</div>
@@ -784,21 +817,17 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
           <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#8B5CF6;border-radius:2px;display:inline-block"></span><span id="lgd3">Phase 3</span></span>
           <span id="lgd4" style="display:none"></span>
           <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#F59E0B55;border-radius:2px;border:1px solid #F59E0B;display:inline-block"></span>Expenses</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#111827;border-radius:50%;display:inline-block"></span>Actual month</span>
         </div>
       </div>
     </div>
-    <div class="g g2" style="margin-top:14px">
+    <div class="g g1" style="margin-top:14px">
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <div class="chart-ttl" style="margin-bottom:0">Savings Projection</div>
           <span style="font-size:10px;color:var(--txt2);font-style:italic">🟡 = one-time inflow</span>
         </div>
         <div style="position:relative;height:200px"><canvas id="savChart"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="chart-ttl" style="margin-bottom:8px">How did I actually do?</div>
-        <div style="position:relative;height:200px"><canvas id="deviationChart" style="display:none"></canvas></div>
-        <div id="ldgChartEmpty" style="text-align:center;padding:20px;color:var(--txt2);font-size:12px">Enter actuals for at least one month to see the chart.</div>
       </div>
     </div>
   </div>
@@ -1194,20 +1223,19 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--neu-l)}
         <div><label class="ts-lbl">Monthly Savings (€)</label>
           <input class="ts-inp" id="cfg_sav3" type="number" placeholder="0" style="margin-top:4px" oninput="onTransitionInput('sav3',this)"></div>
       </div>
-      <!-- One-Time Inflows -->
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#059669;margin-bottom:8px;border-top:1px dashed #D1FAE5;padding-top:10px">💰 One-Time Inflows</div>
-      <div class="g" style="grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px">
-        <div><label class="ts-lbl">Severance Net (€)</label>
-          <input class="ts-inp" id="cfg_severance" type="number" value="0" style="margin-top:4px" oninput="onTransitionInput('severance',this)"></div>
-        <div><label class="ts-lbl">Leave Hours Count</label>
-          <input class="ts-inp" id="cfg_leaveHours" type="number" value="0" style="margin-top:4px" oninput="onTransitionInput('leaveHours',this);updateLeaveHoursTotal()"></div>
-        <div><label class="ts-lbl">Leave Rate (€/hr)</label>
-          <input class="ts-inp" id="cfg_leaveHoursRate" type="number" value="0" style="margin-top:4px" oninput="onTransitionInput('leaveHoursRate',this);updateLeaveHoursTotal();rebuildCashFlow()"></div>
-        <div><label class="ts-lbl">Leave Hours Total</label>
-          <div class="ts-inp" id="leaveHoursTotalDisplay" style="background:var(--bg);color:var(--ok);font-weight:700;display:flex;align-items:center;min-height:34px;margin-top:4px">—</div></div>
-        <div><label class="ts-lbl">Payout Month</label>
-          <input class="ts-inp" id="cfg_severanceMonth" type="month" style="margin-top:4px" oninput="onTransitionInput('severanceMonth',this)"></div>
+      <!-- One-Time Projection Items -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#059669;margin-bottom:8px;border-top:1px dashed #D1FAE5;padding-top:10px">💰 One-Time Projection Items</div>
+      <div style="font-size:11px;color:var(--txt2);margin:-2px 0 8px;line-height:1.45">Add simple items such as severance, tax refund, bonus, or moving cost. These affect Savings Projection only.</div>
+      <div class="g" style="grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:10px;align-items:end">
+        <div><label class="ts-lbl">Item</label>
+          <input class="ts-inp" id="oti_label" type="text" placeholder="e.g. Severance" style="margin-top:4px"></div>
+        <div><label class="ts-lbl">Amount (€)</label>
+          <input class="ts-inp" id="oti_amount" type="number" step="0.01" placeholder="0" style="margin-top:4px"></div>
+        <div><label class="ts-lbl">Month</label>
+          <input class="ts-inp" id="oti_month" type="month" style="margin-top:4px"></div>
+        <button class="btn btn-p btn-sm" type="button" onclick="addOneTimeItem()">Add</button>
       </div>
+      <div id="oneTimeItemsList" style="margin-bottom:14px"></div>
       <!-- Other settings -->
       <div style="padding-top:10px;border-top:1px dashed var(--bdr)">
         <div class="g" style="grid-template-columns:1fr 1fr 1fr;gap:12px">
@@ -1633,6 +1661,7 @@ const DISTINCT_COLORS = [
 ];
 const CAT_COLOR = {ETF:'#3B82F6',Stock:'#8B5CF6',Crypto:'#EF4444',Commodity:'#F59E0B',Cash:'#10B981'};
 const CAT_ICON  = {ETF:'📊',Stock:'💹',Crypto:'₿',Commodity:'🔶',Cash:'💰'};
+function categoryDisplayName(label){ return label==='Cash'?'Liquidity':label==='Commodity'?'Gold':label; }
 
 // ── ENTITY COLOR — deterministic, consistent per key ──
 function getEntityColor(key){
@@ -1980,10 +2009,11 @@ const DEFAULT_TRANSITION = {
   gstart:'',gend:'',gexp:0,
   wstart:'',ww:0,wexp:0,sav3:0,
   buf:0,endproj:'',
-  cashOverride:0,savingsOverride:0,
+  cashOverride:0,savingsOverride:0,savingsOverrideEnabled:true,
   cashTxDelta:0,savTxDelta:0,_cashV2:false,
   severance:0,severanceMonth:'',
   leaveHours:0,leaveHoursRate:0,leaveHoursMonth:'',
+  oneTimeItems:[],
   wwDuration:0,
   modified:{}
 };
@@ -2022,6 +2052,18 @@ function isOverviewPrivacyOn(){ return !!(DB.settings?.hideOverviewAmounts); }
 function fmask(d=1){ return (DB.settings?.currency||'€')+(d>0?'••••.•':'••••'); }
 function fov(n,d=1){ return isOverviewPrivacyOn()?fmask(d):feurRaw(n,d); }
 function fchart(v,suffix=''){ return isOverviewPrivacyOn()?'':`${DB.settings?.currency||'€'}${fmt(v)}${suffix}`; }
+function ensureSavingsSourceOfTruth(){
+  if(!DB.transition) DB.transition={};
+  if(DB.transition.savingsOverride===undefined||DB.transition.savingsOverride===null||DB.transition.savingsOverride===''){
+    DB.transition.savingsOverride=0;
+  }
+  DB.transition.savingsOverride=parseFloat(DB.transition.savingsOverride)||0;
+  // The old SAV instrument placeholder was 50k; do not treat it as real savings.
+  if(!DB.transition.savingsManualConfirmed&&Math.abs(DB.transition.savingsOverride-50000)<0.01){
+    DB.transition.savingsOverride=0;
+  }
+  DB.transition.savingsOverrideEnabled=true;
+}
 function syncOverviewPrivacyToggle(){
   const el=document.getElementById('ovwPrivacyToggle');
   if(!el) return;
@@ -2095,6 +2137,7 @@ function loadDB(){
         if(DB.transition.bizPlanIncome===undefined) DB.transition.bizPlanIncome=0;
         if(DB.transition.cashOverride===undefined) DB.transition.cashOverride=0;
         if(DB.transition.savingsOverride===undefined) DB.transition.savingsOverride=0;
+        ensureSavingsSourceOfTruth();
         if(DB.transition.cashTxDelta===undefined) DB.transition.cashTxDelta=0;
         if(DB.transition.savTxDelta===undefined) DB.transition.savTxDelta=0;
         // V2: cashTxDelta is now transfers-only; reset any forward-only buy/sell/div accumulation
@@ -2498,6 +2541,7 @@ function importDB(event){
       if(DB.transition.bizPlanIncome===undefined) DB.transition.bizPlanIncome=0;
       if(DB.transition.cashOverride===undefined) DB.transition.cashOverride=0;
       if(DB.transition.savingsOverride===undefined) DB.transition.savingsOverride=0;
+      ensureSavingsSourceOfTruth();
       if(DB.transition.cashTxDelta===undefined) DB.transition.cashTxDelta=0;
       if(DB.transition.savTxDelta===undefined) DB.transition.savTxDelta=0;
       if(!DB.transition._cashV2){ DB.transition.cashTxDelta=0; DB.transition._cashV2=true; }
@@ -2803,8 +2847,7 @@ function getPortfolioBase(cats){
   const investmentValue=cats.filter(c=>c.label!=='Cash').reduce((s,c)=>s+c.current,0);
   const liquidValue=(window._cashVal||0)+(window._savVal||0);
   const portfolioValue=investmentValue+liquidValue;
-  const liabilities=getTotalLiabilities();
-  return {investmentValue,liquidValue,portfolioValue,liabilities,netWorth:portfolioValue-liabilities};
+  return {investmentValue,liquidValue,portfolioValue,liabilities:0,netWorth:portfolioValue};
 }
 function openExposureFilter(field,label){
   activeExposureFilter={field,label};
@@ -2825,15 +2868,14 @@ const pc=n=>n>=0?'tg':'tr';
 
 // ── RENDER KPIs ──
 function renderKPIs(cats){
-  // True Net Worth: investments (non-Cash) at market + real cashVal + real savVal − liabilities
+  // Net Worth: investments (non-Cash) at market + real cashVal + real savVal
   // cashVal/savVal are computed fresh in rebuildCashFlow() and stored as globals
   const invCats=cats.filter(c=>c.label!=='Cash');
   const investmentsValue=invCats.reduce((s,c)=>s+c.current,0);
   const cashVal=window._cashVal||0;
   const savVal=window._savVal||0;
   const portfolioValue=investmentsValue+cashVal+savVal;
-  const totalLiab=getTotalLiabilities();
-  const nw=portfolioValue-totalLiab;
+  const nw=portfolioValue;
   // P&L and return: investments only (Cash has no meaningful P&L)
   const inv=invCats.reduce((s,c)=>s+c.invested,0);
   const pnl=invCats.reduce((s,c)=>s+c.pnl,0);
@@ -2858,7 +2900,7 @@ function renderKPIs(cats){
   const totalBizCost=bizPL.cost+tpl.expenses;
   const totalBizNet=bizPL.net+tpl.profit;
   document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi ${nw<0?'err':''}"><div class="kpi-lbl">Net Worth</div><div class="kpi-val ${nw<0?'tr':''}">${fov(nw)}</div><div class="kpi-sub"><span class="badge bn">portfolio ${fov(portfolioValue,0)}</span><span class="t2">liabilities ${fov(totalLiab,0)}</span></div></div>
+    <div class="kpi ${nw<0?'err':''}"><div class="kpi-lbl">Net Worth</div><div class="kpi-val ${nw<0?'tr':''}">${fov(nw)}</div><div class="kpi-sub"><span class="badge bn">investments ${fov(investmentsValue,0)}</span><span class="t2">cash ${fov(cashVal,0)} · savings ${fov(savVal,0)}</span></div></div>
     <div class="kpi ${ret>=0?'ok':'err'}"><div class="kpi-lbl">Portfolio P&amp;L</div><div class="kpi-val ${pc(pnl)}">${pnl>=0?'+':''}${fov(pnl)}</div><div class="kpi-sub"><span class="badge ${pnl>=0?'bg':'br'}">${fpct(ret)}</span><span class="t2">vs cost basis</span></div></div>
     <div class="kpi ${xirrAll===null?'':xirrAll>=0?'ok':'err'}"><div class="kpi-lbl">Portfolio XIRR</div><div class="kpi-val ${xirrAll!==null?pc(xirrAll):''}">${fxirr(xirrAll)}</div><div class="kpi-sub">${xirrPeriodLine}<div style="margin-top:5px"><span class="conf-badge ${xirrConf.cls}">${xirrConf.label}</span></div></div></div>
     <div class="kpi">
@@ -3018,7 +3060,7 @@ function renderAlloc(cats){
 
   } else {
     // allocation (default) — by category
-    const labels=cats.map(c=>c.label), colors=cats.map(c=>CAT_COLOR[c.label]||'#6B7280');
+    const rawLabels=cats.map(c=>c.label), labels=cats.map(c=>categoryDisplayName(c.label)), colors=cats.map(c=>CAT_COLOR[c.label]||'#6B7280');
     // For Cash: use true liquid value (cashVal+savVal) so bar shows no artificial loss
     const cashDisplay=(window._cashVal||0)+(window._savVal||0);
     const catDisplayVal=c=>c.label==='Cash'?cashDisplay:c.current;
@@ -3041,7 +3083,7 @@ function renderAlloc(cats){
           const ret=cat&&cat.label!=='Cash'&&cat.invested>0?((cat.pnl/cat.invested)*100).toFixed(1):null;
           return [` ${ctx.label}: ${feur(ctx.raw)}`,` Alloc: ${p}% of portfolio`+(ret!==null?` · Return: ${+ret>=0?'+':''}${ret}%`:'')];
         }}}},
-        onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
+        onClick:(e,els)=>{if(els.length){jumpToHoldings(rawLabels[els[0].index]);}}
       },plugins:[calloutLabelPlugin]
     });
     safeDestroy('allocBar');
@@ -3065,7 +3107,7 @@ function renderAlloc(cats){
             return ` ${ctx.dataset.label}: ${feur(ctx.raw)}`;
           }}}},
         scales:{x:{grid:{color:'#F3F4F6'},ticks:{callback:v=>fchart(v/1000,'K'),font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}},
-        onClick:(e,els)=>{if(els.length){jumpToHoldings(labels[els[0].index]);}}
+        onClick:(e,els)=>{if(els.length){jumpToHoldings(rawLabels[els[0].index]);}}
       }
     });
   }
@@ -3079,6 +3121,7 @@ function renderCatCards(cats){
   const nw=invValue+cashV+savV;
   document.getElementById('catGrid').innerHTML=cats.map(c=>{
     const color=CAT_COLOR[c.label]||'#6B7280';
+    const displayName=categoryDisplayName(c.label);
     // For Cash category: show true liquid position (cashVal+savVal) not the stale instrument position
     const displayVal=c.label==='Cash'?cashV+savV:c.current;
     const allocPct=nw>0?displayVal/nw*100:0;
@@ -3096,7 +3139,7 @@ function renderCatCards(cats){
     return`<div class="cat-card" onclick="${cardClick}" id="cat-${c.label}">
       <div class="cat-strip" style="background:${color}"></div>
       <div class="cat-top">
-        <div><div class="cat-name">${CAT_ICON[c.label]||'●'} ${c.label==='Commodity'?'Gold':c.label}</div>
+        <div><div class="cat-name">${CAT_ICON[c.label]||'●'} ${displayName}</div>
           ${subLine}</div>
         <div class="tip" style="cursor:help"><div class="hdot ${sig}"></div>
           <span class="tip-box" style="left:auto;right:0;transform:none;min-width:180px">${comment}</span></div>
@@ -3104,7 +3147,7 @@ function renderCatCards(cats){
       <div class="cat-val" style="color:${color}">${fov(displayVal)}</div>
       ${pnlLine}
       ${periodLine}
-      <div class="cat-alloc">${c.label==='Cash'?'Cash + Savings':c.holdings.length+' holdings'} · ${allocPct.toFixed(1)}% of portfolio</div>
+      <div class="cat-alloc">${c.label==='Cash'?'Liquidity':c.holdings.length+' holdings'} · ${allocPct.toFixed(1)}% of portfolio</div>
       <div class="mini-bar"><div class="mini-fill" style="width:${allocPct}%;background:${color}"></div></div>
     </div>`;
   }).join('');
@@ -3545,9 +3588,65 @@ function updateLeaveHoursTotal(){
   el.textContent=total>0?feur(total):'—';
   el.style.color=total>0?'var(--ok)':'var(--txt2)';
 }
+function normalizeOneTimeItems(){
+  const t=DB.transition=DB.transition||{};
+  if(!Array.isArray(t.oneTimeItems)) t.oneTimeItems=[];
+  if(!t._oneTimeItemsMigrated){
+    if((t.severance||0)>0&&t.severanceMonth){
+      t.oneTimeItems.push({id:'oti_'+Date.now()+'_sev',label:'Severance',amount:t.severance||0,month:t.severanceMonth});
+    }
+    const leaveTotal=(t.leaveHours||0)*(t.leaveHoursRate||0);
+    if(leaveTotal>0&&t.severanceMonth){
+      t.oneTimeItems.push({id:'oti_'+Date.now()+'_leave',label:'Leave hours payout',amount:leaveTotal,month:t.severanceMonth});
+    }
+    t._oneTimeItemsMigrated=true;
+  }
+}
+function getOneTimeAmountForMonth(month){
+  normalizeOneTimeItems();
+  return (DB.transition.oneTimeItems||[]).filter(item=>item.month===month).reduce((s,item)=>s+(item.amount||0),0);
+}
+function renderOneTimeItems(){
+  normalizeOneTimeItems();
+  const el=document.getElementById('oneTimeItemsList');
+  if(!el) return;
+  const items=DB.transition.oneTimeItems||[];
+  if(!items.length){
+    el.innerHTML='<div style="padding:12px;border:1px dashed var(--bdr);border-radius:10px;color:var(--txt2);font-size:12px;text-align:center">No one-time projection items yet.</div>';
+    return;
+  }
+  el.innerHTML=`<div style="border:1px solid var(--bdr);border-radius:10px;overflow:hidden">
+    ${items.map(item=>`<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center;padding:9px 10px;border-bottom:1px solid var(--bdr);font-size:13px">
+      <div style="font-weight:700">${item.label||'One-time item'}</div>
+      <div class="num">${feur(item.amount||0)}</div>
+      <div style="color:var(--txt2)">${item.month?fmtM(item.month):'No month'}</div>
+      <button class="btn btn-sm" style="background:var(--err-l);color:var(--err);padding:3px 8px" onclick="removeOneTimeItem('${item.id}')">Remove</button>
+    </div>`).join('')}
+  </div>`;
+}
+function addOneTimeItem(){
+  normalizeOneTimeItems();
+  const label=(document.getElementById('oti_label')?.value||'').trim();
+  const amount=parseFloat(document.getElementById('oti_amount')?.value)||0;
+  const month=document.getElementById('oti_month')?.value||'';
+  if(!label||!month||amount===0){ notify('⚠️ Enter item, amount, and month.','warn'); return; }
+  DB.transition.oneTimeItems.push({id:'oti_'+Date.now(),label,amount,month});
+  ['oti_label','oti_amount','oti_month'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  saveDB();
+  renderOneTimeItems();
+  rebuildCashFlow();
+}
+function removeOneTimeItem(id){
+  normalizeOneTimeItems();
+  DB.transition.oneTimeItems=DB.transition.oneTimeItems.filter(item=>item.id!==id);
+  saveDB();
+  renderOneTimeItems();
+  rebuildCashFlow();
+}
 function loadTransitionSettings(){
   const t=DB.transition;
-  ['salary','exp1','sav1','gexp','ww','wexp','sav3','buf','severance','leaveHours','leaveHoursRate','wwDuration','bizPlanIncome'].forEach(k=>{
+  normalizeOneTimeItems();
+  ['salary','exp1','sav1','gexp','ww','wexp','sav3','buf','severance','leaveHours','leaveHoursRate','wwDuration','bizPlanIncome','savingsOverride'].forEach(k=>{
     const el=document.getElementById('cfg_'+k); if(el) el.value=t[k]||0;
   });
   ['enddate','gstart','gend','wstart','endproj','severanceMonth'].forEach(k=>{
@@ -3557,6 +3656,7 @@ function loadTransitionSettings(){
   ['phaseName1','phaseName2','phaseName3'].forEach(k=>{
     const el=document.getElementById('cfg_'+k); if(el) el.value=t[k]||'';
   });
+  renderOneTimeItems();
   refreshPhaseLabels();
   const mod=t.modified||{};
   Object.keys(mod).forEach(k=>{
@@ -3574,6 +3674,18 @@ function onTransitionInput(key, el){
   const badge=document.getElementById('est_'+key);
   if(badge){ badge.textContent='actual'; badge.className='badge badge-act'; }
   debounce(rebuildCashFlow,800)();
+}
+function saveSavingsBalance(el){
+  const val=parseFloat(el?.value);
+  if(!Number.isFinite(val)){ notify('⚠️ Enter a valid savings balance.','warn'); return; }
+  ensureSavingsSourceOfTruth();
+  DB.transition.savingsOverride=val;
+  DB.transition.savingsManualConfirmed=true;
+  DB.transition.modified=DB.transition.modified||{};
+  DB.transition.modified.savingsOverride=true;
+  saveDB();
+  refreshAll();
+  notify('✅ Savings balance updated.');
 }
 function resetTransitionDefaults(){
   if(!confirm('Reset all transition settings to defaults?')) return;
@@ -3609,16 +3721,18 @@ function saveTransfer(){
   if(!DB.transition) DB.transition={};
   if(DB.transition.cashTxDelta===undefined) DB.transition.cashTxDelta=0;
   if(DB.transition.savTxDelta===undefined) DB.transition.savTxDelta=0;
+  ensureSavingsSourceOfTruth();
   if(dir==='to_sav'){
     DB.transition.cashTxDelta -= amount; // cash goes down
-    DB.transition.savTxDelta  += amount; // savings goes up
+    DB.transition.savingsOverride += amount; // editable savings balance goes up
   } else {
-    DB.transition.savTxDelta  -= amount; // savings goes down
+    DB.transition.savingsOverride -= amount; // editable savings balance goes down
     DB.transition.cashTxDelta += amount; // cash goes up
   }
+  DB.transition.savingsManualConfirmed=true;
   saveDB();
   closeModal('savTransferModal');
-  requestAnimationFrame(rebuildCashFlow);
+  requestAnimationFrame(refreshAll);
   const label=dir==='to_sav'?'Cash → Savings':'Savings → Cash';
   notify(`✅ Transfer recorded: ${label} ${feur(amount)}`);
 }
@@ -3655,28 +3769,34 @@ function buildCFData(lookback=6){
 function buildSavingsProjection(cfData, opts={}){
   const t=DB.transition;
   const {savStart=0} = opts; // current actual savings — used to anchor the current month
+  const manualSavings=!!opts.manualSavings;
   let bal=(t.buf||0);        // start from additional buffer; actuals will build from here
   const _todayDay=new Date().getDate();
   return cfData.map(row=>{
-    let oneTime=0;
-    if(t.severance>0&&t.severanceMonth&&row.mRaw===t.severanceMonth) oneTime+=t.severance;
-    const leaveHoursPayout=(t.leaveHours||0)*(t.leaveHoursRate||0);
-    if(leaveHoursPayout>0&&t.severanceMonth&&row.mRaw===t.severanceMonth) oneTime+=leaveHoursPayout;
+    const oneTime=getOneTimeAmountForMonth(row.mRaw);
     bal+=oneTime;
     const plannedSav=row.phase==='employed'?t.sav1:row.phase==='ww'?t.sav3:0;
     if(row.isCurrent){
-      // Hard-anchor to actual savings so past actuals and future projection connect cleanly
-      bal=savStart;
-      if(plannedSav!==0&&_todayDay>=23) bal+=plannedSav;
+      const ldgData=(DB.ledger?.months||{})[row.mRaw];
+      if(ldgData?.closingSavings!=null){
+        // Current month can be corrected directly from the bank balance.
+        bal=ldgData.closingSavings;
+      } else {
+        // Otherwise hard-anchor to current savings so past actuals and future projection connect cleanly.
+        bal=savStart;
+        if(!manualSavings&&plannedSav!==0&&_todayDay>=23) bal+=plannedSav;
+      }
     } else if(row.isPast){
       // Past months: actual data takes priority over plan
       const ldgData=(DB.ledger?.months||{})[row.mRaw];
-      if(ldgData?.closingCash!=null){
+      if(ldgData?.closingSavings!=null){
+        // Closing savings entered — use as absolute savings anchor
+        bal=ldgData.closingSavings;
+      } else if(ldgData?.closingCash!=null){
         // Closing cash entered — use as absolute anchor
         bal=ldgData.closingCash;
       } else {
-        const hasData=ldgData&&(ldgData.salary||ldgData.uwv||ldgData.other||
-          Object.values(ldgData.expenses||{}).some(v=>v>0));
+        const hasData=hasLedgerActualData(ldgData);
         if(hasData){
           // Use actual net cash flow from ledger
           const{net}=getLedgerActualNetForMonth(row.mRaw);
@@ -3700,11 +3820,8 @@ function rebuildCashFlow(){
   // runway + buffer displayed AFTER cashVal/savVal are computed (see below)
   document.getElementById('monBurn').textContent='−'+feur(t.exp1||0)+'/mo';
   const _wwBen=document.getElementById('wwBen'); if(_wwBen) _wwBen.textContent='+'+feur(t.ww||0)+'/mo';
-  const net=(t.ww||0)-(t.wexp||0);
-  const _netMon=document.getElementById('netMon'); if(_netMon) _netMon.innerHTML=`<span class="${net>=0?'tg':'tr'}">${net>=0?'+':''}${feur(net)}/mo</span>`;
-  const _sevVal=document.getElementById('sevVal'); if(_sevVal) _sevVal.innerHTML=t.severance>0?`<span class="tg">${feur(t.severance)} <span style="font-size:10px;color:var(--txt2)">${t.severanceMonth?'('+fmtM(t.severanceMonth)+')':''}</span></span>`:`<span class="t2" style="font-style:italic">placeholder</span>`;
-  const _lhp=(t.leaveHours||0)*(t.leaveHoursRate||0);
-  const _lhpVal=document.getElementById('leaveHoursVal'); if(_lhpVal) _lhpVal.innerHTML=_lhp>0?`<span class="tg">${feur(_lhp)} <span style="font-size:10px;color:var(--txt2)">${t.severanceMonth?'('+fmtM(t.severanceMonth)+')':''}</span></span>`:`<span class="t2" style="font-style:italic">placeholder</span>`;
+  const _sevVal=document.getElementById('sevVal'); if(_sevVal) _sevVal.innerHTML=`<span class="t2" style="font-style:italic">configured in projection items</span>`;
+  const _lhpVal=document.getElementById('leaveHoursVal'); if(_lhpVal) _lhpVal.innerHTML=`<span class="t2" style="font-style:italic">configured in projection items</span>`;
   updateLeaveHoursTotal();
   const _wwDurVal=document.getElementById('wwDurVal'); if(_wwDurVal) _wwDurVal.innerHTML=t.wwDuration>0?`${t.wwDuration} months`:`<span class="t2" style="font-style:italic">placeholder</span>`;
 
@@ -3729,34 +3846,54 @@ function rebuildCashFlow(){
   const rd=document.getElementById('rwyDurLabel'); if(rd) rd.textContent='⏱ '+ph3+' Duration';
 
   const cfData=buildCFData(0);
+  const currentRow=cfData.find(d=>d.isCurrent)||cfData[0]||{income:0,exp:0,mRaw:new Date().toISOString().slice(0,7)};
+  const currentActuals=(DB.ledger?.months||{})[currentRow.mRaw];
+  const useCurrentActual=hasLedgerTotals(currentActuals);
+  const currentNet=useCurrentActual?getLedgerActualNetForMonth(currentRow.mRaw).net:(currentRow.income+currentRow.exp);
+  const _netMon=document.getElementById('netMon');
+  if(_netMon) _netMon.innerHTML=`<span class="${currentNet>=0?'tg':'tr'}">${currentNet>=0?'+':''}${feur(currentNet)}/mo</span>`;
+  const _netMonSub=document.getElementById('netMonSub');
+  if(_netMonSub) _netMonSub.textContent=useCurrentActual?'Actual income − expenses':'Planned income − expenses';
   const phaseColor=d=>d.phase==='employed'?'#3B82F6':d.phase==='gap'?'#EF4444':d.phase==='ww'?'#8B5CF6':'#94A3B8';
+  const cfDisplayData=cfData.map(row=>{
+    const ldgData=(DB.ledger?.months||{})[row.mRaw];
+    const isActual=hasLedgerTotals(ldgData);
+    return {
+      ...row,
+      isActual,
+      chartIncome:isActual?(ldgData.incomeTotal||0):row.income,
+      chartExpense:isActual?(ldgData.expenseTotal||0):Math.abs(row.exp)
+    };
+  });
   // Past months always gray; current and future use phase color
   const incColors=cfData.map(d=>d.isPast?'#94A3B8':phaseColor(d));
-  const oneTimeData=cfData.map(row=>{
-    let ot=0;
-    if(t.severance>0&&t.severanceMonth&&row.mRaw===t.severanceMonth) ot+=t.severance;
-    const _lp=(t.leaveHours||0)*(t.leaveHoursRate||0);
-    if(_lp>0&&t.severanceMonth&&row.mRaw===t.severanceMonth) ot+=_lp;
-    return ot;
-  });
   // cashInst/savInst declared early — used in cashInstVal + cashTradeDelta blocks below
   const cashInst=DB.instruments.find(i=>i.ticker==='CASH');
   const savInst=DB.instruments.find(i=>i.ticker==='SAV');
   safeDestroy('cfChart');
   charts.cf=new Chart(document.getElementById('cfChart'),{
     type:'bar',
-    data:{labels:cfData.map(d=>d.isCurrent?'▶ '+d.m:d.m),datasets:[
-      {label:'Income',data:cfData.map(d=>d.income),
-       backgroundColor:cfData.map((d,i)=>d.isPast?incColors[i]+'44':d.isCurrent?incColors[i]:incColors[i]+'99'),
-       borderColor:incColors,borderWidth:1,borderRadius:3},
-      {label:'Expenses',data:cfData.map(d=>Math.abs(d.exp)),
-       backgroundColor:cfData.map(d=>d.isPast?'#94A3B822':d.isCurrent?'#F59E0B':'#F59E0B55'),
-       borderColor:cfData.map(d=>d.isPast?'#94A3B8':'#F59E0B'),borderWidth:1,borderRadius:3}
+    data:{labels:cfDisplayData.map(d=>(d.isCurrent?'▶ ':'')+d.m+(d.isActual?' •':'')),datasets:[
+      {label:'Income',data:cfDisplayData.map(d=>d.chartIncome),
+       backgroundColor:cfDisplayData.map((d,i)=>d.isActual?phaseColor(d):d.isPast?'#94A3B844':incColors[i]+'77'),
+       borderColor:cfDisplayData.map(d=>d.isActual?phaseColor(d):d.isPast?'#94A3B8':phaseColor(d)),
+       borderWidth:cfDisplayData.map(d=>d.isActual?2:1),borderRadius:3},
+      {label:'Expenses',data:cfDisplayData.map(d=>d.chartExpense),
+       backgroundColor:cfDisplayData.map(d=>d.isActual?'#F59E0B':d.isPast?'#94A3B822':'#F59E0B55'),
+       borderColor:cfDisplayData.map(d=>d.isActual?'#D97706':d.isPast?'#94A3B8':'#F59E0B'),
+       borderWidth:cfDisplayData.map(d=>d.isActual?2:1),borderRadius:3}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{
         legend:{display:false},
-        tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${feur(ctx.raw)}`}}
+        tooltip:{callbacks:{
+          title:items=>{
+            const idx=items?.[0]?.dataIndex??0;
+            const row=cfDisplayData[idx];
+            return row?`${row.m}${row.isActual?' · actual':' · planned'}`:'';
+          },
+          label:ctx=>` ${ctx.dataset.label}: ${feur(ctx.raw)}`
+        }}
       },
       scales:{
         x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},
@@ -3802,26 +3939,10 @@ function rebuildCashFlow(){
     else if(tx.type==='deposit')  cashTradeDelta += tx.price||0;
   });
   const cashTransferDelta=DB.transition.cashTxDelta||0; // cash↔savings transfers only
-  const savTxDelta=DB.transition.savTxDelta||0;         // savings transfers
-  // Savings = SAV instrument position (anchor) + savings transfers
-  const savInstVal=(()=>{
-    if(!savInst) return 0;
-    let val=0;
-    (DB.transactions||[]).forEach(tx=>{
-      if(tx.iid!==savInst.id||tx.type==='dividend'||tx.type==='deposit'||tx.type==='savings_add'||tx.type==='savings_withdraw') return;
-      if(tx.type==='buy') val+=(tx.qty||0)*(tx.price||0);
-      else if(tx.type==='sell') val-=(tx.qty||0)*(tx.price||0);
-    });
-    return val;
-  })();
-  // savTradeDelta: fresh from savings_add / savings_withdraw transaction history
-  let savTradeDelta=0;
-  (DB.transactions||[]).forEach(tx=>{
-    if(tx.type==='savings_add') savTradeDelta+=(tx.price||0);
-    else if(tx.type==='savings_withdraw') savTradeDelta-=(tx.price||0);
-  });
   const cashVal=cashInstVal+cashTradeDelta+cashTransferDelta;
-  const savVal=savInstVal+savTxDelta+savTradeDelta; // no clamp — negative means data problem, show it
+  ensureSavingsSourceOfTruth();
+  const manualSavings=true;
+  const savVal=t.savingsOverride||0; // source of truth: editable bank savings balance
   // Store for MAX button in transfer modal (clamp to 0 for UX — can't transfer negative)
   window._xferMaxCash=Math.max(0,cashVal); window._xferMaxSav=Math.max(0,savVal);
   window._cashVal=cashVal; window._savVal=savVal;
@@ -3848,7 +3969,11 @@ function rebuildCashFlow(){
   const cashBadge=document.getElementById('cashTxBadge');
   if(cashBadge) cashBadge.textContent=cashTransferDelta!==0?(cashTransferDelta>0?`+${feur(cashTransferDelta,0)}`:`${feur(cashTransferDelta,0)}`):'';
   const savBadge=document.getElementById('savTxBadge');
-  if(savBadge) savBadge.textContent=savTxDelta!==0?(savTxDelta>0?`+${feur(savTxDelta,0)}`:`${feur(savTxDelta,0)}`):'';
+  if(savBadge) savBadge.textContent='editable';
+  const savSource=document.getElementById('cfSavSource');
+  if(savSource) savSource.textContent='Editable bank balance · source of truth';
+  const savInput=document.getElementById('cfSavInput');
+  if(savInput&&document.activeElement!==savInput) savInput.value=Number.isFinite(savVal)?savVal.toFixed(2):'';
   // Cash card: show red if negative balance (overspent)
   const cfCashValEl=document.getElementById('cfCashVal');
   if(cfCashValEl) cfCashValEl.style.color=cashVal<0?'var(--err)':'var(--ok)';
@@ -3889,7 +4014,7 @@ function rebuildCashFlow(){
   const curMonth=new Date().toISOString().slice(0,7);
   // Savings projection only runs from current month forward — past months have no projection
   // Full timeline: actuals for past months, plan for future
-  const savData=buildSavingsProjection(cfData,{savStart:savVal});
+  const savData=buildSavingsProjection(cfData,{savStart:savVal,manualSavings});
   // Split into actual (past+current) and projected (current+future) for two-tone display
   const savActual=savData.map(d=>(d.isPast||d.isCurrent)?d.v:null);
   const savProjected=savData.map(d=>(!d.isPast||d.isCurrent)?d.v:null);
@@ -4786,8 +4911,8 @@ function startEditNote(id){
 }
 
 function refreshAll(){
-  const cats=computeCategories();
   rebuildCashFlow(); // must run first — sets window._cashVal/_savVal used by renderKPIs
+  const cats=computeCategories();
   syncOverviewPrivacyToggle();
   renderKPIs(cats); renderAlloc(cats); renderCatCards(cats);
   renderHoldingsTabs(cats); renderHoldingsTable(cats);
@@ -5988,7 +6113,8 @@ function getTotalLiabilities(){
 }
 function renderBalanceSheet(){
   const cats=computeCategories();
-  const totalAssets=cats.reduce((s,c)=>s+c.current,0);
+  const base=getPortfolioBase(cats);
+  const totalAssets=base.portfolioValue;
   const totalLiab=getTotalLiabilities();
   const trueNW=totalAssets-totalLiab;
   // KPI cards
@@ -6002,10 +6128,10 @@ function renderBalanceSheet(){
   const CAT_ICONS={ETF:'📊',Stock:'💹',Crypto:'₿',Commodity:'🔶',Cash:'💰'};
   const assetsEl=document.getElementById('balanceAssets');
   if(assetsEl) assetsEl.innerHTML=`
-    ${cats.map(c=>`<div style="display:grid;grid-template-columns:1fr auto;padding:11px 16px;border-bottom:1px solid var(--bdr);align-items:center">
-      <span style="font-size:13px;font-weight:500">${CAT_ICONS[c.label]||'📌'} ${c.label}</span>
-      <span class="num fw7">${feur(c.current)}</span>
-    </div>`).join('')}
+    ${cats.map(c=>{ const val=c.label==='Cash'?base.liquidValue:c.current; return `<div style="display:grid;grid-template-columns:1fr auto;padding:11px 16px;border-bottom:1px solid var(--bdr);align-items:center">
+      <span style="font-size:13px;font-weight:500">${CAT_ICONS[c.label]||'📌'} ${categoryDisplayName(c.label)}</span>
+      <span class="num fw7">${feur(val)}</span>
+    </div>`; }).join('')}
     <div style="display:grid;grid-template-columns:1fr auto;padding:12px 16px;background:var(--neu-l);align-items:center">
       <span class="fw7">Total Assets</span><span class="num fw7 tg">${feur(totalAssets)}</span>
     </div>
@@ -6072,31 +6198,47 @@ function deleteLiability(id){
 
 // ── LEDGER ──
 let _ldgMonth = new Date().toISOString().slice(0,7);
-let _ldgExpEditMode = false;
-let _ldgIncEditMode = false;
 
 function getLedgerMonth(ym){
   if(!DB.ledger) DB.ledger={months:{}};
-    if(!DB.ledger.expenseCategories) DB.ledger.expenseCategories=[...DEFAULT_EXPENSE_CATS];
-    if(!DB.ledger.incomeCategories) DB.ledger.incomeCategories=[...DEFAULT_INCOME_ORDER];
+  if(!DB.ledger.expenseCategories) DB.ledger.expenseCategories=[...DEFAULT_EXPENSE_CATS];
+  if(!DB.ledger.incomeCategories) DB.ledger.incomeCategories=[...DEFAULT_INCOME_ORDER];
   if(!DB.ledger.months[ym]) DB.ledger.months[ym]={
+    incomeTotal:null,expenseTotal:null,
     salary:0,uwv:0,portfolioWithdrawal:0,other:0,
     expenses:{housing:0,food:0,transport:0,subscriptions:0,insurance:0,other:0},
-    closingCash:null,notes:''
+    closingCash:null,closingSavings:null,notes:''
   };
-  // Ensure expenses sub-object always has all keys (migration safety)
   const d=DB.ledger.months[ym];
+  if(d.closingSavings===undefined) d.closingSavings=null;
   if(!d.expenses) d.expenses={};
   ['housing','food','transport','subscriptions','insurance','other'].forEach(k=>{ if(d.expenses[k]===undefined) d.expenses[k]=0; });
   return d;
 }
 
-function getLedgerDividends(ym){
-  // Auto: net dividends in month (after per-instrument withholding tax)
-  const instMap={};
-  DB.instruments.forEach(i=>{ instMap[i.id]=i.withholdingRate??DB.taxSettings?.dividendWithholdingRate??15; });
-  return (DB.transactions||[]).filter(tx=>tx.type==='dividend'&&tx.date.startsWith(ym))
-    .reduce((s,tx)=>{ const whr=(instMap[tx.iid]??15)/100; return s+getDividendGross(tx)*(1-whr); },0);
+function getLedgerIncomeTotal(d){
+  if(d.incomeTotal!==undefined&&d.incomeTotal!==null) return d.incomeTotal||0;
+  return (d.salary||0)+(d.uwv||0)+(d.other||0);
+}
+function getLedgerExpenseTotal(d){
+  if(d.expenseTotal!==undefined&&d.expenseTotal!==null) return d.expenseTotal||0;
+  return Object.values(d.expenses||{}).reduce((s,v)=>s+(v||0),0);
+}
+function hasLedgerTotals(d){
+  return !!(d&&(
+    (d.incomeTotal!==undefined&&d.incomeTotal!==null)||
+    (d.expenseTotal!==undefined&&d.expenseTotal!==null)
+  ));
+}
+function hasLedgerActualData(d){
+  return !!(d&&(
+    (d.incomeTotal!==undefined&&d.incomeTotal!==null)||
+    (d.expenseTotal!==undefined&&d.expenseTotal!==null)||
+    d.closingCash!==null&&d.closingCash!==undefined||
+    d.closingSavings!==null&&d.closingSavings!==undefined||
+    d.salary||d.uwv||d.other||
+    Object.values(d.expenses||{}).some(v=>v>0)
+  ));
 }
 
 function getPlannedNetForMonth(ym){
@@ -6109,370 +6251,62 @@ function getPlannedNetForMonth(ym){
 
 function getLedgerActualNetForMonth(ym){
   const d=getLedgerMonth(ym);
-  const divs=getLedgerDividends(ym);
-  // Income: salary/UWV/other (manual) + dividends (auto from transactions)
-  // Investments (Box 3) and business profit (not active yet) excluded
-  const totalIncome=(d.salary||0)+(d.uwv||0)+(d.other||0)+divs;
-  const totalExp=Object.values(d.expenses||{}).reduce((s,v)=>s+(v||0),0);
-  return{totalIncome,totalExp,net:totalIncome-totalExp,divs};
+  const totalIncome=getLedgerIncomeTotal(d);
+  const totalExp=getLedgerExpenseTotal(d);
+  return{totalIncome,totalExp,net:totalIncome-totalExp};
 }
 
-function ledgerPrevMonth(){ _ldgMonth=addM(_ldgMonth,-1); renderLedger(); }
-function ledgerNextMonth(){ _ldgMonth=addM(_ldgMonth,1); renderLedger(); }
-
-function updateLedgerCalc(){
-  const ym=_ldgMonth;
+function openMonthlyActuals(ym=_ldgMonth){
+  _ldgMonth=ym||new Date().toISOString().slice(0,7);
+  loadMonthlyActualsForm(_ldgMonth);
+  openModal('monthlyActualsModal');
+}
+function loadMonthlyActualsForm(ym){
+  if(!ym) ym=new Date().toISOString().slice(0,7);
+  _ldgMonth=ym;
   const d=getLedgerMonth(ym);
-  ['salary','uwv','other'].forEach(f=>{ const el=document.getElementById('ldg_'+f); if(el) d[f]=parseFloat(el.value)||0; });
-  // Read all expense category inputs dynamically
-  (DB.ledger.expenseCategories||DEFAULT_EXPENSE_CATS).forEach(cat=>{ const el=document.getElementById('ldgx_'+cat.id); if(el) d.expenses[cat.id]=parseFloat(el.value)||0; });
-  const cc=document.getElementById('ldg_closingCash'); if(cc) d.closingCash=cc.value===''?null:parseFloat(cc.value)||0;
+  const monthEl=document.getElementById('ma_month'); if(monthEl) monthEl.value=ym;
+  const incEl=document.getElementById('ma_incomeTotal'); if(incEl) incEl.value=getLedgerIncomeTotal(d)||'';
+  const expEl=document.getElementById('ma_expenseTotal'); if(expEl) expEl.value=getLedgerExpenseTotal(d)||'';
+  const cashEl=document.getElementById('ma_closingCash'); if(cashEl) cashEl.value=d.closingCash!=null?d.closingCash:'';
+  const savEl=document.getElementById('ma_closingSavings'); if(savEl) savEl.value=d.closingSavings!=null?d.closingSavings:'';
+  const notesEl=document.getElementById('ma_notes'); if(notesEl) notesEl.value=d.notes||'';
+  updateMonthlyActualsPreview();
+}
+function updateMonthlyActualsPreview(){
+  const income=parseFloat(document.getElementById('ma_incomeTotal')?.value)||0;
+  const expense=parseFloat(document.getElementById('ma_expenseTotal')?.value)||0;
+  const net=income-expense;
+  const el=document.getElementById('ma_net_preview');
+  if(el){
+    el.textContent=(net>=0?'+':'')+feur(net);
+    el.style.color=net>=0?'var(--ok)':'var(--err)';
+  }
+}
+function saveMonthlyActuals(){
+  const ym=document.getElementById('ma_month')?.value||_ldgMonth;
+  if(!ym){ notify('⚠️ Choose a month first.','warn'); return; }
+  const d=getLedgerMonth(ym);
+  const incomeVal=document.getElementById('ma_incomeTotal')?.value;
+  const expenseVal=document.getElementById('ma_expenseTotal')?.value;
+  d.incomeTotal=incomeVal===''?null:parseFloat(incomeVal)||0;
+  d.expenseTotal=expenseVal===''?null:parseFloat(expenseVal)||0;
+  // Once this simplified totals popup is saved, hidden legacy detail fields should not keep driving actuals.
+  d.salary=0; d.uwv=0; d.other=0;
+  Object.keys(d.expenses||{}).forEach(k=>{ d.expenses[k]=0; });
+  const cashVal=document.getElementById('ma_closingCash')?.value;
+  const savVal=document.getElementById('ma_closingSavings')?.value;
+  d.closingCash=cashVal===''?null:parseFloat(cashVal)||0;
+  d.closingSavings=savVal===''?null:parseFloat(savVal)||0;
+  d.notes=document.getElementById('ma_notes')?.value||'';
+  _ldgMonth=ym;
   saveDB();
-  const{totalIncome,totalExp,net}=getLedgerActualNetForMonth(ym);
-  const planRow=buildCFData().find(r=>r.mRaw===ym);
-  const t=DB.transition;
-  const phase=planRow?planRow.phase:'';
-  const planSalary=phase==='employed'?t.salary||0:null;
-  const planUWV=phase==='ww'?t.ww||0:null;
-  const planExpTotal=planRow?Math.abs(planRow.exp):null;
-  const planIncTotal=planRow?planRow.income:null;
-  const planned=getPlannedNetForMonth(ym);
-
-  // Helper: update a diff span by ID
-  const updDiffInc=(id,actual,plan)=>{
-    const el=document.getElementById(id); if(!el) return;
-    if(actual==null||plan==null){el.textContent='—';el.style.color='var(--txt2)';el.style.fontWeight='';return;}
-    const dv=actual-plan;
-    el.textContent=Math.abs(dv)<1?'✓':(dv>0?'+':'')+feur(dv);
-    el.style.color=Math.abs(dv)<1?'var(--ok)':dv>=0?'var(--ok)':'var(--err)';
-    el.style.fontWeight=Math.abs(dv)<1?'':'600';
-  };
-  const updDiffExp=(id,actual,plan)=>{
-    const el=document.getElementById(id); if(!el) return;
-    if(actual==null||plan==null){el.textContent='—';el.style.color='var(--txt2)';el.style.fontWeight='';return;}
-    const dv=plan-actual; // inverted: positive = under budget
-    el.textContent=Math.abs(dv)<1?'✓':(dv>0?'+':'')+feur(dv);
-    el.style.color=Math.abs(dv)<1?'var(--ok)':dv>=0?'var(--ok)':'var(--err)';
-    el.style.fontWeight=Math.abs(dv)<1?'':'600';
-  };
-
-  // Update totals
-  const ti=document.getElementById('ldg_totalIncome'); if(ti) ti.textContent=feur(totalIncome);
-  const te=document.getElementById('ldg_totalExp'); if(te) te.textContent=feur(totalExp);
-  const nEl=document.getElementById('ldg_net'); if(nEl){nEl.textContent=(net>=0?'+':'')+feur(net);nEl.style.color=net>=0?'var(--ok)':'var(--err)';}
-
-  // Update all diff cells
-  updDiffInc('ldgd_salary', d.salary||0, planSalary);
-  updDiffInc('ldgd_uwv', d.uwv||0, planUWV);
-  updDiffInc('ldgd_incTotal', totalIncome, planIncTotal);
-  updDiffExp('ldgd_expTotal', totalExp, planExpTotal);
-
-  // Update section summaries in collapsed headers
-  const incSum=document.getElementById('ldg-sum-inc');
-  const expSum=document.getElementById('ldg-sum-exp');
-  if(incSum) incSum.textContent=planIncTotal!=null?`${feur(totalIncome)} / ${feur(planIncTotal)}`:`${feur(totalIncome)}`;
-  if(expSum) expSum.textContent=planExpTotal!=null?`${feur(totalExp)} / ${feur(planExpTotal)}`:`${feur(totalExp)}`;
-
-  // Net deviation
-  if(planned!==null){
-    const dev=net-planned.net;
-    const dEl=document.getElementById('ldg_deviation'); if(dEl) dEl.innerHTML=`<span style="font-weight:700;color:${Math.abs(dev)<10?'var(--ok)':dev>0?'var(--ok)':'var(--err)'}">${Math.abs(dev)<10?'✓ on track':dev>0?'+'+feur(dev)+' ahead':feur(dev)+' behind'}</span>`;
-  }
-  renderDeviationChart();
+  closeModal('monthlyActualsModal');
+  rebuildCashFlow();
+  notify('✅ Monthly actuals saved.');
 }
-
 function renderLedger(){
-  const el=document.getElementById('planVsActualBody');
-  if(!el) return;
-  const ym=_ldgMonth;
-  const d=getLedgerMonth(ym);
-  const divs=getLedgerDividends(ym);
-  const{totalIncome,totalExp,net}=getLedgerActualNetForMonth(ym);
-  const planned=getPlannedNetForMonth(ym);
-  const planRow=buildCFData().find(r=>r.mRaw===ym);
-  const dev=planned!==null?net-planned.net:null;
-  const t=DB.transition;
-  const expCats=DB.ledger.expenseCategories||DEFAULT_EXPENSE_CATS;
-  const incOrder=DB.ledger.incomeCategories||DEFAULT_INCOME_ORDER;
-
-  document.getElementById('ldgMonthLabel').textContent=fmtM(ym);
-
-  const phase=planRow?planRow.phase:'';
-  const planSalary=phase==='employed'?t.salary||0:null;
-  const planUWV=phase==='ww'?t.ww||0:null;
-  const planExpTotal=planRow?Math.abs(planRow.exp):null;
-  const planIncTotal=planRow?planRow.income:null;
-  const planNet=planned?planned.net:null;
-
-  const pf=v=>v!=null?feur(v):'<span style="color:var(--txt2)">—</span>';
-  const inp=(id,val)=>`<input class="ldg-inp" id="${id}" type="number" min="0" step="0.01" placeholder="0" value="${val||''}" oninput="updateLedgerCalc()" style="width:100%;text-align:right">`;
-
-  const diffInc=(actual,plan,id='')=>{
-    const span=id?`id="${id}"`:'';
-    if(actual==null||plan==null) return `<span ${span} style="color:var(--txt2)">—</span>`;
-    const dv=actual-plan; if(Math.abs(dv)<1) return `<span ${span} style="color:var(--ok)">✓</span>`;
-    return `<span ${span} style="color:${dv>=0?'var(--ok)':'var(--err)'};font-weight:600">${dv>0?'+':''}${feur(dv)}</span>`;
-  };
-  const diffExp=(actual,plan,id='')=>{
-    const span=id?`id="${id}"`:'';
-    if(actual==null||plan==null) return `<span ${span} style="color:var(--txt2)">—</span>`;
-    const dv=plan-actual; if(Math.abs(dv)<1) return `<span ${span} style="color:var(--ok)">✓</span>`;
-    return `<span ${span} style="color:${dv>=0?'var(--ok)':'var(--err)'};font-weight:600">${dv>0?'+':''}${feur(dv)}</span>`;
-  };
-
-  const detRow=(section,label,sub,planCell,actualCell,diffCell)=>`
-    <tr class="ldg-det-${section}" style="display:none;border-bottom:1px solid var(--bdr)">
-      <td style="padding:6px 16px">${label}${sub?`<div style="font-size:10px;color:var(--txt2);margin-top:1px">${sub}</div>`:''}</td>
-      <td style="padding:6px 16px;text-align:right;color:var(--txt2);font-size:12px">${planCell}</td>
-      <td style="padding:6px 12px;text-align:right">${actualCell}</td>
-      <td style="padding:6px 16px;text-align:right;font-size:12px">${diffCell}</td>
-    </tr>`;
-
-  const totRow=(label,planCell,actualId,actualVal,diffId,diffHtml)=>`
-    <tr style="border-bottom:2px solid var(--bdr);font-weight:700;background:var(--bg2)">
-      <td style="padding:8px 16px">${label}</td>
-      <td style="padding:6px 16px;text-align:right;color:var(--txt2);font-size:12px">${planCell}</td>
-      <td style="padding:6px 16px;text-align:right"><span id="${actualId}" style="font-weight:800;font-size:14px">${actualVal}</span></td>
-      <td style="padding:6px 16px;text-align:right;font-size:13px"><span id="${diffId}">${diffHtml}</span></td>
-    </tr>`;
-
-  // ↑/↓ move buttons for edit modes
-  const moveBtn=(fn,id,dir,disabled)=>
-    `<button class="btn btn-g" onclick="${fn}('${id}','${dir}')" style="padding:1px 6px;font-size:12px;min-width:24px${disabled?';opacity:.3;pointer-events:none':''}">${dir==='up'?'↑':'↓'}</button>`;
-
-  // ── Income section ──────────────────────────────────────────────
-  // Definition of each income item (label, plan value, actual input, diff)
-  const incItemDef={
-    salary:   {label:'Salary / Severance',  sub:'net received',        plan:pf(planSalary), actual:inp('ldg_salary',d.salary),  diff:diffInc(d.salary||0,planSalary,'ldgd_salary')},
-    uwv:      {label:'UWV Benefit',         sub:'net benefit received', plan:pf(planUWV),    actual:inp('ldg_uwv',d.uwv),        diff:diffInc(d.uwv||0,planUWV,'ldgd_uwv')},
-    other:    {label:'Other Income',        sub:'freelance, one-off',   plan:pf(null),       actual:inp('ldg_other',d.other),    diff:'<span style="color:var(--txt2)">—</span>'},
-    dividends:{label:'Dividends',           sub:'net after WHT — auto', plan:divs>0?feur(divs):'<span style="color:var(--txt2)">—</span>',
-               actual:`<span style="font-weight:600;color:${divs>0?'var(--ok)':'var(--txt2)'}">${divs>0?feur(divs):'—'}</span>`,
-               diff:'<span style="color:var(--txt2)">auto</span>'}
-  };
-
-  let incSectionRows='';
-  const incSummary=planIncTotal!=null?`${feur(totalIncome)} / ${feur(planIncTotal)}`:`${feur(totalIncome)}`;
-
-  if(_ldgIncEditMode){
-    incSectionRows=`<tr style="background:var(--bg2);border-bottom:1px solid var(--bdr)">
-      <td colspan="4" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
-        ↕️ Reorder Income Items
-        <button class="btn btn-g btn-sm" onclick="toggleIncEditMode()" style="margin-left:12px;font-size:11px">✓ Done</button>
-      </td>
-    </tr>`+
-    incOrder.map((id,idx)=>{
-      const itm=incItemDef[id]||{label:id,sub:''};
-      return `<tr style="border-bottom:1px solid var(--bdr)">
-        <td style="padding:6px 12px;display:flex;align-items:center;gap:6px">
-          ${moveBtn('moveIncCat',id,'up',idx===0)}
-          ${moveBtn('moveIncCat',id,'down',idx===incOrder.length-1)}
-          <span style="font-size:13px">${itm.label}</span>
-          <span style="font-size:10px;color:var(--txt2)">${itm.sub}</span>
-        </td>
-        <td colspan="3" style="padding:6px 12px;font-size:11px;color:var(--txt2)">order: ${idx+1} of ${incOrder.length}</td>
-      </tr>`;
-    }).join('');
-  } else {
-    const incHdr=`<tr class="ldg-sec-hdr" onclick="toggleLdgSection('inc')" style="background:var(--bg2);cursor:pointer;user-select:none">
-      <td colspan="3" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
-        <span id="ldg-arr-inc" style="display:inline-block;transition:transform .2s;margin-right:6px">▶</span>Income
-        <span id="ldg-sum-inc" style="font-weight:400;font-size:11px;color:var(--txt2);margin-left:8px">${incSummary}</span>
-      </td>
-      <td style="padding:6px 12px;text-align:right">
-        <button class="btn-ghost" onclick="event.stopPropagation();toggleIncEditMode()" style="font-size:11px;padding:2px 6px" title="Reorder items">↕</button>
-      </td>
-    </tr>`;
-    const incDetail=incOrder.map(id=>{
-      const itm=incItemDef[id]; if(!itm) return '';
-      return detRow('inc',itm.label,itm.sub,itm.plan,itm.actual,itm.diff);
-    }).join('');
-    incSectionRows=incHdr+incDetail;
-  }
-
-  // ── Expense section ─────────────────────────────────────────────
-  let expRows='';
-  const expSummary=planExpTotal!=null?`${feur(totalExp)} / ${feur(planExpTotal)}`:`${feur(totalExp)}`;
-
-  if(_ldgExpEditMode){
-    expRows=`<tr style="background:var(--bg2);border-bottom:1px solid var(--bdr)">
-      <td colspan="4" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
-        ✏️ Edit Expense Categories
-        <button class="btn btn-g btn-sm" onclick="toggleExpEditMode()" style="margin-left:12px;font-size:11px">✓ Done</button>
-      </td>
-    </tr>`+
-    expCats.map((cat,idx)=>`
-      <tr style="border-bottom:1px solid var(--bdr)">
-        <td style="padding:5px 8px 5px 12px">
-          <div style="display:flex;align-items:center;gap:5px">
-            ${moveBtn('moveExpCat',cat.id,'up',idx===0)}
-            ${moveBtn('moveExpCat',cat.id,'down',idx===expCats.length-1)}
-            <input type="text" class="ts-inp" value="${cat.label}" style="flex:1;font-size:13px;padding:3px 8px"
-              onblur="renameExpCat('${cat.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
-          </div>
-        </td>
-        <td style="padding:5px 8px;font-size:11px;color:var(--txt2);white-space:nowrap" colspan="2">${feur((d.expenses||{})[cat.id]||0)} this month</td>
-        <td style="padding:5px 12px;text-align:right">
-          <button class="btn btn-sm" style="background:var(--err-l);color:var(--err);border:1px solid #FECACA;font-size:11px;padding:2px 6px"
-            onclick="removeExpCat('${cat.id}')">✕</button>
-        </td>
-      </tr>`).join('')+
-    `<tr style="border-bottom:1px solid var(--bdr)">
-      <td colspan="4" style="padding:8px 16px">
-        <button class="btn btn-g btn-sm" onclick="addExpCat()" style="font-size:12px">＋ Add category</button>
-      </td>
-    </tr>`;
-  } else {
-    const expHdr=`<tr class="ldg-sec-hdr" onclick="toggleLdgSection('exp')" style="background:var(--bg2);cursor:pointer;user-select:none">
-      <td colspan="3" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">
-        <span id="ldg-arr-exp" style="display:inline-block;transition:transform .2s;margin-right:6px">▶</span>Expenses
-        <span id="ldg-sum-exp" style="font-weight:400;font-size:11px;color:var(--txt2);margin-left:8px">${expSummary}</span>
-      </td>
-      <td style="padding:6px 12px;text-align:right">
-        <button class="btn-ghost" onclick="event.stopPropagation();toggleExpEditMode()" style="font-size:11px;padding:2px 6px" title="Edit categories">✎</button>
-      </td>
-    </tr>`;
-    const expDetail=expCats.map(cat=>
-      detRow('exp',cat.label,cat.sub||'','—',inp('ldgx_'+cat.id,(d.expenses||{})[cat.id]),'<span style="color:var(--txt2)">—</span>')
-    ).join('');
-    expRows=expHdr+expDetail;
-  }
-
-  el.innerHTML=
-    incSectionRows+
-    (_ldgIncEditMode?'':totRow('Total Income',pf(planIncTotal),'ldg_totalIncome',feur(totalIncome),'ldgd_incTotal',diffInc(totalIncome,planIncTotal)))+
-    expRows+
-    (_ldgExpEditMode?'':totRow('Total Expenses',pf(planExpTotal),'ldg_totalExp',feur(totalExp),'ldgd_expTotal',diffExp(totalExp,planExpTotal)))+
-    `<tr style="background:var(--bg2)"><td colspan="4" style="padding:7px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)">Summary</td></tr>`+
-    `<tr style="border-bottom:1px solid var(--bdr);font-weight:700">
-      <td style="padding:8px 16px">Net Cash Flow</td>
-      <td style="padding:6px 16px;text-align:right;color:var(--txt2);font-size:12px">${pf(planNet)}</td>
-      <td style="padding:6px 16px;text-align:right"><span id="ldg_net" style="font-weight:800;font-size:15px;color:${net>=0?'var(--ok)':'var(--err)'}">${net>=0?'+':''}${feur(net)}</span></td>
-      <td style="padding:6px 16px;text-align:right;font-size:13px"><span id="ldg_deviation">${
-        dev!=null?`<span style="font-weight:700;color:${Math.abs(dev)<10?'var(--ok)':dev>0?'var(--ok)':'var(--err)'}">${Math.abs(dev)<10?'✓ on track':dev>0?'+'+feur(dev)+' ahead':feur(dev)+' behind'}</span>`:'—'
-      }</span></td>
-    </tr>`+
-    `<tr style="border-bottom:1px solid var(--bdr)">
-      <td style="padding:6px 16px">Closing Cash Balance<div style="font-size:10px;color:var(--txt2);margin-top:1px">actual bank balance at month end</div></td>
-      <td style="padding:6px 16px;text-align:right;color:var(--txt2)">—</td>
-      <td style="padding:6px 12px;text-align:right">${inp('ldg_closingCash',d.closingCash!=null?d.closingCash:'')}</td>
-      <td style="padding:6px 16px"></td>
-    </tr>`;
-  renderDeviationChart();
-}
-
-
-
-function toggleExpEditMode(){
-  _ldgExpEditMode=!_ldgExpEditMode;
-  renderLedger();
-}
-function toggleIncEditMode(){
-  _ldgIncEditMode=!_ldgIncEditMode;
-  renderLedger();
-}
-function moveExpCat(id,dir){
-  const cats=DB.ledger.expenseCategories||DEFAULT_EXPENSE_CATS;
-  const idx=cats.findIndex(c=>c.id===id); if(idx<0) return;
-  const swapIdx=dir==='up'?idx-1:idx+1;
-  if(swapIdx<0||swapIdx>=cats.length) return;
-  [cats[idx],cats[swapIdx]]=[cats[swapIdx],cats[idx]];
-  saveDB(); renderLedger();
-}
-function moveIncCat(id,dir){
-  const order=DB.ledger.incomeCategories||[...DEFAULT_INCOME_ORDER];
-  const idx=order.indexOf(id); if(idx<0) return;
-  const swapIdx=dir==='up'?idx-1:idx+1;
-  if(swapIdx<0||swapIdx>=order.length) return;
-  [order[idx],order[swapIdx]]=[order[swapIdx],order[idx]];
-  saveDB(); renderLedger();
-}
-function addExpCat(){
-  const label=prompt('New category name (e.g. Dining, Gym, Kids):');
-  if(!label||!label.trim()) return;
-  const id='cat_'+Date.now();
-  (DB.ledger.expenseCategories=DB.ledger.expenseCategories||[...DEFAULT_EXPENSE_CATS]).push({id,label:label.trim(),sub:''});
-  saveDB(); renderLedger();
-}
-function removeExpCat(id){
-  if(!confirm('Remove this expense category? Recorded amounts stay in the data but won\'t show in the table.')) return;
-  DB.ledger.expenseCategories=(DB.ledger.expenseCategories||[]).filter(c=>c.id!==id);
-  saveDB(); renderLedger();
-}
-function renameExpCat(id,newLabel){
-  const cat=(DB.ledger.expenseCategories||[]).find(c=>c.id===id);
-  if(cat&&newLabel.trim()&&newLabel.trim()!==cat.label){ cat.label=newLabel.trim(); saveDB(); }
-}
-
-function toggleLdgSection(id){
-  const rows=document.querySelectorAll(`.ldg-det-${id}`);
-  const arr=document.getElementById(`ldg-arr-${id}`);
-  const isOpen=rows.length&&rows[0].style.display!=='none';
-  rows.forEach(r=>r.style.display=isOpen?'none':'table-row');
-  if(arr) arr.style.transform=isOpen?'':'rotate(90deg)';
-}
-
-function renderDeviationChart(){
-  const allMonths=Object.keys(DB.ledger?.months||{}).sort();
-  const emptyEl=document.getElementById('ldgChartEmpty');
-  const ctxEl=document.getElementById('deviationChart');
-  if(allMonths.length===0){
-    safeDestroy('deviationChart');
-    if(emptyEl) emptyEl.style.display='block';
-    if(ctxEl) ctxEl.style.display='none';
-    return;
-  }
-  if(emptyEl) emptyEl.style.display='none';
-  if(ctxEl) ctxEl.style.display='block';
-
-  const cfData=buildCFData();
-  const savProj=buildSavingsProjection(cfData);
-  const planMap={};
-  cfData.forEach((r,i)=>{ planMap[r.mRaw]={net:r.income+r.exp,cumul:savProj[i].v}; });
-
-  const t=DB.transition;
-  let actCumul=t.buf||0;
-  const labels=[],actualNets=[],plannedNets=[],actualCumul=[],plannedCumul=[];
-
-  allMonths.forEach(ym=>{
-    const{net}=getLedgerActualNetForMonth(ym);
-    const plan=planMap[ym]||null;
-    labels.push(fmtM(ym));
-    actualNets.push(net);
-    plannedNets.push(plan?plan.net:null);
-    const d=DB.ledger.months[ym];
-    if(d.closingCash!==null&&d.closingCash!==undefined){ actCumul=d.closingCash; }
-    else { actCumul+=net; }
-    actualCumul.push(+actCumul.toFixed(0));
-    plannedCumul.push(plan?plan.cumul:null);
-  });
-
-  safeDestroy('deviationChart');
-  if(!ctxEl) return;
-  charts.deviation=new Chart(ctxEl,{
-    type:'bar',
-    data:{
-      labels,
-      datasets:[
-        {label:'Actual Net',data:actualNets,backgroundColor:actualNets.map(v=>v>=0?'rgba(16,185,129,0.7)':'rgba(239,68,68,0.7)'),borderColor:actualNets.map(v=>v>=0?'#10B981':'#EF4444'),borderWidth:1,yAxisID:'y',order:2},
-        {label:'Planned Net',type:'bar',data:plannedNets,backgroundColor:'rgba(100,116,139,0.2)',borderColor:'rgba(100,116,139,0.45)',borderWidth:1,yAxisID:'y',order:3},
-        {label:'Actual Balance',data:actualCumul,type:'line',borderColor:'#10B981',backgroundColor:'rgba(16,185,129,0.07)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#10B981',fill:false,tension:0.3,yAxisID:'y2',order:0},
-        {label:'Modelled Balance',data:plannedCumul,type:'line',borderDash:[5,4],borderColor:'#6366F1',backgroundColor:'transparent',borderWidth:2,pointRadius:3,pointBackgroundColor:'#6366F1',fill:false,tension:0.3,yAxisID:'y2',order:1}
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
-        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y>=0?'':'-'}${feur(Math.abs(c.parsed.y))}`}}
-      },
-      scales:{
-        y:{title:{display:true,text:'Monthly Net (€)',font:{size:11}},grid:{color:'rgba(0,0,0,0.05)'},ticks:{callback:v=>feur(v)}},
-        y2:{position:'right',title:{display:true,text:'Cumulative (€)',font:{size:11}},grid:{drawOnChartArea:false},ticks:{callback:v=>feur(v)}}
-      }
-    }
-  });
+  // Monthly actuals are now used only as simple inputs for savings projection.
 }
 
 function renderBizTab(){
@@ -6827,6 +6661,7 @@ async function gistFetch(){
     if(DB.transition.bizPlanIncome===undefined) DB.transition.bizPlanIncome=0;
     if(DB.transition.cashOverride===undefined) DB.transition.cashOverride=0;
     if(DB.transition.savingsOverride===undefined) DB.transition.savingsOverride=0;
+    ensureSavingsSourceOfTruth();
     if(DB.transition.cashTxDelta===undefined) DB.transition.cashTxDelta=0;
     if(DB.transition.savTxDelta===undefined) DB.transition.savTxDelta=0;
     if(!DB.transition._cashV2){ DB.transition.cashTxDelta=0; DB.transition._cashV2=true; }
